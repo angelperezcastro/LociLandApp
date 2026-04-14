@@ -31,37 +31,45 @@ export function Onboarding02Screen({
       onSkip={handleSkip}
     >
       <View style={styles.grid}>
-        <ChoiceCard
-          emoji="🏠"
-          title="House"
-          subtitle="Warm and cozy"
-          selected={selectedPlace === 'house'}
-          onPress={() => setSelectedPlace('house')}
-        />
+        <View style={styles.row}>
+          <ChoiceCard
+            emoji="🏠"
+            title="House"
+            subtitle="Warm and cozy"
+            selected={selectedPlace === 'house'}
+            onPress={() => setSelectedPlace('house')}
+          />
 
-        <ChoiceCard
-          emoji="🏰"
-          title="Castle"
-          subtitle="Magical rooms"
-          selected={selectedPlace === 'castle'}
-          onPress={() => setSelectedPlace('castle')}
-        />
+          <View style={styles.columnGap} />
 
-        <ChoiceCard
-          emoji="🌲"
-          title="Forest"
-          subtitle="Nature adventure"
-          selected={selectedPlace === 'forest'}
-          onPress={() => setSelectedPlace('forest')}
-        />
+          <ChoiceCard
+            emoji="🏰"
+            title="Castle"
+            subtitle="Magical rooms"
+            selected={selectedPlace === 'castle'}
+            onPress={() => setSelectedPlace('castle')}
+          />
+        </View>
 
-        <ChoiceCard
-          emoji="🚀"
-          title="Space"
-          subtitle="Galaxy journey"
-          selected={selectedPlace === 'space'}
-          onPress={() => setSelectedPlace('space')}
-        />
+        <View style={styles.row}>
+          <ChoiceCard
+            emoji="🌲"
+            title="Forest"
+            subtitle="Nature adventure"
+            selected={selectedPlace === 'forest'}
+            onPress={() => setSelectedPlace('forest')}
+          />
+
+          <View style={styles.columnGap} />
+
+          <ChoiceCard
+            emoji="🚀"
+            title="Space"
+            subtitle="Galaxy journey"
+            selected={selectedPlace === 'space'}
+            onPress={() => setSelectedPlace('space')}
+          />
+        </View>
       </View>
     </OnboardingLayout>
   );
@@ -69,9 +77,13 @@ export function Onboarding02Screen({
 
 const styles = StyleSheet.create({
   grid: {
+    gap: spacing.md,
+  },
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: spacing.md,
+    alignItems: 'stretch',
+  },
+  columnGap: {
+    width: spacing.md,
   },
 });

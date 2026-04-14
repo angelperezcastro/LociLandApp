@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Body, Caption } from '../ui';
 import { colors, spacing } from '../../theme';
 
@@ -19,13 +19,10 @@ export function ChoiceCard({
   onPress,
 }: ChoiceCardProps) {
   return (
-    <Pressable
+    <TouchableOpacity
+      activeOpacity={0.9}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        selected && styles.selected,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.card, selected && styles.cardSelected]}
     >
       <View style={[styles.emojiCircle, selected && styles.emojiCircleSelected]}>
         <Body style={styles.emoji}>{emoji}</Body>
@@ -36,13 +33,14 @@ export function ChoiceCard({
       {subtitle ? (
         <Caption style={styles.subtitle}>{subtitle}</Caption>
       ) : null}
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    width: '48%',
+  card: {
+    flex: 1,
+    minHeight: 180,
     backgroundColor: colors.white,
     borderRadius: 24,
     borderWidth: 2,
@@ -50,24 +48,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
+    justifyContent: 'flex-start',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  selected: {
+  cardSelected: {
     backgroundColor: colors.accentSoft,
     borderColor: colors.accent,
     transform: [{ scale: 1.02 }],
   },
-  pressed: {
-    opacity: 0.95,
-  },
   emojiCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: colors.bg,
     borderWidth: 2,
     borderColor: colors.border,
@@ -76,18 +72,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   emojiCircleSelected: {
-    borderColor: colors.accent,
     backgroundColor: colors.white,
+    borderColor: colors.accent,
   },
   emoji: {
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 32,
+    lineHeight: 36,
+    textAlign: 'center',
   },
   title: {
     textAlign: 'center',
+    marginBottom: spacing.xs,
   },
   subtitle: {
     textAlign: 'center',
-    marginTop: spacing.xs,
+    lineHeight: 20,
   },
 });
