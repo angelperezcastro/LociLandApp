@@ -9,6 +9,7 @@ import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 import { useUserStore } from '../store/useUserStore';
+import { ComponentShowcaseScreen } from '../screens/dev/ComponentShowcaseScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -30,6 +31,7 @@ export function RootNavigator() {
           <Stack.Screen name="PalaceDetail" component={PalaceDetailScreen} />
           <Stack.Screen name="Review" component={ReviewScreen} />
           <Stack.Screen name="Achievements" component={AchievementsScreen} />
+          <Stack.Screen name="ComponentShowcase" component={ComponentShowcaseScreen} />
         </>
       )}
     </Stack.Navigator>

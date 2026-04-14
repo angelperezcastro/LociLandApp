@@ -32,6 +32,11 @@ export function HomeScreen({ navigation }: AppTabScreenProps<'Home'>) {
           onPress: () => navigation.navigate('Profile'),
           variant: 'ghost',
         },
+        {
+          label: 'Open Component Showcase',
+          onPress: () => rootNavigation.navigate('ComponentShowcase'),
+          variant: 'ghost',
+        },
       ]}
     />
   );

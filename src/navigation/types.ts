@@ -8,6 +8,7 @@ export type RootStackParamList = {
   PalaceDetail: { palaceId?: string } | undefined;
   Review: { palaceId?: string } | undefined;
   Achievements: undefined;
+  ComponentShowcase: undefined;
 };
 
 export type AuthStackParamList = {
@@ -31,3 +32,4 @@ export type AuthScreenProps<T extends keyof AuthStackParamList> =
 
 export type AppTabScreenProps<T extends keyof AppTabParamList> =
   BottomTabScreenProps<AppTabParamList, T>;
+
