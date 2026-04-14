@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Screen } from '../../components/layout';
+import { resetOnboardingSeen } from '../../services/onboardingStorage';
 import {
   Avatar,
   Button,
@@ -50,6 +51,14 @@ export function ComponentShowcaseScreen() {
 <View style={styles.blockSpacing}>
   <Button title="Ghost Button" variant="ghost" onPress={() => {}} />
 </View>
+
+<Button
+  title="Reset onboarding"
+  variant="ghost"
+  onPress={async () => {
+    await resetOnboardingSeen();
+  }}
+/>
       </Card>
 
       <Card style={styles.section}>
