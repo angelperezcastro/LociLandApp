@@ -11,31 +11,45 @@ import {
 } from 'react-native';
 import { colors } from '../../theme';
 
+type AvatarSize = 'sm' | 'md' | 'lg' | number;
+
 export interface AvatarProps {
   imageUri?: string;
   emojiFallback?: string;
-  size?: number;
+  size?: AvatarSize;
   style?: StyleProp<ViewStyle>;
   imageStyle?: StyleProp<ImageStyle>;
   textStyle?: StyleProp<TextStyle>;
 }
 
+const sizeMap: Record<'sm' | 'md' | 'lg', number> = {
+  sm: 40,
+  md: 64,
+  lg: 96,
+};
+
+function resolveSize(size: AvatarSize): number {
+  return typeof size === 'number' ? size : sizeMap[size];
+}
+
 export function Avatar({
   imageUri,
   emojiFallback = '🦊',
-  size = 64,
+  size = 'md',
   style,
   imageStyle,
   textStyle,
 }: AvatarProps) {
+  const resolvedSize = resolveSize(size);
+
   return (
     <View
       style={[
         styles.base,
         {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
+          width: resolvedSize,
+          height: resolvedSize,
+          borderRadius: resolvedSize / 2,
         },
         style,
       ]}
@@ -43,21 +57,21 @@ export function Avatar({
       {imageUri ? (
         <Image
           source={{ uri: imageUri }}
+          resizeMode="cover"
           style={[
             {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
+              width: resolvedSize,
+              height: resolvedSize,
+              borderRadius: resolvedSize / 2,
             },
             imageStyle,
           ]}
-          resizeMode="cover"
         />
       ) : (
         <Text
           style={[
             styles.emoji,
-            { fontSize: size * 0.45 },
+            { fontSize: resolvedSize * 0.42 },
             textStyle,
           ]}
         >
@@ -72,10 +86,10 @@ const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.border,
     overflow: 'hidden',
+    backgroundColor: colors.accentSoft,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
   },
   emoji: {
     textAlign: 'center',

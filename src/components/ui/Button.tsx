@@ -29,10 +29,12 @@ export function Button({
   disabled = false,
   ...touchableProps
 }: ButtonProps) {
+  const isGhost = variant === 'ghost';
+
   return (
     <TouchableOpacity
       accessibilityRole="button"
-      activeOpacity={0.85}
+      activeOpacity={0.88}
       disabled={disabled}
       style={[
         styles.base,
@@ -48,7 +50,7 @@ export function Button({
       <Text
         style={[
           styles.textBase,
-          variant === 'ghost' ? styles.ghostText : styles.filledText,
+          isGhost ? styles.ghostText : styles.filledText,
           disabled && styles.disabledText,
           textStyle,
         ]}
@@ -62,14 +64,14 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minHeight: 56,
-    borderRadius: 20,
-    borderWidth: 2,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'stretch',
-    shadowColor: colors.text,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 20,
+    borderWidth: 2,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.14,
     shadowRadius: 8,
@@ -80,15 +82,17 @@ const styles = StyleSheet.create({
   },
   primary: {
     backgroundColor: colors.primary,
-    borderColor: '#D9B51F',
+    borderColor: colors.primaryBorder,
   },
   secondary: {
     backgroundColor: colors.secondary,
-    borderColor: '#4FA75A',
+    borderColor: colors.secondaryBorder,
   },
   ghost: {
     backgroundColor: colors.white,
     borderColor: colors.accent,
+    shadowOpacity: 0.08,
+    elevation: 2,
   },
   disabled: {
     opacity: 0.55,

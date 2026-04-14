@@ -18,21 +18,13 @@ export const typography = {
     fontFamily: fontFamily.heading,
     fontSize: 32,
     lineHeight: 38,
+    letterSpacing: 0.2,
   },
   h2: {
     fontFamily: fontFamily.heading,
     fontSize: 24,
     lineHeight: 30,
-  },
-  h3: {
-    fontFamily: fontFamily.heading,
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  bodyLg: {
-    fontFamily: fontFamily.body,
-    fontSize: 18,
-    lineHeight: 26,
+    letterSpacing: 0.15,
   },
   body: {
     fontFamily: fontFamily.body,
@@ -46,7 +38,7 @@ export const typography = {
   },
   caption: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
   },
 } as const;

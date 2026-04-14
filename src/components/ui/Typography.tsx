@@ -17,7 +17,7 @@ type BaseTypographyProps = PropsWithChildren<
 function BaseText({
   children,
   style,
-  color = colors.text,
+  color,
   ...textProps
 }: BaseTypographyProps) {
   return (
@@ -27,37 +27,40 @@ function BaseText({
   );
 }
 
-export function H1({ children, style, color, ...props }: BaseTypographyProps) {
+export function H1({
+  children,
+  style,
+  color = colors.text,
+  ...props
+}: BaseTypographyProps) {
   return (
-    <BaseText
-      {...props}
-      color={color}
-      style={[typography.h1, style]}
-    >
+    <BaseText {...props} color={color} style={[typography.h1, style]}>
       {children}
     </BaseText>
   );
 }
 
-export function H2({ children, style, color, ...props }: BaseTypographyProps) {
+export function H2({
+  children,
+  style,
+  color = colors.text,
+  ...props
+}: BaseTypographyProps) {
   return (
-    <BaseText
-      {...props}
-      color={color}
-      style={[typography.h2, style]}
-    >
+    <BaseText {...props} color={color} style={[typography.h2, style]}>
       {children}
     </BaseText>
   );
 }
 
-export function Body({ children, style, color, ...props }: BaseTypographyProps) {
+export function Body({
+  children,
+  style,
+  color = colors.text,
+  ...props
+}: BaseTypographyProps) {
   return (
-    <BaseText
-      {...props}
-      color={color}
-      style={[typography.body, style]}
-    >
+    <BaseText {...props} color={color} style={[typography.body, style]}>
       {children}
     </BaseText>
   );
@@ -66,15 +69,11 @@ export function Body({ children, style, color, ...props }: BaseTypographyProps) 
 export function Caption({
   children,
   style,
-  color,
+  color = colors.muted,
   ...props
 }: BaseTypographyProps) {
   return (
-    <BaseText
-      {...props}
-      color={color}
-      style={[typography.caption, style]}
-    >
+    <BaseText {...props} color={color} style={[typography.caption, style]}>
       {children}
     </BaseText>
   );
