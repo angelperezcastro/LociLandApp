@@ -1,20 +1,42 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import './global.css';
+
+import React from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { colors, typography, useAppFonts } from './src/theme';
 
 export default function App() {
+  const [fontsLoaded] = useAppFonts();
+
+  if (!fontsLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center bg-bg">
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <View className="flex-1 items-center justify-center bg-bg px-md">
+        <Text style={[typography.h1, { color: colors.text, marginBottom: 12 }]}>
+          LociLand
+        </Text>
+
+        <Text
+          style={[
+            typography.bodyLg,
+            {
+              color: colors.text,
+              textAlign: 'center',
+              maxWidth: 320,
+            },
+          ]}
+        >
+          Theme system and folder structure ready.
+        </Text>
+      </View>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
