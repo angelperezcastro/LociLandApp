@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,19 +11,73 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 
 import type { AuthScreenProps } from '../../navigation/types';
-import { signIn } from '../../services/auth';
-import { useUserStore } from '../../store/useUserStore';
 import { colors, spacing } from '../../theme';
+import {
+  resetPassword,
+  signIn,
+  signInWithGoogleIdToken,
+} from '../../services/auth';
 import { getFirebaseAuthErrorMessage } from '../../utils/getFirebaseAuthErrorMessage';
 
-export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
-  const setAuthenticated = useUserStore((state) => state.setAuthenticated);
+WebBrowser.maybeCompleteAuthSession();
 
+export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const hasGoogleConfig = useMemo(() => {
+    return Boolean(
+      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+        process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+    );
+  }, []);
+
+  const [googleRequest, googleResponse, promptGoogleAsync] =
+    Google.useIdTokenAuthRequest({
+      androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      selectAccount: true,
+    });
+
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (!googleResponse) {
+        return;
+      }
+
+      if (googleResponse.type !== 'success') {
+        setGoogleLoading(false);
+        return;
+      }
+
+      const idToken = googleResponse.params.id_token;
+
+      if (!idToken) {
+        setGoogleLoading(false);
+        Alert.alert('Google sign-in failed', 'Google did not return a valid ID token.');
+        return;
+      }
+
+      try {
+        await signInWithGoogleIdToken(idToken);
+      } catch (error) {
+        Alert.alert('Google sign-in failed', getFirebaseAuthErrorMessage(error));
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    void handleGoogleResponse();
+  }, [googleResponse]);
 
   const handleLogin = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -34,16 +88,69 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     }
 
     try {
-      setLoading(true);
-
-      const result = await signIn(normalizedEmail, password);
-
-      Alert.alert('Success', `Signed in as ${result.user.email}`);
-      setAuthenticated(true);
+      setPasswordLoading(true);
+      await signIn(normalizedEmail, password);
+      // No manual navigation here.
+      // RootNavigator will switch to AppNavigator automatically.
     } catch (error) {
       Alert.alert('Login failed', getFirebaseAuthErrorMessage(error));
     } finally {
-      setLoading(false);
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      Alert.alert(
+        'Email required',
+        'Enter your email first, then tap "Forgot password?".'
+      );
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+      await resetPassword(normalizedEmail);
+      Alert.alert(
+        'Email sent',
+        'We sent you a password reset email. Check your inbox.'
+      );
+    } catch (error) {
+      Alert.alert('Reset failed', getFirebaseAuthErrorMessage(error));
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!hasGoogleConfig) {
+      Alert.alert(
+        'Google sign-in not configured',
+        'Add the Google OAuth client IDs to your .env file first.'
+      );
+      return;
+    }
+
+    if (!googleRequest) {
+      Alert.alert(
+        'Google sign-in unavailable',
+        'The Google auth request is not ready yet. Try again in a moment.'
+      );
+      return;
+    }
+
+    try {
+      setGoogleLoading(true);
+      const result = await promptGoogleAsync();
+
+      if (result.type !== 'success') {
+        setGoogleLoading(false);
+      }
+    } catch {
+      setGoogleLoading(false);
+      Alert.alert('Google sign-in failed', 'Could not open the Google sign-in flow.');
     }
   };
 
@@ -53,64 +160,98 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Log in</Text>
+        <View style={styles.header}>
+          <Text style={styles.kicker}>Welcome back</Text>
+          <Text style={styles.title}>Log in to continue</Text>
           <Text style={styles.subtitle}>
-            Temporary real login screen connected to Firebase Auth.
+            Jump back into your palaces and keep your memory streak alive.
           </Text>
+        </View>
 
-          <View style={styles.fieldGroup}>
+        <View style={styles.card}>
+          <View style={styles.fieldBlock}>
             <Text style={styles.label}>Email</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="Your registered email"
-              placeholderTextColor="#7F8C8D"
+              placeholder="you@example.com"
+              placeholderTextColor={colors.text + '88'}
+              style={styles.input}
+              editable={!passwordLoading && !googleLoading && !resetLoading}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
-              style={styles.input}
-              editable={!loading}
             />
           </View>
 
-          <View style={styles.fieldGroup}>
+          <View style={styles.fieldBlock}>
             <Text style={styles.label}>Password</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
               placeholder="Your password"
-              placeholderTextColor="#7F8C8D"
-              secureTextEntry
+              placeholderTextColor={colors.text + '88'}
+              style={styles.input}
+              editable={!passwordLoading && !googleLoading && !resetLoading}
               autoCapitalize="none"
               autoCorrect={false}
-              style={styles.input}
-              editable={!loading}
+              secureTextEntry
             />
           </View>
 
           <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
+            onPress={handleForgotPassword}
+            disabled={passwordLoading || googleLoading || resetLoading}
+            style={styles.forgotPasswordLink}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
+            {resetLoading ? (
+              <ActivityIndicator color={colors.accent} />
             ) : (
-              <Text style={styles.buttonText}>Log in</Text>
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             )}
           </Pressable>
 
           <Pressable
-            style={[styles.button, styles.ghostButton]}
-            onPress={() => navigation.navigate('Register')}
-            disabled={loading}
+            onPress={handleLogin}
+            disabled={passwordLoading || googleLoading || resetLoading}
+            style={[
+              styles.primaryButton,
+              passwordLoading ? styles.buttonDisabled : null,
+            ]}
           >
-            <Text style={styles.ghostButtonText}>
-              I do not have an account yet · Go to Register
+            {passwordLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Log In</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={handleGoogleLogin}
+            disabled={passwordLoading || googleLoading || resetLoading}
+            style={[
+              styles.googleButton,
+              googleLoading ? styles.buttonDisabled : null,
+            ]}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={colors.text} />
+            ) : (
+              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate('Register')}
+            disabled={passwordLoading || googleLoading || resetLoading}
+            style={styles.registerLink}
+          >
+            <Text style={styles.registerLinkText}>
+              Create account
             </Text>
           </Pressable>
         </View>
@@ -124,78 +265,113 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  container: {
+  scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    padding: spacing.lg,
     backgroundColor: colors.bg,
+  },
+  header: {
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  kicker: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.secondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  title: {
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+    opacity: 0.85,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderRadius: 28,
+    padding: spacing.lg,
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  fieldGroup: {
-    marginBottom: 16,
+  fieldBlock: {
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   input: {
+    minHeight: 56,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#D6E4F0',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: '#DCE7F5',
+    paddingHorizontal: spacing.md,
     fontSize: 16,
     color: colors.text,
   },
-  button: {
-    minHeight: 52,
-    borderRadius: 16,
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginBottom: spacing.md,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.accent,
+  },
+  primaryButton: {
+    minHeight: 58,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginTop: 12,
     backgroundColor: colors.accent,
+    marginTop: spacing.sm,
   },
-  ghostButton: {
+  googleButton: {
+    minHeight: 58,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#D6E4F0',
+    borderColor: '#DCE7F5',
+    marginTop: spacing.md,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
   },
-  ghostButtonText: {
+  googleButtonText: {
     color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  registerLink: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  registerLinkText: {
     fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: '900',
+    color: colors.accent,
   },
 });

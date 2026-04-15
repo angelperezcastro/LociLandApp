@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 import { PlaceholderScreen } from '../shared/PlaceholderScreen';
-import type { AppTabScreenProps } from '../../navigation/types';
-import type { RootStackParamList } from '../../navigation/types';
+import type { AppTabScreenProps, RootStackParamList } from '../../navigation/types';
 
 export function HomeScreen({ navigation }: AppTabScreenProps<'Home'>) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -19,12 +19,14 @@ export function HomeScreen({ navigation }: AppTabScreenProps<'Home'>) {
         },
         {
           label: 'Open PalaceDetail',
-          onPress: () => rootNavigation.navigate('PalaceDetail', { palaceId: 'demo-palace' }),
+          onPress: () =>
+            rootNavigation.navigate('PalaceDetail', { palaceId: 'demo-palace' }),
           variant: 'secondary',
         },
         {
           label: 'Open Review',
-          onPress: () => rootNavigation.navigate('Review', { palaceId: 'demo-palace' }),
+          onPress: () =>
+            rootNavigation.navigate('Review', { palaceId: 'demo-palace' }),
           variant: 'secondary',
         },
         {

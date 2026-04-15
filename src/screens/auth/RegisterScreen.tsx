@@ -13,13 +13,12 @@ import {
 } from 'react-native';
 
 import type { AuthScreenProps } from '../../navigation/types';
-import { signUp } from '../../services/auth';
+import { signUp, setCurrentUserDisplayName } from '../../services/auth';
+import { createUserProfile } from '../../services/userProfile';
 import { useUserStore } from '../../store/useUserStore';
 import { colors, spacing } from '../../theme';
 import { getFirebaseAuthErrorMessage } from '../../utils/getFirebaseAuthErrorMessage';
-
-type AgeGroup = '6-9' | '10-14';
-type AvatarEmoji = '🦊' | '🐸' | '🦁' | '🐼' | '🦋' | '🐉' | '🦄' | '🐬';
+import type { AgeGroup, AvatarEmoji } from '../../types/user';
 
 type FormErrors = {
   username?: string;
@@ -32,7 +31,7 @@ type FormErrors = {
 const AVATAR_OPTIONS: AvatarEmoji[] = ['🦊', '🐸', '🦁', '🐼', '🦋', '🐉', '🦄', '🐬'];
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
-  const setAuthenticated = useUserStore((state) => state.setAuthenticated);
+  const setUserProfile = useUserStore((state) => state.setUserProfile);
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -96,12 +95,26 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedUsername = username.trim();
+
     try {
       setLoading(true);
 
-      await signUp(email.trim().toLowerCase(), password);
+      const result = await signUp(normalizedEmail, password);
+      await setCurrentUserDisplayName(trimmedUsername);
 
-      setAuthenticated(true);
+      const profile = await createUserProfile({
+        uid: result.user.uid,
+        displayName: trimmedUsername,
+        email: normalizedEmail,
+        avatarEmoji: selectedAvatar!,
+        ageGroup: selectedAgeGroup!,
+      });
+
+      setUserProfile(profile);
+      // No manual navigation here.
+      // The auth observer in RootNavigator will switch to AppNavigator automatically.
     } catch (error) {
       Alert.alert('Oops!', getFirebaseAuthErrorMessage(error));
     } finally {

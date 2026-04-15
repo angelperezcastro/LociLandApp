@@ -19,10 +19,16 @@ export function getFirebaseAuthErrorMessage(error: unknown): string {
     case 'auth/weak-password':
       return 'Your password is too weak. Use at least 6 characters.';
     case 'auth/network-request-failed':
-      return 'It looks like you are offline. Check your internet connection and try again.';
+      return 'It looks like you are offline. Check your connection and try again.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please wait a moment and try again.';
+    case 'auth/user-not-found':
+      return 'No account was found for that email.';
+    case 'auth/invalid-credential':
+      return 'The email or password is incorrect.';
+    case 'auth/missing-email':
+      return 'Please enter your email first.';
     default:
-      return 'We could not create your account. Please try again.';
+      return 'Something went wrong. Please try again.';
   }
 }

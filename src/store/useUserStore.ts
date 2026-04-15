@@ -1,51 +1,76 @@
 import { create } from 'zustand';
-import type { UserProfile } from '../types';
+import type { User } from 'firebase/auth';
 
-type UserState = {
+import type { UserProfile } from '../types/user';
+import { ensureUserProfile, getUserProfile } from '../services/userProfile';
+
+type UserStore = {
+  authUser: User | null;
   profile: UserProfile | null;
   isAuthenticated: boolean;
+  isAuthResolved: boolean;
+  isLoadingProfile: boolean;
   setAuthenticated: (value: boolean) => void;
-  setUserProfile: (profile: UserProfile) => void;
-  updateUserProfile: (patch: Partial<UserProfile>) => void;
+  setAuthResolved: (value: boolean) => void;
+  setUserProfile: (profile: UserProfile | null) => void;
+  hydrateFromAuthUser: (user: User) => Promise<void>;
   clearUser: () => void;
 };
 
-const buildDevProfile = (): UserProfile => ({
-  id: 'dev-user',
-  displayName: 'Explorer',
-  email: 'explorer@lociland.dev',
-  avatarEmoji: '🦊',
-  ageGroup: '10-14',
-  xp: 0,
-  level: 1,
-  streak: 0,
-  lastActiveDate: new Date().toISOString(),
-});
-
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserStore>((set) => ({
+  authUser: null,
   profile: null,
   isAuthenticated: false,
+  isAuthResolved: false,
+  isLoadingProfile: false,
 
-  setAuthenticated: (value) =>
-    set((state) => ({
-      isAuthenticated: value,
-      profile: value ? state.profile ?? buildDevProfile() : null,
-    })),
+  setAuthenticated: (value) => {
+    set({ isAuthenticated: value });
+  },
 
-  setUserProfile: (profile) =>
+  setAuthResolved: (value) => {
+    set({ isAuthResolved: value });
+  },
+
+  setUserProfile: (profile) => {
+    set({ profile });
+  },
+
+  hydrateFromAuthUser: async (user) => {
     set({
-      profile,
+      authUser: user,
       isAuthenticated: true,
-    }),
+      isLoadingProfile: true,
+    });
 
-  updateUserProfile: (patch) =>
-    set((state) => ({
-      profile: state.profile ? { ...state.profile, ...patch } : state.profile,
-    })),
+    const existingProfile = await getUserProfile(user.uid);
 
-  clearUser: () =>
+    if (existingProfile) {
+      set({
+        profile: existingProfile,
+        isLoadingProfile: false,
+      });
+      return;
+    }
+
+    const ensuredProfile = await ensureUserProfile({
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName ?? 'Explorer',
+    });
+
     set({
+      profile: ensuredProfile,
+      isLoadingProfile: false,
+    });
+  },
+
+  clearUser: () => {
+    set({
+      authUser: null,
       profile: null,
       isAuthenticated: false,
-    }),
+      isLoadingProfile: false,
+    });
+  },
 }));
