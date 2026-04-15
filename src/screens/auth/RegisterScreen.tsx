@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,59 +14,109 @@ import {
 
 import type { AuthScreenProps } from '../../navigation/types';
 import { signUp } from '../../services/auth';
+import { useUserStore } from '../../store/useUserStore';
+import { colors, spacing } from '../../theme';
+import { getFirebaseAuthErrorMessage } from '../../utils/getFirebaseAuthErrorMessage';
+
+type AgeGroup = '6-9' | '10-14';
+type AvatarEmoji = '🦊' | '🐸' | '🦁' | '🐼' | '🦋' | '🐉' | '🦄' | '🐬';
+
+type FormErrors = {
+  username?: string;
+  email?: string;
+  password?: string;
+  ageGroup?: string;
+  avatar?: string;
+};
+
+const AVATAR_OPTIONS: AvatarEmoji[] = ['🦊', '🐸', '🦁', '🐼', '🦋', '🐉', '🦄', '🐬'];
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('123456');
-  const [loading, setLoading] = useState(false);
+  const setAuthenticated = useUserStore((state) => state.setAuthenticated);
 
-  const handleFillTestEmail = () => {
-    setEmail(`test${Date.now()}@lociland.dev`);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroup | null>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarEmoji | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const isFormComplete = useMemo(() => {
+    return (
+      username.trim().length > 0 &&
+      email.trim().length > 0 &&
+      password.trim().length >= 6 &&
+      selectedAgeGroup !== null &&
+      selectedAvatar !== null
+    );
+  }, [username, email, password, selectedAgeGroup, selectedAvatar]);
+
+  const validateForm = (): FormErrors => {
+    const nextErrors: FormErrors = {};
+    const normalizedEmail = email.trim().toLowerCase();
+    const usernameValue = username.trim();
+
+    if (!usernameValue) {
+      nextErrors.username = 'Username is required.';
+    }
+
+    if (!normalizedEmail) {
+      nextErrors.email = 'Email is required.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        nextErrors.email = 'Please enter a valid email address.';
+      }
+    }
+
+    if (!password.trim()) {
+      nextErrors.password = 'Password is required.';
+    } else if (password.length < 6) {
+      nextErrors.password = 'Password must be at least 6 characters.';
+    }
+
+    if (!selectedAgeGroup) {
+      nextErrors.ageGroup = 'Please select an age group.';
+    }
+
+    if (!selectedAvatar) {
+      nextErrors.avatar = 'Please choose an avatar.';
+    }
+
+    return nextErrors;
   };
 
-  const handleRegister = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+  const handleCreateAccount = async () => {
+    const nextErrors = validateForm();
+    setErrors(nextErrors);
 
-    if (!normalizedEmail || !password.trim()) {
-      Alert.alert('Campos incompletos', 'Introduce un email y una contraseña.');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(normalizedEmail)) {
-      Alert.alert('Email no válido', 'Introduce un email con formato correcto.');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert(
-        'Contraseña demasiado corta',
-        'La contraseña debe tener al menos 6 caracteres.'
-      );
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
     try {
       setLoading(true);
 
-      const result = await signUp(normalizedEmail, password);
+      await signUp(email.trim().toLowerCase(), password);
 
-      Alert.alert(
-        'Registro correcto',
-        `Usuario creado en Firebase: ${result.user.email}`
-      );
-
-      navigation.navigate('Login');
+      setAuthenticated(true);
     } catch (error) {
-      console.error('RegisterScreen signUp error:', error);
-      Alert.alert(
-        'Error al registrar',
-        'No se pudo crear la cuenta. Revisa la consola y Firebase Authentication.'
-      );
+      Alert.alert('Oops!', getFirebaseAuthErrorMessage(error));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectAgeGroup = (value: AgeGroup) => {
+    setSelectedAgeGroup(value);
+    setErrors((prev) => ({ ...prev, ageGroup: undefined }));
+  };
+
+  const handleSelectAvatar = (value: AvatarEmoji) => {
+    setSelectedAvatar(value);
+    setErrors((prev) => ({ ...prev, avatar: undefined }));
   };
 
   return (
@@ -75,71 +125,177 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Create account</Text>
+        <View style={styles.header}>
+          <Text style={styles.kicker}>Welcome to LociLand</Text>
+          <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>
-            Pantalla temporal para probar Firebase Auth con registro real.
+            Pick your name, age group and animal friend to start your memory adventure.
           </Text>
+        </View>
 
-          <View style={styles.fieldGroup}>
+        <View style={styles.card}>
+          <View style={styles.fieldBlock}>
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              value={username}
+              onChangeText={(value) => {
+                setUsername(value);
+                if (errors.username) {
+                  setErrors((prev) => ({ ...prev, username: undefined }));
+                }
+              }}
+              placeholder="Your display name"
+              placeholderTextColor={colors.text + '88'}
+              style={[styles.input, errors.username ? styles.inputError : null]}
+              editable={!loading}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+            {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
+          </View>
+
+          <View style={styles.fieldBlock}>
             <Text style={styles.label}>Email</Text>
             <TextInput
               value={email}
-              onChangeText={setEmail}
-              placeholder="ejemplo@correo.com"
-              placeholderTextColor="#7F8C8D"
+              onChangeText={(value) => {
+                setEmail(value);
+                if (errors.email) {
+                  setErrors((prev) => ({ ...prev, email: undefined }));
+                }
+              }}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.text + '88'}
+              style={[styles.input, errors.email ? styles.inputError : null]}
+              editable={!loading}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
-              style={styles.input}
-              editable={!loading}
             />
+            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
           </View>
 
-          <View style={styles.fieldGroup}>
+          <View style={styles.fieldBlock}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Mínimo 6 caracteres"
-              placeholderTextColor="#7F8C8D"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-              editable={!loading}
-            />
+            <View style={[styles.passwordWrapper, errors.password ? styles.inputError : null]}>
+              <TextInput
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (errors.password) {
+                    setErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
+                placeholder="At least 6 characters"
+                placeholderTextColor={colors.text + '88'}
+                style={styles.passwordInput}
+                editable={!loading}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry={!showPassword}
+              />
+              <Pressable
+                onPress={() => setShowPassword((prev) => !prev)}
+                disabled={loading}
+                style={styles.showHideButton}
+              >
+                <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </Pressable>
+            </View>
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+          </View>
+
+          <View style={styles.fieldBlock}>
+            <Text style={styles.label}>Age group</Text>
+
+            <View style={styles.ageGroupRow}>
+              <Pressable
+                onPress={() => handleSelectAgeGroup('6-9')}
+                disabled={loading}
+                style={[
+                  styles.ageCard,
+                  styles.ageCardYoung,
+                  selectedAgeGroup === '6-9' ? styles.ageCardSelected : null,
+                ]}
+              >
+                <Text style={styles.ageEmoji}>🌟</Text>
+                <Text style={styles.ageTitle}>6–9 years</Text>
+                <Text style={styles.ageDescription}>Bigger visuals and simpler choices</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => handleSelectAgeGroup('10-14')}
+                disabled={loading}
+                style={[
+                  styles.ageCard,
+                  styles.ageCardOlder,
+                  selectedAgeGroup === '10-14' ? styles.ageCardSelected : null,
+                ]}
+              >
+                <Text style={styles.ageEmoji}>🚀</Text>
+                <Text style={styles.ageTitle}>10–14 years</Text>
+                <Text style={styles.ageDescription}>More challenge and deeper practice</Text>
+              </Pressable>
+            </View>
+
+            {errors.ageGroup ? <Text style={styles.errorText}>{errors.ageGroup}</Text> : null}
+          </View>
+
+          <View style={styles.fieldBlock}>
+            <Text style={styles.label}>Choose your avatar</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.avatarRow}
+            >
+              {AVATAR_OPTIONS.map((avatar) => {
+                const isSelected = selectedAvatar === avatar;
+
+                return (
+                  <Pressable
+                    key={avatar}
+                    onPress={() => handleSelectAvatar(avatar)}
+                    disabled={loading}
+                    style={[
+                      styles.avatarOption,
+                      isSelected ? styles.avatarOptionSelected : null,
+                    ]}
+                  >
+                    <Text style={styles.avatarEmoji}>{avatar}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            {errors.avatar ? <Text style={styles.errorText}>{errors.avatar}</Text> : null}
           </View>
 
           <Pressable
-            style={[styles.button, styles.secondaryButton, loading && styles.buttonDisabled]}
-            onPress={handleFillTestEmail}
+            onPress={handleCreateAccount}
             disabled={loading}
-          >
-            <Text style={styles.secondaryButtonText}>Usar email de prueba automático</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
+            style={[
+              styles.createButton,
+              !isFormComplete || loading ? styles.createButtonDisabled : null,
+            ]}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.buttonText}>Crear cuenta en Firebase</Text>
+              <Text style={styles.createButtonText}>Create Account</Text>
             )}
           </Pressable>
 
           <Pressable
-            style={[styles.button, styles.ghostButton]}
             onPress={() => navigation.navigate('Login')}
             disabled={loading}
+            style={styles.loginLink}
           >
-            <Text style={styles.ghostButtonText}>Ya tengo cuenta · Ir a Login</Text>
+            <Text style={styles.loginLinkText}>
+              Already have an account? <Text style={styles.loginLinkTextStrong}>Log in</Text>
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -150,88 +306,193 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 const styles = StyleSheet.create({
   keyboard: {
     flex: 1,
-    backgroundColor: '#FFFBF0',
+    backgroundColor: colors.bg,
   },
-  container: {
+  scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#FFFBF0',
+    padding: spacing.lg,
+    backgroundColor: colors.bg,
+  },
+  header: {
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  kicker: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.accent,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  title: {
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+    opacity: 0.85,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderRadius: 28,
+    padding: spacing.lg,
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+    marginBottom: spacing.xl,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#2D3436',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#2D3436',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  fieldGroup: {
-    marginBottom: 16,
+  fieldBlock: {
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2D3436',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   input: {
+    minHeight: 56,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#D6E4F0',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: '#DCE7F5',
+    paddingHorizontal: spacing.md,
     fontSize: 16,
-    color: '#2D3436',
+    color: colors.text,
   },
-  button: {
-    minHeight: 52,
-    borderRadius: 16,
+  passwordWrapper: {
+    minHeight: 56,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#DCE7F5',
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    paddingVertical: spacing.md,
+  },
+  showHideButton: {
+    minWidth: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: '#4D96FF',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 12,
+    backgroundColor: '#EEF5FF',
   },
-  secondaryButton: {
-    backgroundColor: '#6BCB77',
+  showHideText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.accent,
   },
-  ghostButton: {
+  inputError: {
+    borderColor: colors.emphasis,
+  },
+  errorText: {
+    marginTop: spacing.xs,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.emphasis,
+  },
+  ageGroupRow: {
+    gap: spacing.md,
+  },
+  ageCard: {
+    borderRadius: 22,
+    padding: spacing.md,
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+  ageCardYoung: {
+    backgroundColor: '#FFF4C1',
+  },
+  ageCardOlder: {
+    backgroundColor: '#DDF0FF',
+  },
+  ageCardSelected: {
+    borderColor: colors.text,
+    transform: [{ scale: 1.01 }],
+  },
+  ageEmoji: {
+    fontSize: 26,
+    marginBottom: spacing.sm,
+  },
+  ageTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  ageDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text,
+    opacity: 0.85,
+  },
+  avatarRow: {
+    paddingVertical: spacing.xs,
+    gap: spacing.sm,
+  },
+  avatarOption: {
+    width: 68,
+    height: 68,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#D6E4F0',
+    borderColor: '#DCE7F5',
+    marginRight: spacing.sm,
   },
-  buttonDisabled: {
+  avatarOptionSelected: {
+    backgroundColor: '#FFF4C1',
+    borderColor: colors.primary,
+    transform: [{ scale: 1.05 }],
+  },
+  avatarEmoji: {
+    fontSize: 30,
+  },
+  createButton: {
+    minHeight: 58,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+    marginTop: spacing.sm,
+  },
+  createButtonDisabled: {
     opacity: 0.7,
   },
-  buttonText: {
+  createButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
   },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-    textAlign: 'center',
+  loginLink: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ghostButtonText: {
-    color: '#2D3436',
+  loginLinkText: {
     fontSize: 15,
-    fontWeight: '700',
+    color: colors.text,
+  },
+  loginLinkTextStrong: {
+    fontWeight: '900',
+    color: colors.accent,
   },
 });
