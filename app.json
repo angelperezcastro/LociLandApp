@@ -1,9 +1,10 @@
 {
   "expo": {
     "name": "LociLandApp",
-    "slug": "LociLandApp",
+    "slug": "lociland",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "lociland",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -13,9 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.angelpeka.lociland"
     },
     "android": {
+      "package": "com.angelpeka.lociland",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
