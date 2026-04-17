@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 import { db } from './firebase';
 import type { AgeGroup, AvatarEmoji, UserProfile } from '../types/user';
@@ -18,6 +18,10 @@ type EnsureUserProfileInput = {
   avatarEmoji?: AvatarEmoji;
   ageGroup?: AgeGroup;
 };
+
+type UpdateUserProfileInput = Partial<
+  Pick<UserProfile, 'displayName' | 'avatarEmoji' | 'ageGroup' | 'xp' | 'level' | 'streak' | 'lastActiveDate'>
+>;
 
 function getTodayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -69,4 +73,11 @@ export async function ensureUserProfile(
     avatarEmoji: input.avatarEmoji ?? '🦊',
     ageGroup: input.ageGroup ?? '10-14',
   });
+}
+
+export async function updateUserProfile(
+  uid: string,
+  data: UpdateUserProfileInput
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), data);
 }
