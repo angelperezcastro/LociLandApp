@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing } from '../../theme';
 import type { Palace } from '../../types';
 import { auth } from '../../services/firebase';
+import { getPalaceTemplateById } from '../../assets/templates';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { PalaceCard } from '../../components/palace/PalaceCard';
@@ -98,7 +105,7 @@ export default function HomeScreen() {
     }
 
     loadPalaces(userId).catch(() => {
-      // The store keeps the error. The alert is handled below.
+      // Store handles the error. Alert is handled below.
     });
   }, [loadPalaces, userId]);
 
@@ -196,14 +203,26 @@ export default function HomeScreen() {
     }
   };
 
-  const renderPalace = ({ item }: { item: Palace }) => (
-    <PalaceCard
-      palace={item}
-      onPress={handleOpenPalace}
-      onReviewPress={handleReviewPalace}
-      onLongPress={handleRequestDelete}
-    />
-  );
+  const renderPalace = ({ item }: { item: Palace }) => {
+    const template = getPalaceTemplateById(item.templateId);
+
+    return (
+      <View
+        style={[
+          styles.palaceItemShell,
+          { backgroundColor: template.backgroundColour },
+        ]}
+      >
+        <PalaceCard
+          palace={item}
+          onPress={handleOpenPalace}
+          onReviewPress={handleReviewPalace}
+          onLongPress={handleRequestDelete}
+          style={styles.palaceCardInsideShell}
+        />
+      </View>
+    );
+  };
 
   const renderEmptyState = () => {
     if (showInitialLoading) {
@@ -268,7 +287,7 @@ export default function HomeScreen() {
         contentContainerStyle={[
           styles.listContent,
           {
-            paddingBottom: tabBarHeight + 112,
+            paddingBottom: tabBarHeight + 128,
           },
         ]}
         refreshControl={
@@ -361,6 +380,7 @@ function SkeletonPalaceCard() {
       <View style={styles.skeletonContent}>
         <View style={styles.skeletonLineLarge} />
         <View style={styles.skeletonLineSmall} />
+
         <View style={styles.skeletonFooter}>
           <View style={styles.skeletonBadge} />
           <View style={styles.skeletonButton} />
@@ -434,6 +454,33 @@ const styles = StyleSheet.create({
 
   avatarEmoji: {
     fontSize: 39,
+  },
+
+  palaceItemShell: {
+    marginBottom: spacing.xl,
+    padding: spacing.md,
+    borderRadius: 38,
+    borderWidth: 2,
+    borderColor: colors.text,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.13,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+
+  palaceCardInsideShell: {
+    marginBottom: 0,
+    backgroundColor: colors.bg,
+    borderColor: colors.white,
+    elevation: 0,
+    shadowOpacity: 0,
   },
 
   emptyState: {

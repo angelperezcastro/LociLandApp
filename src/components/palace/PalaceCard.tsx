@@ -5,24 +5,23 @@ import {
   StyleSheet,
   Text,
   View,
-  type GestureResponderEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 
 import { colors, spacing } from '../../theme';
-import type { Palace } from '../../types';
 import { getPalaceTemplateById } from '../../assets/templates';
+import type { Palace } from '../../types';
 
-interface PalaceCardProps {
+export interface PalaceCardProps {
   palace: Palace;
-  onPress: (palaceId: string) => void;
-  onReviewPress: (palaceId: string) => void;
+  onPress?: (palaceId: string) => void;
+  onReviewPress?: (palaceId: string) => void;
   onLongPress?: (palaceId: string) => void;
   style?: StyleProp<ViewStyle>;
 }
 
-export function PalaceCard({
+function PalaceCard({
   palace,
   onPress,
   onReviewPress,
@@ -31,57 +30,56 @@ export function PalaceCard({
 }: PalaceCardProps) {
   const template = getPalaceTemplateById(palace.templateId);
 
-  const handleReviewPress = (event: GestureResponderEvent) => {
-    event.stopPropagation();
-    onReviewPress(palace.id);
-  };
+  const stationLabel = palace.stationCount === 1 ? 'station' : 'stations';
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${palace.name}`}
-      onPress={() => onPress(palace.id)}
+      onPress={() => onPress?.(palace.id)}
       onLongPress={() => onLongPress?.(palace.id)}
-      delayLongPress={450}
+      delayLongPress={280}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: template.backgroundColour },
         pressed && styles.cardPressed,
         style,
       ]}
     >
-      <View style={styles.emojiContainer}>
-        <Text style={styles.emoji}>{template.emoji}</Text>
+      <View style={styles.topRow}>
+        <View style={styles.emojiBox}>
+          <Text style={styles.emoji}>{template.emoji}</Text>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <Text numberOfLines={1} style={styles.name}>
-          {palace.name}
-        </Text>
+      <Text numberOfLines={2} style={styles.title}>
+        {palace.name}
+      </Text>
 
-        <Text numberOfLines={2} style={styles.description}>
-          {template.description}
-        </Text>
+      <Text numberOfLines={2} style={styles.description}>
+        {template.description}
+      </Text>
 
-        <View style={styles.footer}>
-          <View style={styles.stationBadge}>
-            <Text style={styles.stationBadgeText}>
-              🚩 {palace.stationCount} stations
-            </Text>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Review ${palace.name}`}
-            onPress={handleReviewPress}
-            style={({ pressed }) => [
-              styles.reviewButton,
-              pressed && styles.reviewButtonPressed,
-            ]}
-          >
-            <Text style={styles.reviewButtonText}>Review</Text>
-          </Pressable>
+      <View style={styles.footerRow}>
+        <View style={styles.stationBadge}>
+          <Text style={styles.stationBadgeText}>
+            🚩 {palace.stationCount} {stationLabel}
+          </Text>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Review ${palace.name}`}
+          onPress={(event) => {
+            event.stopPropagation();
+            onReviewPress?.(palace.id);
+          }}
+          style={({ pressed }) => [
+            styles.reviewButton,
+            pressed && styles.reviewButtonPressed,
+          ]}
+        >
+          <Text style={styles.reviewButtonText}>Review</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -89,95 +87,126 @@ export function PalaceCard({
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 168,
-    borderRadius: 28,
-    padding: spacing.lg,
     marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: 30,
+    backgroundColor: colors.bg,
     borderWidth: 2,
-    borderColor: colors.bg,
+    borderColor: colors.white,
     ...Platform.select({
       ios: {
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.16,
-        shadowRadius: 16,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 14,
       },
       android: {
-        elevation: 7,
+        elevation: 4,
       },
     }),
   },
+
   cardPressed: {
-    transform: [{ scale: 0.985 }],
+    transform: [{ scale: 0.99 }],
+    opacity: 0.96,
   },
-  emojiContainer: {
-    width: 86,
-    height: 86,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.text,
-  },
-  emoji: {
-    fontSize: 48,
-  },
-  content: {
-    flex: 1,
-    minWidth: 0,
-  },
-  name: {
-    color: colors.text,
-    fontSize: 25,
-    fontFamily: 'FredokaOne_400Regular',
-    marginBottom: spacing.xs,
-  },
-  description: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: 'Nunito_600SemiBold',
-    lineHeight: 19,
-    opacity: 0.78,
+
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: spacing.md,
   },
-  footer: {
+
+  emojiBox: {
+    width: 108,
+    height: 108,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 3,
+    borderColor: colors.text,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.08,
+        shadowRadius: 9,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+
+  emoji: {
+    fontSize: 58,
+  },
+
+  title: {
+    color: colors.text,
+    fontSize: 30,
+    lineHeight: 36,
+    fontFamily: 'FredokaOne_400Regular',
+    marginBottom: spacing.sm,
+  },
+
+  description: {
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 23,
+    fontFamily: 'Nunito_600SemiBold',
+    opacity: 0.74,
+    marginBottom: spacing.lg,
+  },
+
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.sm,
+    columnGap: spacing.md,
   },
+
   stationBadge: {
     flexShrink: 1,
-    borderRadius: 999,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.bg,
-    borderWidth: 1.5,
+    borderRadius: 999,
+    backgroundColor: colors.white,
+    borderWidth: 2,
     borderColor: colors.text,
   },
+
   stationBadgeText: {
     color: colors.text,
-    fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: 'Nunito_800ExtraBold',
   },
+
   reviewButton: {
-    borderRadius: 999,
+    minWidth: 104,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.accent,
   },
+
   reviewButtonPressed: {
-    transform: [{ scale: 0.96 }],
+    opacity: 0.88,
   },
+
   reviewButtonText: {
     color: colors.accent,
-    fontSize: 14,
+    fontSize: 15,
+    lineHeight: 19,
     fontFamily: 'Nunito_800ExtraBold',
   },
 });
+
+export { PalaceCard };
+export default PalaceCard;
