@@ -1,16 +1,30 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type { AppTabParamList } from './types';
+
 import HomeScreen from '../screens/app/HomeScreen';
 import { ProgressScreen } from '../screens/app/ProgressScreen';
 import { ProfileScreen } from '../screens/app/ProfileScreen';
+import CreatePalaceScreen from '../screens/app/CreatePalaceScreen';
+import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
+import { ReviewScreen } from '../screens/app/ReviewScreen';
+
 import { colors } from '../theme';
 
-const Tab = createBottomTabNavigator<AppTabParamList>();
+export type AppStackParamList = {
+  MainTabs: undefined;
+  CreatePalace: undefined;
+  PalaceDetail: { palaceId: string };
+  Review: { palaceId: string };
+};
 
-export function AppNavigator() {
+const Tab = createBottomTabNavigator<AppTabParamList>();
+const Stack = createNativeStackNavigator<AppStackParamList>();
+
+function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -46,7 +60,9 @@ export function AppNavigator() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🏠</Text>,
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>🏠</Text>
+          ),
         }}
       />
 
@@ -55,7 +71,9 @@ export function AppNavigator() {
         component={ProgressScreen}
         options={{
           tabBarLabel: 'Progress',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📊</Text>,
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>📊</Text>
+          ),
         }}
       />
 
@@ -64,9 +82,48 @@ export function AppNavigator() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👤</Text>,
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>👤</Text>
+          ),
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+export function AppNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+
+      <Stack.Screen
+        name="CreatePalace"
+        component={CreatePalaceScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+
+      <Stack.Screen
+        name="PalaceDetail"
+        component={PalaceDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name="Review"
+        component={ReviewScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+    </Stack.Navigator>
   );
 }
