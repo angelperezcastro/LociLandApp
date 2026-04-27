@@ -8,8 +8,9 @@ import type { AppTabParamList } from './types';
 import HomeScreen from '../screens/app/HomeScreen';
 import { ProgressScreen } from '../screens/app/ProgressScreen';
 import { ProfileScreen } from '../screens/app/ProfileScreen';
-import CreatePalaceScreen from '../screens/app/CreatePalaceScreen';
+import { CreatePalaceScreen } from '../screens/app/CreatePalaceScreen';
 import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
+import { AddStationScreen } from '../screens/app/AddStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 
 import { colors } from '../theme';
@@ -18,6 +19,7 @@ export type AppStackParamList = {
   MainTabs: undefined;
   CreatePalace: undefined;
   PalaceDetail: { palaceId: string };
+  AddStation: { palaceId: string };
   Review: { palaceId: string };
 };
 
@@ -93,11 +95,7 @@ function MainTabs() {
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
 
       <Stack.Screen
@@ -114,6 +112,15 @@ export function AppNavigator() {
         component={PalaceDetailScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name="AddStation"
+        component={AddStationScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
         }}
       />
 
