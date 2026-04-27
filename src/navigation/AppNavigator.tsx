@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import type { AppTabParamList } from './types';
-import { HomeScreen } from '../screens/app/HomeScreen';
+import HomeScreen from '../screens/app/HomeScreen';
 import { ProgressScreen } from '../screens/app/ProgressScreen';
 import { ProfileScreen } from '../screens/app/ProfileScreen';
 import { colors } from '../theme';

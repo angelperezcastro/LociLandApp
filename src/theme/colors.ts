@@ -23,6 +23,9 @@ export const colors = {
 
   muted: '#7C8793',
   shadow: '#1F2937',
+
+  homeBackground: '#FFF9E8',
+  softYellow: '#FFE7A3',
 } as const;
 
 export type AppColors = typeof colors;
