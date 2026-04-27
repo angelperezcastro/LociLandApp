@@ -11,6 +11,7 @@ import { useUserStore } from '../store/useUserStore';
 
 import { CreatePalaceScreen } from '../screens/app/CreatePalaceScreen';
 import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
+import { AddStationScreen } from '../screens/app/AddStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 import { ComponentShowcaseScreen } from '../screens/dev/ComponentShowcaseScreen';
@@ -57,11 +58,56 @@ export function RootNavigator() {
       {isAuthenticated ? (
         <>
           <Stack.Screen name="App" component={AppNavigator} />
-          <Stack.Screen name="CreatePalace" component={CreatePalaceScreen} />
-          <Stack.Screen name="PalaceDetail" component={PalaceDetailScreen} />
-          <Stack.Screen name="Review" component={ReviewScreen} />
-          <Stack.Screen name="Achievements" component={AchievementsScreen} />
-          <Stack.Screen name="ComponentShowcase" component={ComponentShowcaseScreen} />
+
+          <Stack.Screen
+            name="CreatePalace"
+            component={CreatePalaceScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+
+          <Stack.Screen
+            name="PalaceDetail"
+            component={PalaceDetailScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+
+          <Stack.Screen
+            name="AddStation"
+            component={AddStationScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+
+          <Stack.Screen
+            name="Review"
+            component={ReviewScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+
+          <Stack.Screen
+            name="Achievements"
+            component={AchievementsScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+
+          <Stack.Screen
+            name="ComponentShowcase"
+            component={ComponentShowcaseScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
         </>
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />

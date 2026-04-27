@@ -67,8 +67,15 @@ function PalaceDetailScreen() {
 
   const palaces = usePalaceStore((state) => state.palaces);
   const isLoading = usePalaceStore((state) => state.isLoading);
+  const isLoadingStations = usePalaceStore(
+    (state) => state.isLoadingStations,
+  );
   const error = usePalaceStore((state) => state.error);
   const loadPalaces = usePalaceStore((state) => state.loadPalaces);
+  const loadStations = usePalaceStore((state) => state.loadStations);
+  const getStationsByPalaceId = usePalaceStore(
+    (state) => state.getStationsByPalaceId,
+  );
 
   const palace = useMemo(() => {
     if (!palaceId) {
@@ -77,6 +84,14 @@ function PalaceDetailScreen() {
 
     return palaces.find((item) => item.id === palaceId);
   }, [palaceId, palaces]);
+
+  const stations: Station[] = useMemo(() => {
+    if (!palaceId) {
+      return [];
+    }
+
+    return getStationsByPalaceId(palaceId);
+  }, [getStationsByPalaceId, palaceId]);
 
   useEffect(() => {
     if (!palaceId || !userId || palace) {
@@ -89,6 +104,16 @@ function PalaceDetailScreen() {
   }, [loadPalaces, palace, palaceId, userId]);
 
   useEffect(() => {
+    if (!palaceId || !userId) {
+      return;
+    }
+
+    loadStations(palaceId, userId).catch(() => {
+      // The store already keeps the error.
+    });
+  }, [loadStations, palaceId, userId]);
+
+  useEffect(() => {
     if (!error) {
       return;
     }
@@ -96,11 +121,15 @@ function PalaceDetailScreen() {
     Alert.alert('Something went wrong', error);
   }, [error]);
 
-  const stations: Station[] = [];
-
   const template = palace ? getPalaceTemplateById(palace.templateId) : null;
   const hasStations = stations.length > 0;
-  const canStartReview = Boolean(palace && palace.stationCount > 0);
+
+  const visibleStationCount = Math.max(
+    palace?.stationCount ?? 0,
+    stations.length,
+  );
+
+  const canStartReview = Boolean(palace && visibleStationCount > 0);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -248,8 +277,8 @@ function PalaceDetailScreen() {
 
             <View style={styles.stationCountBadge}>
               <Text style={styles.stationCountText}>
-                🚩 {palace.stationCount}{' '}
-                {palace.stationCount === 1 ? 'station' : 'stations'}
+                🚩 {visibleStationCount}{' '}
+                {visibleStationCount === 1 ? 'station' : 'stations'}
               </Text>
             </View>
           </View>
@@ -257,10 +286,21 @@ function PalaceDetailScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Memory stations</Text>
-          <Text style={styles.sectionHint}>Week 4 will fill this list</Text>
+          <Text style={styles.sectionHint}>
+            {hasStations
+              ? 'Walk through your palace in this order'
+              : 'Add stations to build your memory route'}
+          </Text>
         </View>
 
-        {hasStations ? (
+        {isLoadingStations && !hasStations ? (
+          <View style={styles.loadingStationsCard}>
+            <ActivityIndicator size="small" color={colors.text} />
+            <Text style={styles.loadingStationsText}>
+              Loading stations...
+            </Text>
+          </View>
+        ) : hasStations ? (
           <View style={styles.stationList}>
             {stations.map((station) => (
               <StationCard
@@ -289,8 +329,8 @@ function PalaceDetailScreen() {
             </Text>
 
             <Text style={styles.emptyText}>
-              Stations are the stops in your palace. Soon you will place ideas,
-              words, dates, or images inside each one.
+              Stations are the stops in your palace. Place ideas, words,
+              dates, or images inside each one.
             </Text>
 
             <Button
@@ -521,6 +561,35 @@ const styles = StyleSheet.create({
 
   stationList: {
     marginTop: spacing.xs,
+    gap: spacing.md,
+  },
+
+  loadingStationsCard: {
+    borderRadius: 26,
+    padding: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
+    borderWidth: 2,
+    borderColor: colors.softYellow,
+    gap: spacing.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+
+  loadingStationsText: {
+    color: colors.text,
+    fontSize: 15,
+    fontFamily: 'Nunito_700Bold',
   },
 
   emptyStateCard: {

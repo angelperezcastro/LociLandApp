@@ -12,6 +12,7 @@ import { CreatePalaceScreen } from '../screens/app/CreatePalaceScreen';
 import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
 import { AddStationScreen } from '../screens/app/AddStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
+import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 
 import { colors } from '../theme';
 
@@ -21,6 +22,7 @@ export type AppStackParamList = {
   PalaceDetail: { palaceId: string };
   AddStation: { palaceId: string };
   Review: { palaceId: string };
+  Achievements: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -127,6 +129,14 @@ export function AppNavigator() {
       <Stack.Screen
         name="Review"
         component={ReviewScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name="Achievements"
+        component={AchievementsScreen}
         options={{
           animation: 'slide_from_right',
         }}

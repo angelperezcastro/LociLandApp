@@ -6,6 +6,7 @@ export type RootStackParamList = {
   App: undefined;
   CreatePalace: undefined;
   PalaceDetail: { palaceId?: string } | undefined;
+  AddStation: { palaceId: string };
   Review: { palaceId?: string } | undefined;
   Achievements: undefined;
   ComponentShowcase: undefined;
@@ -25,6 +26,15 @@ export type AppTabParamList = {
   Profile: undefined;
 };
 
+export type AppStackParamList = {
+  MainTabs: undefined;
+  CreatePalace: undefined;
+  PalaceDetail: { palaceId: string };
+  AddStation: { palaceId: string };
+  Review: { palaceId: string };
+  Achievements: undefined;
+};
+
 export type RootScreenProps<T extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, T>;
 
@@ -33,3 +43,6 @@ export type AuthScreenProps<T extends keyof AuthStackParamList> =
 
 export type AppTabScreenProps<T extends keyof AppTabParamList> =
   BottomTabScreenProps<AppTabParamList, T>;
+
+export type AppStackScreenProps<T extends keyof AppStackParamList> =
+  NativeStackScreenProps<AppStackParamList, T>;

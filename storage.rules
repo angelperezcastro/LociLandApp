@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidStationImage() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    match /users/{uid}/palaces/{palaceId}/stations/{stationId}/{fileName} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && isValidStationImage()
+        && fileName.matches('station-image-[0-9]+\\.(jpg|jpeg|png|webp)');
+
+      allow update: if false;
+
+      allow delete: if isOwner(uid);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

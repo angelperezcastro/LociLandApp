@@ -2,8 +2,78 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{db}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasValidOptionalImageUri() {
+      return !request.resource.data.keys().hasAny(['imageUri'])
+        || (
+          request.resource.data.imageUri is string
+          && request.resource.data.imageUri.size() <= 2048
+          && request.resource.data.imageUri.matches('https://firebasestorage.googleapis.com/.*')
+        );
+    }
+
+    function isValidStation(uid, palaceId) {
+      return request.resource.data.keys().hasOnly([
+          'id',
+          'palaceId',
+          'userId',
+          'order',
+          'emoji',
+          'label',
+          'memoryText',
+          'imageUri',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.userId == uid
+        && request.resource.data.palaceId == palaceId
+        && request.resource.data.order is int
+        && request.resource.data.order >= 0
+        && request.resource.data.order <= 20
+        && request.resource.data.emoji is string
+        && request.resource.data.emoji.size() > 0
+        && request.resource.data.emoji.size() <= 16
+        && request.resource.data.label is string
+        && request.resource.data.label.size() > 0
+        && request.resource.data.label.size() <= 40
+        && request.resource.data.memoryText is string
+        && request.resource.data.memoryText.size() <= 500
+        && request.resource.data.createdAt is timestamp
+        && hasValidOptionalImageUri();
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isOwner(uid);
+      allow delete: if false;
+
+      match /palaces/{palaceId} {
+        allow read, create, update, delete: if isOwner(uid);
+
+        match /stations/{stationId} {
+          allow read: if isOwner(uid);
+
+          allow create: if isOwner(uid)
+            && isValidStation(uid, palaceId);
+
+          allow update: if isOwner(uid)
+            && resource.data.userId == uid
+            && resource.data.palaceId == palaceId
+            && isValidStation(uid, palaceId);
+
+          allow delete: if isOwner(uid);
+        }
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
