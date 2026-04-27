@@ -1,11 +1,29 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type AgeGroup = '6-9' | '10-14';
+
+export type PalaceTemplateId =
+  | 'my-home'
+  | 'magic-castle'
+  | 'enchanted-forest'
+  | 'space-station'
+  | 'underwater-world'
+  | 'dinosaur-island';
+
+export interface PalaceTemplate {
+  id: PalaceTemplateId;
+  name: string;
+  emoji: string;
+  description: string;
+  backgroundColour: string;
+}
 
 export interface Palace {
   id: string;
   userId: string;
   name: string;
-  templateId: string;
-  createdAt: string;
+  templateId: PalaceTemplateId;
+  createdAt: Timestamp;
   stationCount: number;
 }
 
@@ -18,7 +36,7 @@ export interface Station {
   label: string;
   memoryText: string;
   imageUri?: string;
-  createdAt: string;
+  createdAt: Timestamp;
 }
 
 export interface UserProfile {
@@ -30,15 +48,17 @@ export interface UserProfile {
   xp: number;
   level: number;
   streak: number;
-  lastActiveDate: string;
+  lastActiveDate: Timestamp | null;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface ReviewSession {
   id: string;
   palaceId: string;
   userId: string;
-  startedAt: string;
-  completedAt?: string;
+  startedAt: Timestamp;
+  completedAt?: Timestamp | null;
   totalStations: number;
   correctAnswers: number;
   incorrectAnswers: number;

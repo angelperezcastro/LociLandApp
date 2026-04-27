@@ -1,36 +1,138 @@
 import { create } from 'zustand';
-import type { Palace } from '../types';
 
-type PalaceState = {
+import type { Palace, PalaceTemplateId } from '../types';
+import {
+  createPalace as createPalaceService,
+  deletePalace as deletePalaceService,
+  getPalaces as getPalacesService,
+} from '../services/palaceService';
+
+interface PalaceStoreState {
   palaces: Palace[];
-  setPalaces: (palaces: Palace[]) => void;
-  addPalace: (palace: Palace) => void;
-  updatePalace: (id: string, patch: Partial<Palace>) => void;
-  removePalace: (id: string) => void;
+  selectedPalaceId: string | null;
+  isLoading: boolean;
+  error: string | null;
+
+  loadPalaces: (userId: string) => Promise<void>;
+  createPalace: (
+    userId: string,
+    name: string,
+    templateId: PalaceTemplateId,
+  ) => Promise<Palace>;
+  deletePalace: (palaceId: string, userId: string) => Promise<void>;
+
+  selectPalace: (palaceId: string | null) => void;
+  getPalaceById: (palaceId: string) => Palace | undefined;
+
   clearPalaces: () => void;
-};
+  clearError: () => void;
+}
 
-export const usePalaceStore = create<PalaceState>((set) => ({
+export const usePalaceStore = create<PalaceStoreState>((set, get) => ({
   palaces: [],
+  selectedPalaceId: null,
+  isLoading: false,
+  error: null,
 
-  setPalaces: (palaces) => set({ palaces }),
+  loadPalaces: async (userId: string) => {
+    set({ isLoading: true, error: null });
 
-  addPalace: (palace) =>
-    set((state) => ({
-      palaces: [palace, ...state.palaces],
-    })),
+    try {
+      const palaces = await getPalacesService(userId);
 
-  updatePalace: (id, patch) =>
-    set((state) => ({
-      palaces: state.palaces.map((palace) =>
-        palace.id === id ? { ...palace, ...patch } : palace
-      ),
-    })),
+      set({
+        palaces,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not load palaces.';
 
-  removePalace: (id) =>
-    set((state) => ({
-      palaces: state.palaces.filter((palace) => palace.id !== id),
-    })),
+      set({
+        isLoading: false,
+        error: message,
+      });
 
-  clearPalaces: () => set({ palaces: [] }),
+      throw error;
+    }
+  },
+
+  createPalace: async (
+    userId: string,
+    name: string,
+    templateId: PalaceTemplateId,
+  ) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const newPalace = await createPalaceService(userId, name, templateId);
+
+      set((state) => ({
+        palaces: [newPalace, ...state.palaces],
+        selectedPalaceId: newPalace.id,
+        isLoading: false,
+        error: null,
+      }));
+
+      return newPalace;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not create palace.';
+
+      set({
+        isLoading: false,
+        error: message,
+      });
+
+      throw error;
+    }
+  },
+
+  deletePalace: async (palaceId: string, userId: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      await deletePalaceService(palaceId, userId);
+
+      set((state) => ({
+        palaces: state.palaces.filter((palace) => palace.id !== palaceId),
+        selectedPalaceId:
+          state.selectedPalaceId === palaceId ? null : state.selectedPalaceId,
+        isLoading: false,
+        error: null,
+      }));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete palace.';
+
+      set({
+        isLoading: false,
+        error: message,
+      });
+
+      throw error;
+    }
+  },
+
+  selectPalace: (palaceId: string | null) => {
+    set({ selectedPalaceId: palaceId });
+  },
+
+  getPalaceById: (palaceId: string) => {
+    return get().palaces.find((palace) => palace.id === palaceId);
+  },
+
+  clearPalaces: () => {
+    set({
+      palaces: [],
+      selectedPalaceId: null,
+      isLoading: false,
+      error: null,
+    });
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
 }));
