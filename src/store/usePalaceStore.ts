@@ -1,16 +1,33 @@
 import { create } from 'zustand';
 
-import type { Palace, PalaceTemplateId } from '../types';
+import type { Palace, PalaceTemplateId, Station } from '../types';
 import {
   createPalace as createPalaceService,
   deletePalace as deletePalaceService,
-  getPalaces as getPalacesService,
+  getPalaces,
 } from '../services/palaceService';
+import {
+  createStation as createStationService,
+  deleteStation as deleteStationService,
+  getStations,
+  reorderStations as reorderStationsService,
+  updateStation as updateStationService,
+  type CreateStationData,
+  type UpdateStationData,
+} from '../services/stationService';
 
-interface PalaceStoreState {
+interface PalaceState {
   palaces: Palace[];
-  selectedPalaceId: string | null;
+  stations: Record<string, Station[]>;
+
+  /**
+   * isLoading is kept for compatibility with existing screens.
+   * isLoadingPalaces and isLoadingStations are more explicit for future use.
+   */
   isLoading: boolean;
+  isLoadingPalaces: boolean;
+  isLoadingStations: boolean;
+
   error: string | null;
 
   loadPalaces: (userId: string) => Promise<void>;
@@ -21,37 +38,69 @@ interface PalaceStoreState {
   ) => Promise<Palace>;
   deletePalace: (palaceId: string, userId: string) => Promise<void>;
 
-  selectPalace: (palaceId: string | null) => void;
-  getPalaceById: (palaceId: string) => Palace | undefined;
+  loadStations: (palaceId: string, userId: string) => Promise<void>;
+  createStation: (
+    palaceId: string,
+    userId: string,
+    data: CreateStationData,
+  ) => Promise<Station>;
+  updateStation: (
+    stationId: string,
+    palaceId: string,
+    userId: string,
+    data: UpdateStationData,
+  ) => Promise<void>;
+  deleteStation: (
+    stationId: string,
+    palaceId: string,
+    userId: string,
+  ) => Promise<void>;
+  reorderStations: (
+    palaceId: string,
+    userId: string,
+    orderedIds: string[],
+  ) => Promise<void>;
 
-  clearPalaces: () => void;
+  getPalaceById: (palaceId: string) => Palace | undefined;
+  getStationsByPalaceId: (palaceId: string) => Station[];
+
   clearError: () => void;
+  clearPalaceStore: () => void;
 }
 
-export const usePalaceStore = create<PalaceStoreState>((set, get) => ({
+export const usePalaceStore = create<PalaceState>((set, get) => ({
   palaces: [],
-  selectedPalaceId: null,
+  stations: {},
+
   isLoading: false,
+  isLoadingPalaces: false,
+  isLoadingStations: false,
+
   error: null,
 
   loadPalaces: async (userId: string) => {
-    set({ isLoading: true, error: null });
-
     try {
-      const palaces = await getPalacesService(userId);
+      set({
+        isLoading: true,
+        isLoadingPalaces: true,
+        error: null,
+      });
+
+      const palaces = await getPalaces(userId);
 
       set({
         palaces,
         isLoading: false,
-        error: null,
+        isLoadingPalaces: false,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Could not load palaces.';
-
       set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to load palaces.',
         isLoading: false,
-        error: message,
+        isLoadingPalaces: false,
       });
 
       throw error;
@@ -63,26 +112,26 @@ export const usePalaceStore = create<PalaceStoreState>((set, get) => ({
     name: string,
     templateId: PalaceTemplateId,
   ) => {
-    set({ isLoading: true, error: null });
-
     try {
-      const newPalace = await createPalaceService(userId, name, templateId);
+      set({ error: null });
+
+      const createdPalace = await createPalaceService(
+        userId,
+        name,
+        templateId,
+      );
 
       set((state) => ({
-        palaces: [newPalace, ...state.palaces],
-        selectedPalaceId: newPalace.id,
-        isLoading: false,
-        error: null,
+        palaces: [createdPalace, ...state.palaces],
       }));
 
-      return newPalace;
+      return createdPalace;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Could not create palace.';
-
       set({
-        isLoading: false,
-        error: message,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to create palace.',
       });
 
       throw error;
@@ -90,49 +139,250 @@ export const usePalaceStore = create<PalaceStoreState>((set, get) => ({
   },
 
   deletePalace: async (palaceId: string, userId: string) => {
-    set({ isLoading: true, error: null });
-
     try {
+      set({ error: null });
+
       await deletePalaceService(palaceId, userId);
 
-      set((state) => ({
-        palaces: state.palaces.filter((palace) => palace.id !== palaceId),
-        selectedPalaceId:
-          state.selectedPalaceId === palaceId ? null : state.selectedPalaceId,
-        isLoading: false,
-        error: null,
-      }));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Could not delete palace.';
+      set((state) => {
+        const nextStations = { ...state.stations };
+        delete nextStations[palaceId];
 
+        return {
+          palaces: state.palaces.filter((palace) => palace.id !== palaceId),
+          stations: nextStations,
+        };
+      });
+    } catch (error) {
       set({
-        isLoading: false,
-        error: message,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete palace.',
       });
 
       throw error;
     }
   },
 
-  selectPalace: (palaceId: string | null) => {
-    set({ selectedPalaceId: palaceId });
+  loadStations: async (palaceId: string, userId: string) => {
+    try {
+      set({
+        isLoading: true,
+        isLoadingStations: true,
+        error: null,
+      });
+
+      const loadedStations = await getStations(palaceId, userId);
+
+      set((state) => ({
+        stations: {
+          ...state.stations,
+          [palaceId]: loadedStations,
+        },
+        isLoading: false,
+        isLoadingStations: false,
+      }));
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to load stations.',
+        isLoading: false,
+        isLoadingStations: false,
+      });
+
+      throw error;
+    }
   },
 
-  getPalaceById: (palaceId: string) => {
-    return get().palaces.find((palace) => palace.id === palaceId);
+  createStation: async (
+    palaceId: string,
+    userId: string,
+    data: CreateStationData,
+  ) => {
+    try {
+      set({ error: null });
+
+      const createdStation = await createStationService(
+        palaceId,
+        userId,
+        data,
+      );
+
+      set((state) => {
+        const currentStations = state.stations[palaceId] ?? [];
+
+        return {
+          stations: {
+            ...state.stations,
+            [palaceId]: [...currentStations, createdStation].sort(
+              (a, b) => a.order - b.order,
+            ),
+          },
+        };
+      });
+
+      return createdStation;
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to create station.',
+      });
+
+      throw error;
+    }
   },
 
-  clearPalaces: () => {
-    set({
-      palaces: [],
-      selectedPalaceId: null,
-      isLoading: false,
-      error: null,
-    });
+  updateStation: async (
+    stationId: string,
+    palaceId: string,
+    userId: string,
+    data: UpdateStationData,
+  ) => {
+    try {
+      set({ error: null });
+
+      await updateStationService(stationId, palaceId, userId, data);
+
+      set((state) => {
+        const currentStations = state.stations[palaceId] ?? [];
+
+        return {
+          stations: {
+            ...state.stations,
+            [palaceId]: currentStations
+              .map((station) =>
+                station.id === stationId
+                  ? {
+                      ...station,
+                      ...data,
+                      label:
+                        data.label !== undefined
+                          ? data.label.trim()
+                          : station.label,
+                      emoji:
+                        data.emoji !== undefined
+                          ? data.emoji.trim()
+                          : station.emoji,
+                      memoryText:
+                        data.memoryText !== undefined
+                          ? data.memoryText.trim()
+                          : station.memoryText,
+                    }
+                  : station,
+              )
+              .sort((a, b) => a.order - b.order),
+          },
+        };
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to update station.',
+      });
+
+      throw error;
+    }
   },
+
+  deleteStation: async (
+    stationId: string,
+    palaceId: string,
+    userId: string,
+  ) => {
+    try {
+      set({ error: null });
+
+      await deleteStationService(stationId, palaceId, userId);
+
+      set((state) => {
+        const currentStations = state.stations[palaceId] ?? [];
+
+        return {
+          stations: {
+            ...state.stations,
+            [palaceId]: currentStations.filter(
+              (station) => station.id !== stationId,
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete station.',
+      });
+
+      throw error;
+    }
+  },
+
+  reorderStations: async (
+    palaceId: string,
+    userId: string,
+    orderedIds: string[],
+  ) => {
+    try {
+      set({ error: null });
+
+      await reorderStationsService(palaceId, userId, orderedIds);
+
+      set((state) => {
+        const currentStations = state.stations[palaceId] ?? [];
+        const orderMap = new Map(
+          orderedIds.map((stationId, index) => [stationId, index]),
+        );
+
+        return {
+          stations: {
+            ...state.stations,
+            [palaceId]: currentStations
+              .map((station) => ({
+                ...station,
+                order: orderMap.get(station.id) ?? station.order,
+              }))
+              .sort((a, b) => a.order - b.order),
+          },
+        };
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to reorder stations.',
+      });
+
+      throw error;
+    }
+  },
+
+  getPalaceById: (palaceId: string) =>
+    get().palaces.find((palace) => palace.id === palaceId),
+
+  getStationsByPalaceId: (palaceId: string) =>
+    get().stations[palaceId] ?? [],
 
   clearError: () => {
     set({ error: null });
+  },
+
+  clearPalaceStore: () => {
+    set({
+      palaces: [],
+      stations: {},
+      isLoading: false,
+      isLoadingPalaces: false,
+      isLoadingStations: false,
+      error: null,
+    });
   },
 }));
