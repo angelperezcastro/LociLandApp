@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Platform,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,6 +22,7 @@ import { auth } from '../../services/firebase';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { PalaceCard } from '../../components/palace/PalaceCard';
+import { DeletePalaceSheet } from '../../components/palace/DeletePalaceSheet';
 import { Button } from '../../components/ui/Button';
 
 type LooseUserProfile = {
@@ -46,6 +49,10 @@ type LooseUserStore = {
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const tabBarHeight = useBottomTabBarHeight();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [palaceToDelete, setPalaceToDelete] = useState<Palace | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const userStore = useUserStore(
     (state) => state as unknown as LooseUserStore,
@@ -80,6 +87,10 @@ export default function HomeScreen() {
   const error = usePalaceStore((state) => state.error);
   const loadPalaces = usePalaceStore((state) => state.loadPalaces);
   const deletePalace = usePalaceStore((state) => state.deletePalace);
+  const clearError = usePalaceStore((state) => state.clearError);
+
+  const showInitialLoading =
+    isLoading && palaces.length === 0 && !isRefreshing;
 
   useEffect(() => {
     if (!userId) {
@@ -87,7 +98,7 @@ export default function HomeScreen() {
     }
 
     loadPalaces(userId).catch(() => {
-      // The store already keeps the user-facing error.
+      // The store keeps the error. The alert is handled below.
     });
   }, [loadPalaces, userId]);
 
@@ -96,8 +107,13 @@ export default function HomeScreen() {
       return;
     }
 
-    Alert.alert('Something went wrong', error);
-  }, [error]);
+    Alert.alert('Something went wrong', error, [
+      {
+        text: 'OK',
+        onPress: clearError,
+      },
+    ]);
+  }, [clearError, error]);
 
   const handleCreatePalace = () => {
     navigation.navigate('CreatePalace');
@@ -111,56 +127,86 @@ export default function HomeScreen() {
     navigation.navigate('Review', { palaceId });
   };
 
-  const handleDeletePalace = useCallback(
+  const handleRefresh = useCallback(async () => {
+    if (!userId) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      await loadPalaces(userId);
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Could not refresh your palaces.';
+
+      Alert.alert('Refresh failed', message);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadPalaces, userId]);
+
+  const handleRequestDelete = useCallback(
     (palaceId: string) => {
-      if (!userId) {
-        Alert.alert('Not ready yet', 'Your account is still loading.');
+      const palace = palaces.find((item) => item.id === palaceId);
+
+      if (!palace) {
+        Alert.alert(
+          'Palace unavailable',
+          'This palace could not be found locally. Pull to refresh and try again.',
+        );
         return;
       }
 
-      const palace = palaces.find((item) => item.id === palaceId);
-
-      Alert.alert(
-        'Delete palace?',
-        palace
-          ? `Do you want to delete "${palace.name}"?`
-          : 'Do you want to delete this palace?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => {
-              deletePalace(palaceId, userId).catch((caughtError) => {
-                const message =
-                  caughtError instanceof Error
-                    ? caughtError.message
-                    : 'Could not delete this palace.';
-
-                Alert.alert('Delete failed', message);
-              });
-            },
-          },
-        ],
-      );
+      setPalaceToDelete(palace);
     },
-    [deletePalace, palaces, userId],
+    [palaces],
   );
+
+  const handleCancelDelete = () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setPalaceToDelete(null);
+  };
+
+  const handleConfirmDelete = async (palace: Palace) => {
+    if (!userId) {
+      Alert.alert('Account still loading', 'Please wait and try again.');
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deletePalace(palace.id, userId);
+      setPalaceToDelete(null);
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Could not delete this palace.';
+
+      Alert.alert('Delete failed', message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const renderPalace = ({ item }: { item: Palace }) => (
     <PalaceCard
       palace={item}
       onPress={handleOpenPalace}
       onReviewPress={handleReviewPalace}
-      onLongPress={handleDeletePalace}
+      onLongPress={handleRequestDelete}
     />
   );
 
   const renderEmptyState = () => {
-    if (isLoading) {
+    if (showInitialLoading) {
       return <HomeLoadingState />;
     }
 
@@ -225,13 +271,22 @@ export default function HomeScreen() {
             paddingBottom: tabBarHeight + 112,
           },
         ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.text}
+            colors={[colors.text]}
+            progressBackgroundColor={colors.softYellow}
+          />
+        }
         showsVerticalScrollIndicator={false}
       />
 
-      {palaces.length > 0 && isLoading ? (
+      {palaces.length > 0 && isLoading && !isRefreshing ? (
         <View style={styles.loadingPill}>
           <ActivityIndicator color={colors.text} />
-          <Text style={styles.loadingPillText}>Loading palaces...</Text>
+          <Text style={styles.loadingPillText}>Syncing palaces...</Text>
         </View>
       ) : null}
 
@@ -249,6 +304,14 @@ export default function HomeScreen() {
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      <DeletePalaceSheet
+        visible={palaceToDelete !== null}
+        palace={palaceToDelete}
+        isDeleting={isDeleting}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
     </SafeAreaView>
   );
 }
@@ -256,13 +319,54 @@ export default function HomeScreen() {
 function HomeLoadingState() {
   return (
     <View style={styles.loadingState}>
-      <ActivityIndicator size="large" color={colors.text} />
       <Text style={styles.loadingTitle}>Loading your palaces...</Text>
 
-      <View style={styles.skeletonCard} />
-      <View style={styles.skeletonCard} />
-      <View style={styles.skeletonCard} />
+      <SkeletonPalaceCard />
+      <SkeletonPalaceCard />
+      <SkeletonPalaceCard />
     </View>
+  );
+}
+
+function SkeletonPalaceCard() {
+  const opacity = useRef(new Animated.Value(0.42)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.76,
+          duration: 720,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.42,
+          duration: 720,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [opacity]);
+
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <View style={styles.skeletonEmoji} />
+
+      <View style={styles.skeletonContent}>
+        <View style={styles.skeletonLineLarge} />
+        <View style={styles.skeletonLineSmall} />
+        <View style={styles.skeletonFooter}>
+          <View style={styles.skeletonBadge} />
+          <View style={styles.skeletonButton} />
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -400,26 +504,89 @@ const styles = StyleSheet.create({
   },
 
   loadingState: {
-    flex: 1,
-    paddingTop: spacing.xl,
-    alignItems: 'center',
+    width: '100%',
+    paddingTop: spacing.md,
   },
 
   loadingTitle: {
-    marginTop: spacing.md,
     marginBottom: spacing.lg,
     color: colors.text,
-    fontSize: 17,
-    fontFamily: 'Nunito_700Bold',
+    fontSize: 18,
+    textAlign: 'center',
+    fontFamily: 'Nunito_800ExtraBold',
   },
 
   skeletonCard: {
-    width: '100%',
-    height: 150,
+    minHeight: 168,
+    borderRadius: 28,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderWidth: 2,
+    borderColor: colors.softYellow,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 14,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+
+  skeletonEmoji: {
+    width: 86,
+    height: 86,
     borderRadius: 28,
     backgroundColor: colors.softYellow,
-    opacity: 0.5,
-    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginRight: spacing.md,
+  },
+
+  skeletonContent: {
+    flex: 1,
+  },
+
+  skeletonLineLarge: {
+    width: '82%',
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: colors.softYellow,
+    marginBottom: spacing.sm,
+  },
+
+  skeletonLineSmall: {
+    width: '100%',
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+
+  skeletonFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  skeletonBadge: {
+    width: 104,
+    height: 34,
+    borderRadius: 999,
+    backgroundColor: colors.softYellow,
+  },
+
+  skeletonButton: {
+    width: 76,
+    height: 34,
+    borderRadius: 999,
+    backgroundColor: colors.border,
   },
 
   loadingPill: {
