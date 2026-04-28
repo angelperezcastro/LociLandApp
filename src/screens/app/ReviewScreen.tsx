@@ -1,5 +1,3 @@
-import { auth } from '../../services/firebase';
-import { startReview } from '../../services/reviewService';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,6 +21,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GuideLottie } from '../../components/review/GuideLottie';
+import { auth } from '../../services/firebase';
+import { startReview } from '../../services/reviewService';
 import { getReviewScreenData } from '../../services/reviewScreenDataService';
 import type {
   ReviewScreenData,
@@ -58,33 +58,136 @@ const REVIEW_COLORS = {
   textSoft: '#374151',
   white: '#FFFFFF',
   defaultPalaceBackground: '#DDEBFF',
-  primaryButton: '#111827',
-  buttonShadow: '#000000',
-  overlayLight: 'rgba(255, 255, 255, 0.72)',
+  overlayLight: 'rgba(255, 255, 255, 0.76)',
   overlayDark: 'rgba(255, 255, 255, 0.16)',
   overlayMedium: 'rgba(255, 255, 255, 0.55)',
-  overlayStrong: 'rgba(255, 255, 255, 0.8)',
-  overlayBubble: 'rgba(255, 255, 255, 0.78)',
+  overlayStrong: 'rgba(255, 255, 255, 0.82)',
+  overlayBubble: 'rgba(255, 255, 255, 0.88)',
+  progressTrack: 'rgba(255,255,255,0.55)',
+};
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+const parseHexColor = (hex: string) => {
+  if (!hex.startsWith('#')) return null;
+
+  const normalized = hex.replace('#', '');
+
+  if (normalized.length !== 6) return null;
+
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+
+  if ([r, g, b].some(Number.isNaN)) return null;
+
+  return { r, g, b };
+};
+
+const toHex = (value: number) => value.toString(16).padStart(2, '0');
+
+const rgbToHsl = ({ r, g, b }: { r: number; g: number; b: number }) => {
+  const normalizedR = r / 255;
+  const normalizedG = g / 255;
+  const normalizedB = b / 255;
+
+  const max = Math.max(normalizedR, normalizedG, normalizedB);
+  const min = Math.min(normalizedR, normalizedG, normalizedB);
+
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const delta = max - min;
+
+    s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+
+    switch (max) {
+      case normalizedR:
+        h =
+          (normalizedG - normalizedB) / delta +
+          (normalizedG < normalizedB ? 6 : 0);
+        break;
+
+      case normalizedG:
+        h = (normalizedB - normalizedR) / delta + 2;
+        break;
+
+      case normalizedB:
+        h = (normalizedR - normalizedG) / delta + 4;
+        break;
+
+      default:
+        h = 0;
+    }
+
+    h /= 6;
+  }
+
+  return { h, s, l };
+};
+
+const hueToRgb = (p: number, q: number, t: number) => {
+  let adjustedT = t;
+
+  if (adjustedT < 0) adjustedT += 1;
+  if (adjustedT > 1) adjustedT -= 1;
+
+  if (adjustedT < 1 / 6) return p + (q - p) * 6 * adjustedT;
+  if (adjustedT < 1 / 2) return q;
+  if (adjustedT < 2 / 3) return p + (q - p) * (2 / 3 - adjustedT) * 6;
+
+  return p;
+};
+
+const hslToHex = ({ h, s, l }: { h: number; s: number; l: number }) => {
+  let r: number;
+  let g: number;
+  let b: number;
+
+  if (s === 0) {
+    r = l;
+    g = l;
+    b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+
+    r = hueToRgb(p, q, h + 1 / 3);
+    g = hueToRgb(p, q, h);
+    b = hueToRgb(p, q, h - 1 / 3);
+  }
+
+  return `#${toHex(Math.round(r * 255))}${toHex(
+    Math.round(g * 255),
+  )}${toHex(Math.round(b * 255))}`;
+};
+
+const intensifyPastelHex = (hex: string): string => {
+  const rgb = parseHexColor(hex);
+
+  if (!rgb) {
+    return '#24C55E';
+  }
+
+  const { h, s } = rgbToHsl(rgb);
+
+  return hslToHex({
+    h,
+    s: clamp(Math.max(s * 1.8, 0.78), 0.78, 0.95),
+    l: 0.42,
+  });
 };
 
 const getReadableTextColor = (backgroundColor: string): string => {
   const fallbackColor = REVIEW_COLORS.textSoft;
+  const rgb = parseHexColor(backgroundColor);
 
-  if (!backgroundColor.startsWith('#')) {
-    return fallbackColor;
-  }
+  if (!rgb) return fallbackColor;
 
-  const hex = backgroundColor.replace('#', '');
-
-  if (hex.length !== 6) {
-    return fallbackColor;
-  }
-
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
 
   return brightness > 150 ? REVIEW_COLORS.textDark : REVIEW_COLORS.white;
 };
@@ -131,26 +234,70 @@ const ReviewErrorState = ({
   );
 };
 
+const ReviewPrimaryButton = ({
+  label,
+  backgroundColor,
+  textColor,
+  disabled = false,
+  onPress,
+}: {
+  label: string;
+  backgroundColor: string;
+  textColor: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) => {
+  return (
+    <View style={styles.primaryButtonOuter}>
+      <Pressable
+        disabled={disabled}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          {
+            backgroundColor,
+          },
+          pressed && styles.primaryButtonPressed,
+          disabled && styles.primaryButtonDisabled,
+        ]}
+      >
+        <Text style={[styles.primaryButtonText, { color: textColor }]}>
+          {label}
+        </Text>
+      </Pressable>
+    </View>
+  );
+};
+
 const ProgressBar = ({
   currentIndex,
   totalStations,
+  textColor,
 }: {
   currentIndex: number;
   totalStations: number;
+  textColor: string;
 }) => {
   const progress = totalStations > 0 ? (currentIndex + 1) / totalStations : 0;
 
   return (
     <View style={styles.progressWrapper}>
       <View style={styles.progressHeader}>
-        <Text style={styles.progressLabel}>Journey progress</Text>
-        <Text style={styles.progressValue}>
+        <Text style={[styles.progressLabel, { color: textColor }]}>
+          Journey progress
+        </Text>
+        <Text style={[styles.progressValue, { color: textColor }]}>
           {getProgressLabel(currentIndex, totalStations)}
         </Text>
       </View>
 
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${progress * 100}%`, backgroundColor: textColor },
+          ]}
+        />
       </View>
     </View>
   );
@@ -160,12 +307,16 @@ const IntroState = ({
   data,
   textColor,
   overlayColor,
+  buttonFillColor,
+  buttonTextColor,
   isStarting,
   onStart,
 }: {
   data: ReviewScreenData;
   textColor: string;
   overlayColor: string;
+  buttonFillColor: string;
+  buttonTextColor: string;
   isStarting: boolean;
   onStart: () => void;
 }) => {
@@ -174,8 +325,8 @@ const IntroState = ({
   useEffect(() => {
     floating.value = withRepeat(
       withSequence(
-        withTiming(-10, { duration: 850 }),
-        withTiming(0, { duration: 850 }),
+        withTiming(-8, { duration: 900 }),
+        withTiming(0, { duration: 900 }),
       ),
       -1,
       true,
@@ -208,23 +359,23 @@ const IntroState = ({
         </View>
       </View>
 
-      <View style={styles.guideLargeWrapper}>
+      <View style={styles.introGuideSection}>
         <GuideLottie size={210} variant="forward" />
+
+        <View style={styles.guideSpeechBubble}>
+          <Text style={styles.guideSpeechBubbleText}>Follow me!</Text>
+        </View>
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.primaryButton,
-          pressed && styles.buttonPressed,
-          isStarting && styles.buttonDisabled,
-        ]}
-        disabled={isStarting}
-        onPress={onStart}
-      >
-        <Text style={styles.primaryButtonText}>
-          {isStarting ? 'Starting...' : INTRO_COPY.startButton}
-        </Text>
-      </Pressable>
+      <View style={styles.introButtonSection}>
+        <ReviewPrimaryButton
+          label={isStarting ? 'Starting...' : INTRO_COPY.startButton}
+          backgroundColor={buttonFillColor}
+          textColor={buttonTextColor}
+          disabled={isStarting}
+          onPress={onStart}
+        />
+      </View>
     </Animated.View>
   );
 };
@@ -235,6 +386,8 @@ const WalkingState = ({
   totalStations,
   textColor,
   overlayColor,
+  buttonFillColor,
+  buttonTextColor,
   onRemember,
 }: {
   station: ReviewScreenStation;
@@ -242,11 +395,17 @@ const WalkingState = ({
   totalStations: number;
   textColor: string;
   overlayColor: string;
+  buttonFillColor: string;
+  buttonTextColor: string;
   onRemember: () => void;
 }) => {
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
-      <ProgressBar currentIndex={currentIndex} totalStations={totalStations} />
+      <ProgressBar
+        currentIndex={currentIndex}
+        totalStations={totalStations}
+        textColor={textColor}
+      />
 
       <View style={styles.walkingContent}>
         <Animated.View
@@ -266,24 +425,22 @@ const WalkingState = ({
         </Text>
       </View>
 
-      <View style={styles.smallGuideWrapper}>
-        <GuideLottie size={96} variant="encourage" />
-        <View style={styles.speechBubble}>
-          <Text style={styles.speechBubbleText}>Take your time.</Text>
+      <View style={styles.walkingGuideSection}>
+        <GuideLottie size={104} variant="encourage" />
+
+        <View style={styles.guideSpeechBubble}>
+          <Text style={styles.guideSpeechBubbleText}>Take your time.</Text>
         </View>
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.primaryButton,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={onRemember}
-      >
-        <Text style={styles.primaryButtonText}>
-          {WALKING_COPY.rememberButton}
-        </Text>
-      </Pressable>
+      <View style={styles.walkingButtonSection}>
+        <ReviewPrimaryButton
+          label={WALKING_COPY.rememberButton}
+          backgroundColor={buttonFillColor}
+          textColor={buttonTextColor}
+          onPress={onRemember}
+        />
+      </View>
     </Animated.View>
   );
 };
@@ -307,11 +464,13 @@ const QuestionPlaceholderState = ({
         </Text>
       </View>
 
-      <Pressable style={styles.secondaryButton} onPress={onBackToWalking}>
-        <Text style={[styles.secondaryButtonText, { color: textColor }]}>
-          Back to walking state
-        </Text>
-      </Pressable>
+      <View style={styles.walkingButtonSection}>
+        <Pressable style={styles.secondaryButton} onPress={onBackToWalking}>
+          <Text style={[styles.secondaryButtonText, { color: textColor }]}>
+            Back to walking state
+          </Text>
+        </Pressable>
+      </View>
     </Animated.View>
   );
 };
@@ -376,58 +535,65 @@ export const ReviewScreen = () => {
     };
   }, [initialPalace, initialStations, palaceId]);
 
+  const palaceBackgroundColor =
+    data?.palace.backgroundColor ?? REVIEW_COLORS.defaultPalaceBackground;
+
   const textColor = useMemo(() => {
-    return getReadableTextColor(
-      data?.palace.backgroundColor ?? REVIEW_COLORS.defaultPalaceBackground,
-    );
-  }, [data?.palace.backgroundColor]);
+    return getReadableTextColor(palaceBackgroundColor);
+  }, [palaceBackgroundColor]);
 
   const overlayColor = useMemo(() => {
     return getSoftOverlayColor(textColor);
   }, [textColor]);
 
+  const buttonFillColor = useMemo(() => {
+    return intensifyPastelHex(palaceBackgroundColor);
+  }, [palaceBackgroundColor]);
+
+  const buttonTextColor = REVIEW_COLORS.white;
+
   const currentStation = data?.stations[currentStationIndex] ?? null;
 
   const handleStartJourney = async () => {
-  if (!data) return;
+    if (!data) return;
 
-  if (data.stations.length < 2) {
-    Alert.alert('Not enough stations', INTRO_COPY.notEnoughStations);
-    return;
-  }
+    if (data.stations.length < 2) {
+      Alert.alert('Not enough stations', INTRO_COPY.notEnoughStations);
+      return;
+    }
 
-  const currentUserId = auth.currentUser?.uid;
+    const currentUserId = auth.currentUser?.uid;
 
-  if (!currentUserId) {
-    Alert.alert(
-      'Session unavailable',
-      'You need to be logged in before starting a review.',
-    );
-    return;
-  }
+    if (!currentUserId) {
+      Alert.alert(
+        'Session unavailable',
+        'You need to be logged in before starting a review.',
+      );
+      return;
+    }
 
-  try {
-    setIsStarting(true);
+    try {
+      setIsStarting(true);
 
-    const session = await startReview({
-      palaceId: data.palace.id,
-      userId: currentUserId,
-      totalStations: data.stations.length,
-    });
+      const session = await startReview({
+        palaceId: data.palace.id,
+        userId: currentUserId,
+        totalStations: data.stations.length,
+      });
 
-    setSessionId(session.id);
-    setScreenState('WALKING');
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'The review session could not be started.';
+      setSessionId(session.id);
+      setScreenState('WALKING');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'The review session could not be started.';
 
-    Alert.alert('Could not start review', message);
-  } finally {
-    setIsStarting(false);
-  }
-};
+      Alert.alert('Could not start review', message);
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const handleRemember = () => {
     if (!sessionId) {
@@ -470,6 +636,8 @@ export const ReviewScreen = () => {
           data={data}
           textColor={textColor}
           overlayColor={overlayColor}
+          buttonFillColor={buttonFillColor}
+          buttonTextColor={buttonTextColor}
           isStarting={isStarting}
           onStart={handleStartJourney}
         />
@@ -482,6 +650,8 @@ export const ReviewScreen = () => {
           totalStations={data.stations.length}
           textColor={textColor}
           overlayColor={overlayColor}
+          buttonFillColor={buttonFillColor}
+          buttonTextColor={buttonTextColor}
           onRemember={handleRemember}
         />
       )}
@@ -502,13 +672,14 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+
   stateContainer: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 24,
-    justifyContent: 'space-between',
+    paddingTop: 18,
+    paddingBottom: 34,
   },
+
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -516,11 +687,13 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: REVIEW_COLORS.lightFallback,
   },
+
   loadingText: {
     fontSize: 16,
     fontWeight: '700',
     color: REVIEW_COLORS.textSoft,
   },
+
   errorContainer: {
     flex: 1,
     alignItems: 'center',
@@ -529,76 +702,144 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: REVIEW_COLORS.lightFallback,
   },
+
   errorEmoji: {
     fontSize: 56,
   },
+
   errorTitle: {
     fontSize: 24,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
     textAlign: 'center',
   },
+
   errorMessage: {
     fontSize: 16,
     lineHeight: 24,
     color: REVIEW_COLORS.textMuted,
     textAlign: 'center',
   },
+
   introTopSection: {
     alignItems: 'center',
     gap: 18,
+    marginTop: 6,
   },
+
   palaceEmoji: {
     fontSize: 104,
     textAlign: 'center',
   },
+
   introHeading: {
     fontSize: 34,
     lineHeight: 40,
     fontWeight: '900',
     textAlign: 'center',
   },
+
   stationCountPill: {
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
   },
+
   stationCountText: {
     fontSize: 16,
     fontWeight: '800',
     textAlign: 'center',
   },
-  guideLargeWrapper: {
+
+  introGuideSection: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 28,
   },
+
+  walkingGuideSection: {
+    marginTop: 34,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  guideSpeechBubble: {
+    marginTop: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 24,
+    backgroundColor: REVIEW_COLORS.overlayBubble,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.65)',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+
+  guideSpeechBubbleText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: REVIEW_COLORS.textDark,
+    textAlign: 'center',
+  },
+
+  introButtonSection: {
+    alignItems: 'center',
+    marginTop: 34,
+  },
+
+  walkingButtonSection: {
+    alignItems: 'center',
+    marginTop: 42,
+  },
+
+  primaryButtonOuter: {
+  width: '86%',
+  maxWidth: 340,
+  borderRadius: 32,
+  borderWidth: 3,
+  borderColor: REVIEW_COLORS.white,
+  backgroundColor: 'rgba(255,255,255,0.28)',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.14,
+  shadowRadius: 16,
+  elevation: 5,
+  overflow: 'hidden',
+},
+
   primaryButton: {
-    minHeight: 60,
-    borderRadius: 30,
-    backgroundColor: REVIEW_COLORS.primaryButton,
+    minHeight: 64,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    shadowColor: REVIEW_COLORS.buttonShadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 5,
   },
+
   primaryButtonText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: REVIEW_COLORS.white,
+  fontSize: 20,
+  fontWeight: '900',
+  textAlign: 'center',
+  textShadowColor: 'rgba(0,0,0,0.18)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
+},
+
+  primaryButtonPressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.94,
   },
-  buttonPressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.9,
+
+  primaryButtonDisabled: {
+    opacity: 0.62,
   },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
+
   secondaryButton: {
-    minHeight: 52,
+    minHeight: 56,
     borderRadius: 26,
     borderWidth: 2,
     borderColor: REVIEW_COLORS.textDark,
@@ -607,90 +848,84 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: REVIEW_COLORS.overlayLight,
   },
+
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
   },
+
   progressWrapper: {
     gap: 8,
+    marginTop: 4,
   },
+
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+
   progressLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: REVIEW_COLORS.textDark,
-  },
-  progressValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '900',
-    color: REVIEW_COLORS.textDark,
   },
+
+  progressValue: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+
   progressTrack: {
-    height: 14,
+    height: 16,
     borderRadius: 999,
-    backgroundColor: REVIEW_COLORS.overlayMedium,
+    backgroundColor: REVIEW_COLORS.progressTrack,
     overflow: 'hidden',
   },
+
   progressFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: REVIEW_COLORS.textDark,
   },
+
   walkingContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 18,
+    gap: 16,
+    marginTop: 54,
   },
+
   stationEmojiCard: {
-    width: 164,
-    height: 164,
-    borderRadius: 44,
+    width: 170,
+    height: 170,
+    borderRadius: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: REVIEW_COLORS.buttonShadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 18,
     elevation: 5,
   },
+
   stationEmoji: {
     fontSize: 86,
   },
+
   stationName: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 36,
+    lineHeight: 40,
     fontWeight: '900',
     textAlign: 'center',
   },
+
   walkingPrompt: {
     fontSize: 22,
     lineHeight: 30,
     fontWeight: '800',
     textAlign: 'center',
   },
-  smallGuideWrapper: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  speechBubble: {
-    maxWidth: 180,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: REVIEW_COLORS.overlayBubble,
-  },
-  speechBubbleText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: REVIEW_COLORS.textDark,
-  },
+
   placeholderCard: {
     marginTop: 80,
     padding: 24,
@@ -699,15 +934,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+
   placeholderEmoji: {
     fontSize: 56,
   },
+
   placeholderTitle: {
     fontSize: 22,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
     textAlign: 'center',
   },
+
   placeholderText: {
     fontSize: 15,
     lineHeight: 22,
