@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,14 +21,16 @@ import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { uploadStationImage } from '../../services/storageService';
 
-interface AddStationRouteParams {
+interface StationFormRouteParams {
   palaceId: string;
+  stationId?: string;
 }
 
 interface SelectedImage {
   uri: string;
-  base64: string;
+  base64?: string;
   contentType?: string;
+  isRemote?: boolean;
 }
 
 interface UserStoreSnapshot {
@@ -101,17 +103,28 @@ const getUserIdFromStore = (state: unknown): string | null => {
 export const AddStationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const params = route.params as AddStationRouteParams | undefined;
+  const params = route.params as StationFormRouteParams | undefined;
 
   const palaceId = params?.palaceId ?? '';
+  const stationId = params?.stationId;
+  const isEditMode = Boolean(stationId);
 
   const userId = useUserStore(getUserIdFromStore);
 
   const createStation = usePalaceStore((state) => state.createStation);
   const updateStation = usePalaceStore((state) => state.updateStation);
+  const loadStations = usePalaceStore((state) => state.loadStations);
   const existingStations = usePalaceStore((state) =>
     palaceId ? state.getStationsByPalaceId(palaceId) : [],
   );
+
+  const stationToEdit = useMemo(() => {
+    if (!stationId) {
+      return undefined;
+    }
+
+    return existingStations.find((station) => station.id === stationId);
+  }, [existingStations, stationId]);
 
   const [selectedEmoji, setSelectedEmoji] = useState<string>('');
   const [label, setLabel] = useState<string>('');
@@ -119,7 +132,38 @@ export const AddStationScreen = () => {
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
     null,
   );
+  const [hasHydratedEditForm, setHasHydratedEditForm] =
+    useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isEditMode || !palaceId || !userId || stationToEdit) {
+      return;
+    }
+
+    loadStations(palaceId, userId).catch(() => {
+      // Store already keeps the error.
+    });
+  }, [isEditMode, loadStations, palaceId, stationToEdit, userId]);
+
+  useEffect(() => {
+    if (!stationToEdit || hasHydratedEditForm) {
+      return;
+    }
+
+    setSelectedEmoji(stationToEdit.emoji);
+    setLabel(stationToEdit.label);
+    setMemoryText(stationToEdit.memoryText);
+
+    if (stationToEdit.imageUri) {
+      setSelectedImage({
+        uri: stationToEdit.imageUri,
+        isRemote: true,
+      });
+    }
+
+    setHasHydratedEditForm(true);
+  }, [hasHydratedEditForm, stationToEdit]);
 
   const isSaveDisabled = useMemo(
     () => !selectedEmoji || !label.trim() || isSaving,
@@ -146,7 +190,7 @@ export const AddStationScreen = () => {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.65,
+      quality: 0.6,
       base64: true,
     });
 
@@ -164,10 +208,27 @@ export const AddStationScreen = () => {
       return;
     }
 
+    const contentType = asset.mimeType ?? 'image/jpeg';
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
+      Alert.alert(
+        'Unsupported image',
+        'Please choose a JPG, PNG, or WEBP image.',
+      );
+      return;
+    }
+
+    const approximateSizeInBytes = Math.floor((asset.base64.length * 3) / 4);
+
+    if (approximateSizeInBytes > 2 * 1024 * 1024) {
+      Alert.alert('Image too large', 'Please choose a smaller image under 2 MB.');
+      return;
+    }
+
     setSelectedImage({
       uri: asset.uri,
       base64: asset.base64,
-      contentType: asset.mimeType ?? 'image/jpeg',
+      contentType,
     });
   };
 
@@ -203,6 +264,32 @@ export const AddStationScreen = () => {
     try {
       setIsSaving(true);
 
+      if (isEditMode && stationId) {
+        let nextImageUri: string | null | undefined;
+
+        if (selectedImage?.base64) {
+          nextImageUri = await uploadStationImage({
+            userId,
+            palaceId,
+            stationId,
+            base64: selectedImage.base64,
+            contentType: selectedImage.contentType,
+          });
+        } else if (!selectedImage && stationToEdit?.imageUri) {
+          nextImageUri = null;
+        }
+
+        await updateStation(stationId, palaceId, userId, {
+          emoji: selectedEmoji,
+          label: label.trim(),
+          memoryText: memoryText.trim(),
+          ...(nextImageUri !== undefined ? { imageUri: nextImageUri } : {}),
+        });
+
+        navigation.goBack();
+        return;
+      }
+
       const station = await createStation(palaceId, userId, {
         order: existingStations.length,
         emoji: selectedEmoji,
@@ -210,7 +297,7 @@ export const AddStationScreen = () => {
         memoryText: memoryText.trim(),
       });
 
-      if (selectedImage) {
+      if (selectedImage?.base64) {
         const imageUri = await uploadStationImage({
           userId,
           palaceId,
@@ -255,8 +342,12 @@ export const AddStationScreen = () => {
           </Pressable>
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>New memory stop</Text>
-            <Text style={styles.title}>Add Station</Text>
+            <Text style={styles.eyebrow}>
+              {isEditMode ? 'Update memory stop' : 'New memory stop'}
+            </Text>
+            <Text style={styles.title}>
+              {isEditMode ? 'Edit Station' : 'Add Station'}
+            </Text>
             <Text style={styles.subtitle}>
               Choose a place, add a memory, and make your palace easier to walk
               through.
@@ -312,8 +403,8 @@ export const AddStationScreen = () => {
               value={label}
               onChangeText={setLabel}
               placeholder="Front door"
-              placeholderTextColor={colors.text}
-              maxLength={32}
+              placeholderTextColor={colors.muted}
+              maxLength={40}
               style={styles.input}
             />
           </View>
@@ -328,10 +419,10 @@ export const AddStationScreen = () => {
               value={memoryText}
               onChangeText={setMemoryText}
               placeholder="Example: The first planet is Mercury."
-              placeholderTextColor={colors.text}
+              placeholderTextColor={colors.muted}
               multiline
               textAlignVertical="top"
-              maxLength={280}
+              maxLength={500}
               style={[styles.input, styles.textArea]}
             />
           </View>
@@ -349,13 +440,23 @@ export const AddStationScreen = () => {
                   style={styles.imagePreview}
                 />
 
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleRemoveImage}
-                  style={styles.removeImageButton}
-                >
-                  <Text style={styles.removeImageText}>Remove photo</Text>
-                </Pressable>
+                <View style={styles.imageActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={handlePickImage}
+                    style={styles.secondaryImageButton}
+                  >
+                    <Text style={styles.secondaryImageText}>Replace photo</Text>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={handleRemoveImage}
+                    style={styles.removeImageButton}
+                  >
+                    <Text style={styles.removeImageText}>Remove</Text>
+                  </Pressable>
+                </View>
               </View>
             ) : (
               <Pressable
@@ -381,7 +482,9 @@ export const AddStationScreen = () => {
             {isSaving ? (
               <ActivityIndicator color={colors.text} />
             ) : (
-              <Text style={styles.saveButtonText}>Save Station</Text>
+              <Text style={styles.saveButtonText}>
+                {isEditMode ? 'Save Changes' : 'Save Station'}
+              </Text>
             )}
           </Pressable>
         </ScrollView>
@@ -566,7 +669,22 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 190,
   },
+  imageActions: {
+    flexDirection: 'row',
+  },
+  secondaryImageButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    backgroundColor: colors.softYellow,
+  },
+  secondaryImageText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900',
+  },
   removeImageButton: {
+    flex: 1,
     paddingVertical: spacing.md,
     alignItems: 'center',
     backgroundColor: colors.emphasis,

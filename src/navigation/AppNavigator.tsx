@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import type { AppTabParamList } from './types';
+import type { AppStackParamList, AppTabParamList } from './types';
 
 import HomeScreen from '../screens/app/HomeScreen';
 import { ProgressScreen } from '../screens/app/ProgressScreen';
@@ -11,19 +11,11 @@ import { ProfileScreen } from '../screens/app/ProfileScreen';
 import { CreatePalaceScreen } from '../screens/app/CreatePalaceScreen';
 import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
 import { AddStationScreen } from '../screens/app/AddStationScreen';
+import { EditStationScreen } from '../screens/app/EditStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 
 import { colors } from '../theme';
-
-export type AppStackParamList = {
-  MainTabs: undefined;
-  CreatePalace: undefined;
-  PalaceDetail: { palaceId: string };
-  AddStation: { palaceId: string };
-  Review: { palaceId: string };
-  Achievements: undefined;
-};
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -120,6 +112,15 @@ export function AppNavigator() {
       <Stack.Screen
         name="AddStation"
         component={AddStationScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+
+      <Stack.Screen
+        name="EditStation"
+        component={EditStationScreen}
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',

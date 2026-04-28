@@ -20,10 +20,6 @@ interface PalaceState {
   palaces: Palace[];
   stations: Record<string, Station[]>;
 
-  /**
-   * isLoading is kept for compatibility with existing screens.
-   * isLoadingPalaces and isLoadingStations are more explicit for future use.
-   */
   isLoading: boolean;
   isLoadingPalaces: boolean;
   isLoadingStations: boolean;
@@ -215,6 +211,14 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
         const currentStations = state.stations[palaceId] ?? [];
 
         return {
+          palaces: state.palaces.map((palace) =>
+            palace.id === palaceId
+              ? {
+                  ...palace,
+                  stationCount: palace.stationCount + 1,
+                }
+              : palace,
+          ),
           stations: {
             ...state.stations,
             [palaceId]: [...currentStations, createdStation].sort(
@@ -255,26 +259,38 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
           stations: {
             ...state.stations,
             [palaceId]: currentStations
-              .map((station) =>
-                station.id === stationId
-                  ? {
-                      ...station,
-                      ...data,
-                      label:
-                        data.label !== undefined
-                          ? data.label.trim()
-                          : station.label,
-                      emoji:
-                        data.emoji !== undefined
-                          ? data.emoji.trim()
-                          : station.emoji,
-                      memoryText:
-                        data.memoryText !== undefined
-                          ? data.memoryText.trim()
-                          : station.memoryText,
-                    }
-                  : station,
-              )
+              .map((station) => {
+                if (station.id !== stationId) {
+                  return station;
+                }
+
+                const nextStation: Station = {
+                  ...station,
+                  ...data,
+                  label:
+                    data.label !== undefined
+                      ? data.label.trim()
+                      : station.label,
+                  emoji:
+                    data.emoji !== undefined
+                      ? data.emoji.trim()
+                      : station.emoji,
+                  memoryText:
+                    data.memoryText !== undefined
+                      ? data.memoryText.trim()
+                      : station.memoryText,
+                  imageUri:
+                    data.imageUri === undefined
+                      ? station.imageUri
+                      : data.imageUri ?? undefined,
+                };
+
+                if (data.imageUri === null) {
+                  delete nextStation.imageUri;
+                }
+
+                return nextStation;
+              })
               .sort((a, b) => a.order - b.order),
           },
         };
@@ -303,13 +319,25 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
 
       set((state) => {
         const currentStations = state.stations[palaceId] ?? [];
+        const nextStations = currentStations
+          .filter((station) => station.id !== stationId)
+          .map((station, index) => ({
+            ...station,
+            order: index,
+          }));
 
         return {
+          palaces: state.palaces.map((palace) =>
+            palace.id === palaceId
+              ? {
+                  ...palace,
+                  stationCount: Math.max(0, palace.stationCount - 1),
+                }
+              : palace,
+          ),
           stations: {
             ...state.stations,
-            [palaceId]: currentStations.filter(
-              (station) => station.id !== stationId,
-            ),
+            [palaceId]: nextStations,
           },
         };
       });

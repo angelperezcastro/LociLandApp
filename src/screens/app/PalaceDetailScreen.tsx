@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,6 +11,9 @@ import {
 import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import DraggableFlatList, {
+  type RenderItemParams,
+} from 'react-native-draggable-flatlist';
 
 import { colors, spacing } from '../../theme';
 import { auth } from '../../services/firebase';
@@ -73,6 +75,8 @@ function PalaceDetailScreen() {
   const error = usePalaceStore((state) => state.error);
   const loadPalaces = usePalaceStore((state) => state.loadPalaces);
   const loadStations = usePalaceStore((state) => state.loadStations);
+  const deleteStation = usePalaceStore((state) => state.deleteStation);
+  const reorderStations = usePalaceStore((state) => state.reorderStations);
   const getStationsByPalaceId = usePalaceStore(
     (state) => state.getStationsByPalaceId,
   );
@@ -143,12 +147,179 @@ function PalaceDetailScreen() {
     navigation.navigate('AddStation', { palaceId });
   };
 
+  const handleEditStation = useCallback(
+    (station: Station) => {
+      if (!palaceId) {
+        return;
+      }
+
+      navigation.navigate('EditStation', {
+        palaceId,
+        stationId: station.id,
+      });
+    },
+    [navigation, palaceId],
+  );
+
+  const handleDeleteStation = useCallback(
+    (station: Station) => {
+      if (!palaceId || !userId) {
+        return;
+      }
+
+      Alert.alert(
+        'Delete station?',
+        `This will remove "${station.label}" from your palace.`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              deleteStation(station.id, palaceId, userId).catch((deleteError) => {
+                Alert.alert(
+                  'Station not deleted',
+                  deleteError instanceof Error
+                    ? deleteError.message
+                    : 'Something went wrong while deleting this station.',
+                );
+              });
+            },
+          },
+        ],
+      );
+    },
+    [deleteStation, palaceId, userId],
+  );
+
+  const handleDragEnd = useCallback(
+    ({ data }: { data: Station[] }) => {
+      if (!palaceId || !userId) {
+        return;
+      }
+
+      const orderedIds = data.map((station) => station.id);
+
+      reorderStations(palaceId, userId, orderedIds).catch((reorderError) => {
+        Alert.alert(
+          'Stations not reordered',
+          reorderError instanceof Error
+            ? reorderError.message
+            : 'Something went wrong while reordering your stations.',
+        );
+      });
+    },
+    [palaceId, reorderStations, userId],
+  );
+
   const handleStartReview = () => {
     if (!palaceId || !canStartReview) {
       return;
     }
 
     navigation.navigate('Review', { palaceId });
+  };
+
+  const renderStationItem = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<Station>) => (
+      <StationCard
+        station={item}
+        isActive={isActive}
+        onEdit={handleEditStation}
+        onDelete={handleDeleteStation}
+        onDrag={drag}
+      />
+    ),
+    [handleDeleteStation, handleEditStation],
+  );
+
+  const renderListHeader = () => {
+    if (!palace || !template) {
+      return null;
+    }
+
+    return (
+      <>
+        <View style={styles.heroCard}>
+          <View
+            style={[
+              styles.palaceEmojiShell,
+              { backgroundColor: template.backgroundColour },
+            ]}
+          >
+            <Text style={styles.palaceEmoji}>{template.emoji}</Text>
+          </View>
+
+          <View style={styles.heroTextBlock}>
+            <Text numberOfLines={2} style={styles.palaceName}>
+              {palace.name}
+            </Text>
+
+            <Text style={styles.palaceDescription}>
+              {template.description}
+            </Text>
+
+            <View style={styles.stationCountBadge}>
+              <Text style={styles.stationCountText}>
+                🚩 {visibleStationCount}{' '}
+                {visibleStationCount === 1 ? 'station' : 'stations'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Memory stations</Text>
+          <Text style={styles.sectionHint}>
+            {hasStations
+              ? 'Hold a card and drag it to reorder your route'
+              : 'Add stations to build your memory route'}
+          </Text>
+        </View>
+      </>
+    );
+  };
+
+  const renderEmptyList = () => {
+    if (isLoadingStations) {
+      return (
+        <View style={styles.loadingStationsCard}>
+          <ActivityIndicator size="small" color={colors.text} />
+          <Text style={styles.loadingStationsText}>Loading stations...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyStateCard}>
+        <View style={styles.emptyIllustration}>
+          <LottieView
+            source={require('../../assets/animations/wizard-beckoning.json')}
+            autoPlay
+            loop
+            style={styles.emptyAnimation}
+          />
+          <Text style={styles.emptyEmoji}>📍</Text>
+        </View>
+
+        <Text style={styles.emptyTitle}>Add your first memory station!</Text>
+
+        <Text style={styles.emptyText}>
+          Stations are the stops in your palace. Place ideas, words, dates, or
+          images inside each one.
+        </Text>
+
+        <Button
+          title="＋ Add station"
+          variant="primary"
+          onPress={handleAddStation}
+          style={styles.emptyButton}
+        />
+      </View>
+    );
   };
 
   if (!palaceId) {
@@ -252,96 +423,18 @@ function PalaceDetailScreen() {
         />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
+      <DraggableFlatList
+        data={stations}
+        keyExtractor={(item) => item.id}
+        renderItem={renderStationItem}
+        onDragEnd={handleDragEnd}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyList}
         contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.heroCard}>
-          <View
-            style={[
-              styles.palaceEmojiShell,
-              { backgroundColor: template.backgroundColour },
-            ]}
-          >
-            <Text style={styles.palaceEmoji}>{template.emoji}</Text>
-          </View>
-
-          <View style={styles.heroTextBlock}>
-            <Text numberOfLines={2} style={styles.palaceName}>
-              {palace.name}
-            </Text>
-
-            <Text style={styles.palaceDescription}>
-              {template.description}
-            </Text>
-
-            <View style={styles.stationCountBadge}>
-              <Text style={styles.stationCountText}>
-                🚩 {visibleStationCount}{' '}
-                {visibleStationCount === 1 ? 'station' : 'stations'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Memory stations</Text>
-          <Text style={styles.sectionHint}>
-            {hasStations
-              ? 'Walk through your palace in this order'
-              : 'Add stations to build your memory route'}
-          </Text>
-        </View>
-
-        {isLoadingStations && !hasStations ? (
-          <View style={styles.loadingStationsCard}>
-            <ActivityIndicator size="small" color={colors.text} />
-            <Text style={styles.loadingStationsText}>
-              Loading stations...
-            </Text>
-          </View>
-        ) : hasStations ? (
-          <View style={styles.stationList}>
-            {stations.map((station) => (
-              <StationCard
-                key={station.id}
-                order={station.order}
-                emoji={station.emoji}
-                label={station.label}
-                memoryText={station.memoryText}
-              />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyStateCard}>
-            <View style={styles.emptyIllustration}>
-              <LottieView
-                source={require('../../assets/animations/wizard-beckoning.json')}
-                autoPlay
-                loop
-                style={styles.emptyAnimation}
-              />
-              <Text style={styles.emptyEmoji}>📍</Text>
-            </View>
-
-            <Text style={styles.emptyTitle}>
-              Add your first memory station!
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Stations are the stops in your palace. Place ideas, words,
-              dates, or images inside each one.
-            </Text>
-
-            <Button
-              title="＋ Add station"
-              variant="primary"
-              onPress={handleAddStation}
-              style={styles.emptyButton}
-            />
-          </View>
-        )}
-      </ScrollView>
+        containerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        activationDistance={12}
+      />
 
       <TouchableOpacity
         accessibilityRole="button"
@@ -459,6 +552,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_800ExtraBold',
   },
 
+  listContainer: {
+    flex: 1,
+  },
+
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -557,11 +654,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontFamily: 'Nunito_700Bold',
-  },
-
-  stationList: {
-    marginTop: spacing.xs,
-    gap: spacing.md,
   },
 
   loadingStationsCard: {

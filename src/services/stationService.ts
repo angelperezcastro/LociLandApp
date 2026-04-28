@@ -1,14 +1,15 @@
 import {
-  addDoc,
   collection,
-  deleteDoc,
+  deleteField,
   doc,
   getDocs,
+  increment,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
   writeBatch,
+  type FieldValue,
   type Timestamp,
 } from 'firebase/firestore';
 
@@ -23,7 +24,14 @@ export interface CreateStationData {
   imageUri?: string;
 }
 
-export type UpdateStationData = Partial<CreateStationData>;
+export type UpdateStationData = Partial<
+  Omit<CreateStationData, 'imageUri'>
+> & {
+  imageUri?: string | null;
+};
+
+const getPalaceDocRef = (userId: string, palaceId: string) =>
+  doc(db, 'users', userId, 'palaces', palaceId);
 
 const getStationsCollectionRef = (userId: string, palaceId: string) =>
   collection(db, 'users', userId, 'palaces', palaceId, 'stations');
@@ -80,6 +88,10 @@ export const createStation = async (
     throw new Error('stationService: station emoji is required.');
   }
 
+  const stationRef = doc(getStationsCollectionRef(userId, palaceId));
+  const palaceRef = getPalaceDocRef(userId, palaceId);
+  const createdAt = serverTimestamp();
+
   const payload = {
     palaceId,
     userId,
@@ -88,13 +100,20 @@ export const createStation = async (
     label,
     memoryText: data.memoryText?.trim() ?? '',
     ...(data.imageUri ? { imageUri: data.imageUri } : {}),
-    createdAt: serverTimestamp(),
+    createdAt,
   };
 
-  const docRef = await addDoc(getStationsCollectionRef(userId, palaceId), payload);
+  const batch = writeBatch(db);
+
+  batch.set(stationRef, payload);
+  batch.update(palaceRef, {
+    stationCount: increment(1),
+  });
+
+  await batch.commit();
 
   return {
-    id: docRef.id,
+    id: stationRef.id,
     palaceId,
     userId,
     order: payload.order,
@@ -102,7 +121,7 @@ export const createStation = async (
     label: payload.label,
     memoryText: payload.memoryText,
     ...(payload.imageUri ? { imageUri: payload.imageUri } : {}),
-    createdAt: serverTimestamp() as unknown as Timestamp,
+    createdAt: createdAt as unknown as Timestamp,
   };
 };
 
@@ -133,7 +152,7 @@ export const updateStation = async (
   assertRequiredIds(palaceId, userId);
   assertStationId(stationId);
 
-  const payload: Partial<CreateStationData> = {};
+  const payload: Record<string, string | number | FieldValue> = {};
 
   if (data.order !== undefined) {
     payload.order = data.order;
@@ -164,7 +183,7 @@ export const updateStation = async (
   }
 
   if (data.imageUri !== undefined) {
-    payload.imageUri = data.imageUri;
+    payload.imageUri = data.imageUri === null ? deleteField() : data.imageUri;
   }
 
   if (Object.keys(payload).length === 0) {
@@ -182,7 +201,17 @@ export const deleteStation = async (
   assertRequiredIds(palaceId, userId);
   assertStationId(stationId);
 
-  await deleteDoc(getStationDocRef(userId, palaceId, stationId));
+  const stationRef = getStationDocRef(userId, palaceId, stationId);
+  const palaceRef = getPalaceDocRef(userId, palaceId);
+
+  const batch = writeBatch(db);
+
+  batch.delete(stationRef);
+  batch.update(palaceRef, {
+    stationCount: increment(-1),
+  });
+
+  await batch.commit();
 };
 
 export const reorderStations = async (

@@ -12,6 +12,7 @@ import { useUserStore } from '../store/useUserStore';
 import { CreatePalaceScreen } from '../screens/app/CreatePalaceScreen';
 import { PalaceDetailScreen } from '../screens/app/PalaceDetailScreen';
 import { AddStationScreen } from '../screens/app/AddStationScreen';
+import { EditStationScreen } from '../screens/app/EditStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 import { ComponentShowcaseScreen } from '../screens/dev/ComponentShowcaseScreen';
@@ -79,6 +80,15 @@ export function RootNavigator() {
           <Stack.Screen
             name="AddStation"
             component={AddStationScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+
+          <Stack.Screen
+            name="EditStation"
+            component={EditStationScreen}
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
