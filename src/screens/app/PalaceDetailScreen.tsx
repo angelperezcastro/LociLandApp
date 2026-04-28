@@ -30,6 +30,8 @@ import { StationCard } from '../../components/station/StationCard';
 import type { Station } from '../../types';
 
 const EMPTY_STATIONS: Station[] = [];
+const MIN_REVIEW_STATIONS = 2;
+const LARGE_PALACE_WARNING_THRESHOLD = 20;
 
 type PalaceDetailRoute = {
   params?: {
@@ -142,7 +144,12 @@ function PalaceDetailScreen() {
     stations.length,
   );
 
-  const canStartReview = Boolean(palace && visibleStationCount > 0);
+  const canStartReview = Boolean(
+    palace && visibleStationCount >= MIN_REVIEW_STATIONS,
+  );
+
+  const shouldShowLargePalaceWarning =
+    visibleStationCount >= LARGE_PALACE_WARNING_THRESHOLD;
 
   const stationListRenderKey = useMemo(
     () =>
@@ -151,6 +158,22 @@ function PalaceDetailScreen() {
         .join('|')}`,
     [palaceId, stations],
   );
+
+  const sectionHint = useMemo(() => {
+    if (hasStations && visibleStationCount < MIN_REVIEW_STATIONS) {
+      return 'Add one more station to start review mode';
+    }
+
+    if (hasStations) {
+      return 'Hold a card and drag it to reorder your route';
+    }
+
+    if (visibleStationCount > 0) {
+      return 'Loading your stations...';
+    }
+
+    return 'Add stations to build your memory route';
+  }, [hasStations, visibleStationCount]);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -264,6 +287,25 @@ function PalaceDetailScreen() {
     [],
   );
 
+  const renderLargePalaceWarning = () => {
+    if (!shouldShowLargePalaceWarning) {
+      return null;
+    }
+
+    return (
+      <View style={styles.largePalaceNotice}>
+        <Text style={styles.largePalaceEmoji}>🏰</Text>
+
+        <View style={styles.largePalaceCopy}>
+          <Text style={styles.largePalaceTitle}>That’s a big palace!</Text>
+          <Text style={styles.largePalaceText}>
+            Smaller palaces are easier to memorise.
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderListHeader = () => {
     if (!palace || !template) {
       return null;
@@ -301,14 +343,10 @@ function PalaceDetailScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Memory stations</Text>
-          <Text style={styles.sectionHint}>
-            {hasStations
-              ? 'Hold a card and drag it to reorder your route'
-              : visibleStationCount > 0
-                ? 'Loading your stations...'
-                : 'Add stations to build your memory route'}
-          </Text>
+          <Text style={styles.sectionHint}>{sectionHint}</Text>
         </View>
+
+        {renderLargePalaceWarning()}
       </>
     );
   };
@@ -469,6 +507,10 @@ function PalaceDetailScreen() {
         autoscrollThreshold={90}
         autoscrollSpeed={80}
         dragItemOverflow
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
         renderPlaceholder={() => <View style={styles.dragPlaceholder} />}
       />
 
@@ -708,6 +750,53 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontFamily: 'Nunito_700Bold',
+  },
+
+  largePalaceNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: colors.softYellow,
+    backgroundColor: colors.bg,
+    marginBottom: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+
+  largePalaceEmoji: {
+    fontSize: 34,
+  },
+
+  largePalaceCopy: {
+    flex: 1,
+  },
+
+  largePalaceTitle: {
+    color: colors.text,
+    fontSize: 17,
+    lineHeight: 22,
+    fontFamily: 'Nunito_800ExtraBold',
+  },
+
+  largePalaceText: {
+    marginTop: 2,
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 19,
+    fontFamily: 'Nunito_600SemiBold',
+    opacity: 0.74,
   },
 
   loadingStationsCard: {
