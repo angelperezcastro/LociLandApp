@@ -296,16 +296,27 @@ function PalaceDetailScreen() {
       emoji?: string;
       icon?: string;
       imageUrl?: string | null;
+      imageUri?: string | null;
       photoUrl?: string | null;
+      memoryText?: string;
+      answerText?: string;
+      answer?: string;
       position?: number;
       index?: number;
     };
 
+    const stationName =
+      station.label ?? looseStation.name ?? `Station ${index + 1}`;
+
     return {
       id: station.id,
-      name: station.label ?? looseStation.name ?? `Station ${index + 1}`,
+      name: stationName,
       emoji: looseStation.emoji ?? looseStation.icon ?? '📍',
-      imageUrl: looseStation.imageUrl ?? looseStation.photoUrl ?? null,
+      imageUrl:
+        looseStation.imageUri ??
+        looseStation.imageUrl ??
+        looseStation.photoUrl ??
+        null,
       order:
         typeof station.order === 'number'
           ? station.order
@@ -314,6 +325,11 @@ function PalaceDetailScreen() {
             : typeof looseStation.index === 'number'
               ? looseStation.index
               : index,
+      answerText:
+        looseStation.memoryText ??
+        looseStation.answerText ??
+        looseStation.answer ??
+        stationName,
     };
   });
 

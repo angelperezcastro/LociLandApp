@@ -2,41 +2,61 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import Svg, { Circle } from 'react-native-svg';
 import Animated, {
   BounceIn,
   FadeIn,
   SlideInRight,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withSequence,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 
 import { GuideLottie } from '../../components/review/GuideLottie';
 import { auth } from '../../services/firebase';
-import { startReview } from '../../services/reviewService';
+import {
+  completeReview,
+  recordAnswer,
+  startReview,
+} from '../../services/reviewService';
 import { getReviewScreenData } from '../../services/reviewScreenDataService';
 import type {
   ReviewScreenData,
   ReviewScreenStation,
 } from '../../services/reviewScreenDataService';
 import type { ReviewScreenState } from '../../types/reviewState';
+import type { ReviewSession } from '../../types/review';
+
+type ReviewAgeGroup = '6-9' | '10-14';
 
 type ReviewRouteParams = {
   Review: {
     palaceId: string;
     initialPalace?: ReviewScreenData['palace'];
     initialStations?: ReviewScreenStation[];
+    ageGroup?: ReviewAgeGroup;
   };
 };
+
+type RevealResult = {
+  stationId: string;
+  correct: boolean;
+  correctAnswer: string;
+  chosenAnswer?: string | null;
+  gaveUp: boolean;
+};
+
+const DEFAULT_REVIEW_AGE_GROUP: ReviewAgeGroup = '6-9';
 
 const INTRO_COPY = {
   startButton: 'Start the Journey!',
@@ -51,20 +71,74 @@ const WALKING_COPY = {
   rememberButton: 'I remember!',
 };
 
+const QUESTION_COPY = {
+  title: 'Can you remember it?',
+  subtitle6to9: 'Pick the answer you placed in this station.',
+  subtitle10to14: 'Type what you placed here.',
+  inputPlaceholder: 'Type your answer...',
+  submit: 'Check my answer',
+  giveUp: 'I give up / Show me',
+};
+
+const REVEAL_COPY = {
+  correctTitle: 'Great memory!',
+  correctSubtitle: 'You remembered this station.',
+  incorrectTitle: 'Almost!',
+  nextTime: 'You will get it next time!',
+  answerWas: 'The answer was...',
+  nextStation: 'Next Station',
+  finishReview: 'Finish Review',
+};
+
 const REVIEW_COLORS = {
   lightFallback: '#F7F7FB',
   textDark: '#111827',
   textMuted: '#4B5563',
   textSoft: '#374151',
   white: '#FFFFFF',
+  success: '#22C55E',
+  successDark: '#15803D',
+  warning: '#FBBF24',
+  warningDark: '#B45309',
+  orangeSoft: '#FFF4D6',
+  greenSoft: '#DCFCE7',
   defaultPalaceBackground: '#DDEBFF',
   overlayLight: 'rgba(255, 255, 255, 0.76)',
   overlayDark: 'rgba(255, 255, 255, 0.16)',
   overlayMedium: 'rgba(255, 255, 255, 0.55)',
-  overlayStrong: 'rgba(255, 255, 255, 0.82)',
+  overlayStrong: 'rgba(255, 255, 255, 0.88)',
   overlayBubble: 'rgba(255, 255, 255, 0.88)',
   progressTrack: 'rgba(255,255,255,0.55)',
 };
+
+const PLACEHOLDER_OPTIONS = [
+  'A magic key',
+  'A golden star',
+  'A tiny dragon',
+  'A secret map',
+  'A blue book',
+  'A bright lantern',
+  'A silver crown',
+  'A hidden treasure',
+];
+
+const CONFETTI_COLORS = [
+  '#22C55E',
+  '#FACC15',
+  '#38BDF8',
+  '#FB7185',
+  '#A78BFA',
+  '#F97316',
+];
+
+const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
+  id: index,
+  left: (index * 37) % 100,
+  delay: (index % 7) * 90,
+  size: 7 + (index % 4) * 3,
+  rotate: index % 2 === 0 ? 160 : -160,
+  color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+}));
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -205,6 +279,108 @@ const getProgressLabel = (
   return `${currentIndex + 1} / ${totalStations}`;
 };
 
+const getStationAnswer = (station: ReviewScreenStation): string => {
+  return station.answerText?.trim() || station.name;
+};
+
+const normalizeAnswer = (value: string): string => {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+};
+
+const getLevenshteinDistance = (a: string, b: string): number => {
+  const matrix = Array.from({ length: b.length + 1 }, (_, rowIndex) =>
+    Array.from({ length: a.length + 1 }, (_, columnIndex) => {
+      if (rowIndex === 0) return columnIndex;
+      if (columnIndex === 0) return rowIndex;
+      return 0;
+    }),
+  );
+
+  for (let rowIndex = 1; rowIndex <= b.length; rowIndex += 1) {
+    for (let columnIndex = 1; columnIndex <= a.length; columnIndex += 1) {
+      if (b.charAt(rowIndex - 1) === a.charAt(columnIndex - 1)) {
+        matrix[rowIndex][columnIndex] = matrix[rowIndex - 1][columnIndex - 1];
+      } else {
+        matrix[rowIndex][columnIndex] = Math.min(
+          matrix[rowIndex - 1][columnIndex - 1] + 1,
+          matrix[rowIndex][columnIndex - 1] + 1,
+          matrix[rowIndex - 1][columnIndex] + 1,
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+};
+
+const isFreeTextAnswerCorrect = (input: string, expected: string): boolean => {
+  const normalizedInput = normalizeAnswer(input);
+  const normalizedExpected = normalizeAnswer(expected);
+
+  if (!normalizedInput || !normalizedExpected) {
+    return false;
+  }
+
+  if (normalizedInput === normalizedExpected) {
+    return true;
+  }
+
+  if (
+    normalizedExpected.length >= 4 &&
+    normalizedInput.length >= 4 &&
+    (normalizedInput.includes(normalizedExpected) ||
+      normalizedExpected.includes(normalizedInput))
+  ) {
+    return true;
+  }
+
+  const distance = getLevenshteinDistance(normalizedInput, normalizedExpected);
+  const longestLength = Math.max(normalizedInput.length, normalizedExpected.length);
+
+  if (longestLength === 0) {
+    return false;
+  }
+
+  const similarity = 1 - distance / longestLength;
+
+  return similarity >= 0.82;
+};
+
+const shuffleArray = <T,>(items: T[]): T[] => {
+  return [...items].sort(() => Math.random() - 0.5);
+};
+
+const createMultipleChoiceOptions = (
+  currentStation: ReviewScreenStation,
+  stations: ReviewScreenStation[],
+): string[] => {
+  const correctAnswer = getStationAnswer(currentStation);
+
+  const wrongAnswers = stations
+    .filter((station) => station.id !== currentStation.id)
+    .map(getStationAnswer)
+    .filter((answer) => normalizeAnswer(answer) !== normalizeAnswer(correctAnswer));
+
+  const uniqueWrongAnswers = Array.from(new Set(wrongAnswers));
+
+  const placeholders = PLACEHOLDER_OPTIONS.filter(
+    (option) => normalizeAnswer(option) !== normalizeAnswer(correctAnswer),
+  );
+
+  const filledWrongAnswers = [
+    ...uniqueWrongAnswers,
+    ...placeholders,
+  ].slice(0, 3);
+
+  return shuffleArray([correctAnswer, ...filledWrongAnswers]).slice(0, 4);
+};
+
 const ReviewLoadingState = () => {
   return (
     <SafeAreaView style={styles.loadingContainer}>
@@ -254,9 +430,7 @@ const ReviewPrimaryButton = ({
         onPress={onPress}
         style={({ pressed }) => [
           styles.primaryButton,
-          {
-            backgroundColor,
-          },
+          { backgroundColor },
           pressed && styles.primaryButtonPressed,
           disabled && styles.primaryButtonDisabled,
         ]}
@@ -303,6 +477,156 @@ const ProgressBar = ({
   );
 };
 
+const CountdownTimer = () => {
+  const [remainingSeconds, setRemainingSeconds] = useState(30);
+
+  const radius = 24;
+  const strokeWidth = 5;
+  const circumference = 2 * Math.PI * radius;
+  const progress = remainingSeconds / 30;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  useEffect(() => {
+    setRemainingSeconds(30);
+
+    const intervalId = setInterval(() => {
+      setRemainingSeconds((current) => {
+        if (current <= 0) {
+          clearInterval(intervalId);
+          return 0;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  return (
+    <View style={styles.timerWrapper}>
+      <Svg width={62} height={62} viewBox="0 0 62 62">
+        <Circle
+          cx="31"
+          cy="31"
+          r={radius}
+          stroke="rgba(17,24,39,0.12)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <Circle
+          cx="31"
+          cy="31"
+          r={radius}
+          stroke={REVIEW_COLORS.textDark}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90"
+          origin="31,31"
+        />
+      </Svg>
+
+      <Text style={styles.timerText}>{remainingSeconds}</Text>
+    </View>
+  );
+};
+
+const ConfettiPiece = ({
+  left,
+  delay,
+  size,
+  rotate,
+  color,
+}: {
+  left: number;
+  delay: number;
+  size: number;
+  rotate: number;
+  color: string;
+}) => {
+  const progress = useSharedValue(0);
+  const screenHeight = Dimensions.get('window').height;
+
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withTiming(1, {
+        duration: 1400,
+      }),
+    );
+  }, [delay, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 1 - progress.value,
+      transform: [
+        { translateY: progress.value * screenHeight * 0.72 },
+        { rotate: `${progress.value * rotate}deg` },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiPiece,
+        {
+          left: `${left}%`,
+          width: size,
+          height: size * 1.6,
+          backgroundColor: color,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+};
+
+const ConfettiOverlay = () => {
+  return (
+    <View pointerEvents="none" style={styles.confettiOverlay}>
+      {CONFETTI_PIECES.map((piece) => (
+        <ConfettiPiece
+          key={piece.id}
+          left={piece.left}
+          delay={piece.delay}
+          size={piece.size}
+          rotate={piece.rotate}
+          color={piece.color}
+        />
+      ))}
+    </View>
+  );
+};
+
+const FloatingXp = () => {
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    translateY.value = withTiming(-62, { duration: 1100 });
+    opacity.value = withDelay(450, withTiming(0, { duration: 750 }));
+  }, [opacity, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+
+  return (
+    <Animated.Text style={[styles.floatingXp, animatedStyle]}>
+      +10 XP
+    </Animated.Text>
+  );
+};
+
 const IntroState = ({
   data,
   textColor,
@@ -323,14 +647,7 @@ const IntroState = ({
   const floating = useSharedValue(0);
 
   useEffect(() => {
-    floating.value = withRepeat(
-      withSequence(
-        withTiming(-8, { duration: 900 }),
-        withTiming(0, { duration: 900 }),
-      ),
-      -1,
-      true,
-    );
+    floating.value = withTiming(0);
   }, [floating]);
 
   const floatingStyle = useAnimatedStyle(() => {
@@ -445,31 +762,248 @@ const WalkingState = ({
   );
 };
 
-const QuestionPlaceholderState = ({
+const QuestionState = ({
+  station,
+  stations,
+  ageGroup,
   textColor,
-  onBackToWalking,
+  overlayColor,
+  buttonFillColor,
+  buttonTextColor,
+  onSubmitAnswer,
+  onGiveUp,
 }: {
+  station: ReviewScreenStation;
+  stations: ReviewScreenStation[];
+  ageGroup: ReviewAgeGroup;
   textColor: string;
-  onBackToWalking: () => void;
+  overlayColor: string;
+  buttonFillColor: string;
+  buttonTextColor: string;
+  onSubmitAnswer: (answer: string) => void;
+  onGiveUp: () => void;
 }) => {
+  const [freeTextAnswer, setFreeTextAnswer] = useState('');
+
+  const options = useMemo(() => {
+    return createMultipleChoiceOptions(station, stations);
+  }, [station, stations]);
+
+  const canSubmitFreeText = freeTextAnswer.trim().length > 0;
+
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
-      <View style={styles.placeholderCard}>
-        <Text style={styles.placeholderEmoji}>✨</Text>
-        <Text style={styles.placeholderTitle}>QUESTION state reached</Text>
-        <Text style={styles.placeholderText}>
-          This is intentionally only a placeholder. Today we are committing the
-          INTRO and WALKING states. The real QUESTION and REVEAL states come in
-          the next phase.
+      <View style={styles.questionHeader}>
+        <Text style={[styles.questionTitle, { color: textColor }]}>
+          {QUESTION_COPY.title}
+        </Text>
+        <Text style={[styles.questionSubtitle, { color: textColor }]}>
+          {ageGroup === '6-9'
+            ? QUESTION_COPY.subtitle6to9
+            : QUESTION_COPY.subtitle10to14}
         </Text>
       </View>
 
-      <View style={styles.walkingButtonSection}>
-        <Pressable style={styles.secondaryButton} onPress={onBackToWalking}>
-          <Text style={[styles.secondaryButtonText, { color: textColor }]}>
-            Back to walking state
+      <View style={[styles.questionCard, { backgroundColor: overlayColor }]}>
+        <Text style={styles.questionStationEmoji}>{station.emoji}</Text>
+
+        <Text style={[styles.questionStationName, { color: textColor }]}>
+          {station.name}
+        </Text>
+
+        {ageGroup === '10-14' && (
+          <View style={styles.timerSection}>
+            <CountdownTimer />
+            <Text style={styles.timerHint}>No pressure. Just focus.</Text>
+          </View>
+        )}
+      </View>
+
+      {ageGroup === '6-9' ? (
+        <View style={styles.optionsGrid}>
+          {options.map((option) => (
+            <Pressable
+              key={option}
+              onPress={() => onSubmitAnswer(option)}
+              style={({ pressed }) => [
+                styles.optionButton,
+                pressed && styles.optionButtonPressed,
+              ]}
+            >
+              <Text style={styles.optionButtonText}>{option}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.freeTextSection}>
+          <TextInput
+            value={freeTextAnswer}
+            onChangeText={setFreeTextAnswer}
+            placeholder={QUESTION_COPY.inputPlaceholder}
+            placeholderTextColor="rgba(17,24,39,0.45)"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.answerInput}
+          />
+
+          <ReviewPrimaryButton
+            label={QUESTION_COPY.submit}
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            disabled={!canSubmitFreeText}
+            onPress={() => onSubmitAnswer(freeTextAnswer)}
+          />
+        </View>
+      )}
+
+      <Pressable style={styles.giveUpButton} onPress={onGiveUp}>
+        <Text style={styles.giveUpButtonText}>{QUESTION_COPY.giveUp}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const RevealState = ({
+  result,
+  isLastStation,
+  isCompleting,
+  buttonFillColor,
+  buttonTextColor,
+  onNext,
+}: {
+  result: RevealResult;
+  isLastStation: boolean;
+  isCompleting: boolean;
+  buttonFillColor: string;
+  buttonTextColor: string;
+  onNext: () => void;
+}) => {
+  if (result.correct) {
+    return (
+      <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+        <ConfettiOverlay />
+
+        <View style={styles.correctRevealContent}>
+          <Animated.View entering={BounceIn.duration(900)} style={styles.checkmarkCircle}>
+            <Text style={styles.checkmarkText}>✓</Text>
+          </Animated.View>
+
+          <FloatingXp />
+
+          <Text style={styles.correctRevealTitle}>{REVEAL_COPY.correctTitle}</Text>
+          <Text style={styles.correctRevealSubtitle}>
+            {REVEAL_COPY.correctSubtitle}
           </Text>
-        </Pressable>
+
+          <GuideLottie size={170} variant="encourage" />
+        </View>
+
+        <View style={styles.revealButtonSection}>
+          <ReviewPrimaryButton
+            label={
+              isCompleting
+                ? 'Finishing...'
+                : isLastStation
+                  ? REVEAL_COPY.finishReview
+                  : REVEAL_COPY.nextStation
+            }
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            disabled={isCompleting}
+            onPress={onNext}
+          />
+        </View>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+      <View style={styles.incorrectRevealContent}>
+        <View style={styles.almostCard}>
+          <Text style={styles.almostEmoji}>🌟</Text>
+          <Text style={styles.almostTitle}>{REVEAL_COPY.incorrectTitle}</Text>
+
+          <Text style={styles.almostMessage}>
+            {result.gaveUp
+              ? 'Good choice asking for help.'
+              : 'That was close. You are still learning this station.'}
+          </Text>
+
+          <Text style={styles.answerWas}>{REVEAL_COPY.answerWas}</Text>
+          <Text style={styles.correctAnswerText}>{result.correctAnswer}</Text>
+        </View>
+
+        <View style={styles.encouragementRow}>
+          <GuideLottie size={120} variant="encourage" />
+
+          <View style={styles.encouragementBubble}>
+            <Text style={styles.encouragementBubbleText}>
+              {REVEAL_COPY.nextTime}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.revealButtonSection}>
+        <ReviewPrimaryButton
+          label={
+            isCompleting
+              ? 'Finishing...'
+              : isLastStation
+                ? REVEAL_COPY.finishReview
+                : REVEAL_COPY.nextStation
+          }
+          backgroundColor={buttonFillColor}
+          textColor={buttonTextColor}
+          disabled={isCompleting}
+          onPress={onNext}
+        />
+      </View>
+    </Animated.View>
+  );
+};
+
+const CompleteState = ({
+  correctAnswers,
+  totalStations,
+  xpEarned,
+  buttonFillColor,
+  buttonTextColor,
+  onBack,
+}: {
+  correctAnswers: number;
+  totalStations: number;
+  xpEarned: number;
+  buttonFillColor: string;
+  buttonTextColor: string;
+  onBack: () => void;
+}) => {
+  return (
+    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+      <View style={styles.completeContent}>
+        <Text style={styles.completeEmoji}>🏆</Text>
+        <Text style={styles.completeTitle}>Memory walk complete!</Text>
+        <Text style={styles.completeSubtitle}>
+          You remembered {correctAnswers} of {totalStations} stations.
+        </Text>
+
+        <View style={styles.completeXpCard}>
+          <Text style={styles.completeXpText}>+{xpEarned} XP</Text>
+        </View>
+
+        <Text style={styles.completeEncouragement}>
+          Every review makes your palace stronger.
+        </Text>
+      </View>
+
+      <View style={styles.revealButtonSection}>
+        <ReviewPrimaryButton
+          label="Back to Palace"
+          backgroundColor={buttonFillColor}
+          textColor={buttonTextColor}
+          onPress={onBack}
+        />
       </View>
     </Animated.View>
   );
@@ -479,14 +1013,26 @@ export const ReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ReviewRouteParams, 'Review'>>();
 
-  const { palaceId, initialPalace, initialStations } = route.params;
+  const {
+    palaceId,
+    initialPalace,
+    initialStations,
+    ageGroup = DEFAULT_REVIEW_AGE_GROUP,
+  } = route.params;
 
   const [data, setData] = useState<ReviewScreenData | null>(null);
   const [screenState, setScreenState] = useState<ReviewScreenState>('INTRO');
-  const [currentStationIndex] = useState(0);
+  const [currentStationIndex, setCurrentStationIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [revealResult, setRevealResult] = useState<RevealResult | null>(null);
+  const [answeredResults, setAnsweredResults] = useState<RevealResult[]>([]);
+  const [completedSession, setCompletedSession] = useState<ReviewSession | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -553,6 +1099,13 @@ export const ReviewScreen = () => {
   const buttonTextColor = REVIEW_COLORS.white;
 
   const currentStation = data?.stations[currentStationIndex] ?? null;
+  const isLastStation = Boolean(
+    data && currentStationIndex >= data.stations.length - 1,
+  );
+
+  const correctAnswers = answeredResults.filter((result) => result.correct).length;
+  const totalStations = data?.stations.length ?? 0;
+  const fallbackXpEarned = correctAnswers * 10;
 
   const handleStartJourney = async () => {
     if (!data) return;
@@ -582,6 +1135,10 @@ export const ReviewScreen = () => {
       });
 
       setSessionId(session.id);
+      setCurrentStationIndex(0);
+      setAnsweredResults([]);
+      setRevealResult(null);
+      setCompletedSession(null);
       setScreenState('WALKING');
     } catch (error) {
       const message =
@@ -605,6 +1162,117 @@ export const ReviewScreen = () => {
     }
 
     setScreenState('QUESTION');
+  };
+
+  const handleSubmitAnswer = async (answer: string, gaveUp = false) => {
+    if (!data || !currentStation || !sessionId || isSubmittingAnswer) {
+      return;
+    }
+
+    const currentUserId = auth.currentUser?.uid;
+
+    if (!currentUserId) {
+      Alert.alert(
+        'Session unavailable',
+        'You need to be logged in to record this answer.',
+      );
+      return;
+    }
+
+    const correctAnswer = getStationAnswer(currentStation);
+
+    const correct = gaveUp
+      ? false
+      : ageGroup === '6-9'
+        ? normalizeAnswer(answer) === normalizeAnswer(correctAnswer)
+        : isFreeTextAnswerCorrect(answer, correctAnswer);
+
+    const result: RevealResult = {
+      stationId: currentStation.id,
+      correct,
+      correctAnswer,
+      chosenAnswer: answer || null,
+      gaveUp,
+    };
+
+    try {
+      setIsSubmittingAnswer(true);
+
+      await recordAnswer({
+        userId: currentUserId,
+        palaceId: data.palace.id,
+        sessionId,
+        stationId: currentStation.id,
+        correct,
+      });
+
+      setAnsweredResults((currentResults) => {
+        const withoutCurrentStation = currentResults.filter(
+          (item) => item.stationId !== currentStation.id,
+        );
+
+        return [...withoutCurrentStation, result];
+      });
+
+      setRevealResult(result);
+      setScreenState('REVEAL');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'The answer could not be recorded.';
+
+      Alert.alert('Could not record answer', message);
+    } finally {
+      setIsSubmittingAnswer(false);
+    }
+  };
+
+  const handleGiveUp = () => {
+    handleSubmitAnswer('', true);
+  };
+
+  const handleNextStation = async () => {
+    if (!data || !sessionId) return;
+
+    if (!isLastStation) {
+      setRevealResult(null);
+      setCurrentStationIndex((current) => current + 1);
+      setScreenState('WALKING');
+      return;
+    }
+
+    const currentUserId = auth.currentUser?.uid;
+
+    if (!currentUserId) {
+      Alert.alert(
+        'Session unavailable',
+        'You need to be logged in to complete this review.',
+      );
+      return;
+    }
+
+    try {
+      setIsCompleting(true);
+
+      const completed = await completeReview({
+        userId: currentUserId,
+        palaceId: data.palace.id,
+        sessionId,
+      });
+
+      setCompletedSession(completed);
+      setScreenState('COMPLETE');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'The review could not be completed.';
+
+      Alert.alert('Could not complete review', message);
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const handleGoBack = () => {
@@ -656,10 +1324,39 @@ export const ReviewScreen = () => {
         />
       )}
 
-      {screenState === 'QUESTION' && (
-        <QuestionPlaceholderState
+      {screenState === 'QUESTION' && currentStation && (
+        <QuestionState
+          station={currentStation}
+          stations={data.stations}
+          ageGroup={ageGroup}
           textColor={textColor}
-          onBackToWalking={() => setScreenState('WALKING')}
+          overlayColor={overlayColor}
+          buttonFillColor={buttonFillColor}
+          buttonTextColor={buttonTextColor}
+          onSubmitAnswer={(answer) => handleSubmitAnswer(answer)}
+          onGiveUp={handleGiveUp}
+        />
+      )}
+
+      {screenState === 'REVEAL' && revealResult && (
+        <RevealState
+          result={revealResult}
+          isLastStation={isLastStation}
+          isCompleting={isCompleting}
+          buttonFillColor={buttonFillColor}
+          buttonTextColor={buttonTextColor}
+          onNext={handleNextStation}
+        />
+      )}
+
+      {screenState === 'COMPLETE' && (
+        <CompleteState
+          correctAnswers={correctAnswers}
+          totalStations={totalStations}
+          xpEarned={completedSession?.xpEarned ?? fallbackXpEarned}
+          buttonFillColor={buttonFillColor}
+          buttonTextColor={buttonTextColor}
+          onBack={handleGoBack}
         />
       )}
     </SafeAreaView>
@@ -798,21 +1495,22 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonOuter: {
-  width: '86%',
-  maxWidth: 340,
-  borderRadius: 32,
-  borderWidth: 3,
-  borderColor: REVIEW_COLORS.white,
-  backgroundColor: 'rgba(255,255,255,0.28)',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.14,
-  shadowRadius: 16,
-  elevation: 5,
-  overflow: 'hidden',
-},
+    width: '86%',
+    maxWidth: 340,
+    borderRadius: 32,
+    borderWidth: 3,
+    borderColor: REVIEW_COLORS.white,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 5,
+    overflow: 'hidden',
+  },
 
   primaryButton: {
+    width: '100%',
     minHeight: 64,
     borderRadius: 29,
     alignItems: 'center',
@@ -821,13 +1519,13 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-  fontSize: 20,
-  fontWeight: '900',
-  textAlign: 'center',
-  textShadowColor: 'rgba(0,0,0,0.18)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-},
+    fontSize: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.18)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 
   primaryButtonPressed: {
     transform: [{ scale: 0.985 }],
@@ -922,6 +1620,343 @@ const styles = StyleSheet.create({
   walkingPrompt: {
     fontSize: 22,
     lineHeight: 30,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  questionHeader: {
+    alignItems: 'center',
+    marginTop: 24,
+    gap: 8,
+  },
+
+  questionTitle: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  questionSubtitle: {
+    maxWidth: 320,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    opacity: 0.72,
+  },
+
+  questionCard: {
+    marginTop: 28,
+    borderRadius: 34,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.54)',
+  },
+
+  questionStationEmoji: {
+    fontSize: 64,
+    marginBottom: 10,
+  },
+
+  questionStationName: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  timerSection: {
+    marginTop: 18,
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  timerWrapper: {
+    width: 62,
+    height: 62,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  timerText: {
+    position: 'absolute',
+    color: REVIEW_COLORS.textDark,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  timerHint: {
+    color: REVIEW_COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  optionsGrid: {
+    marginTop: 24,
+    gap: 12,
+  },
+
+  optionButton: {
+    minHeight: 58,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: REVIEW_COLORS.overlayStrong,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
+  },
+
+  optionButtonPressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.88,
+  },
+
+  optionButtonText: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  freeTextSection: {
+    marginTop: 26,
+    alignItems: 'center',
+    gap: 18,
+  },
+
+  answerInput: {
+    width: '100%',
+    minHeight: 58,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    color: REVIEW_COLORS.textDark,
+    backgroundColor: REVIEW_COLORS.overlayStrong,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.75)',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  giveUpButton: {
+    alignSelf: 'center',
+    marginTop: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.44)',
+  },
+
+  giveUpButtonText: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: 14,
+    fontWeight: '900',
+    opacity: 0.78,
+  },
+
+  confettiOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+
+  confettiPiece: {
+    position: 'absolute',
+    top: -28,
+    borderRadius: 3,
+  },
+
+  correctRevealContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+
+  checkmarkCircle: {
+    width: 118,
+    height: 118,
+    borderRadius: 59,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: REVIEW_COLORS.success,
+    borderWidth: 5,
+    borderColor: REVIEW_COLORS.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+
+  checkmarkText: {
+    color: REVIEW_COLORS.white,
+    fontSize: 72,
+    lineHeight: 78,
+    fontWeight: '900',
+  },
+
+  floatingXp: {
+    color: REVIEW_COLORS.successDark,
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '900',
+  },
+
+  correctRevealTitle: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  correctRevealSubtitle: {
+    color: REVIEW_COLORS.textMuted,
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  revealButtonSection: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  incorrectRevealContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
+  },
+
+  almostCard: {
+    width: '100%',
+    borderRadius: 32,
+    padding: 24,
+    alignItems: 'center',
+    backgroundColor: REVIEW_COLORS.orangeSoft,
+    borderWidth: 3,
+    borderColor: REVIEW_COLORS.warning,
+  },
+
+  almostEmoji: {
+    fontSize: 46,
+    marginBottom: 8,
+  },
+
+  almostTitle: {
+    color: REVIEW_COLORS.warningDark,
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  almostMessage: {
+    marginTop: 8,
+    color: REVIEW_COLORS.textDark,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    opacity: 0.78,
+  },
+
+  answerWas: {
+    marginTop: 18,
+    color: REVIEW_COLORS.warningDark,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  correctAnswerText: {
+    marginTop: 4,
+    color: REVIEW_COLORS.textDark,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  encouragementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  encouragementBubble: {
+    maxWidth: 190,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 22,
+    backgroundColor: REVIEW_COLORS.overlayBubble,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.65)',
+  },
+
+  encouragementBubbleText: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900',
+  },
+
+  completeContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+  },
+
+  completeEmoji: {
+    fontSize: 88,
+  },
+
+  completeTitle: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  completeSubtitle: {
+    color: REVIEW_COLORS.textMuted,
+    fontSize: 18,
+    lineHeight: 25,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  completeXpCard: {
+    marginTop: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 28,
+    backgroundColor: REVIEW_COLORS.greenSoft,
+    borderWidth: 3,
+    borderColor: REVIEW_COLORS.success,
+  },
+
+  completeXpText: {
+    color: REVIEW_COLORS.successDark,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '900',
+  },
+
+  completeEncouragement: {
+    maxWidth: 280,
+    color: REVIEW_COLORS.textMuted,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '800',
     textAlign: 'center',
   },
