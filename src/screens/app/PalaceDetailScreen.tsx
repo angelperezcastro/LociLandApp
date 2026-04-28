@@ -258,12 +258,77 @@ function PalaceDetailScreen() {
   );
 
   const handleStartReview = () => {
-    if (!palaceId || !canStartReview) {
-      return;
-    }
+  if (!palaceId) {
+    Alert.alert(
+      'Review unavailable',
+      'This palace could not be opened because its route is missing.',
+    );
+    return;
+  }
 
-    navigation.navigate('Review', { palaceId });
-  };
+  if (!canStartReview) {
+    Alert.alert(
+      'Add more stations',
+      'You need at least 2 stations before starting review mode.',
+    );
+    return;
+  }
+
+  if (!palace || !template) {
+    Alert.alert(
+      'Review unavailable',
+      'This palace is not ready yet. Go back and try again.',
+    );
+    return;
+  }
+
+  if (stations.length < MIN_REVIEW_STATIONS) {
+    Alert.alert(
+      'Stations still loading',
+      'Wait a second until your memory stations are fully loaded.',
+    );
+    return;
+  }
+
+  const initialStations = stations.map((station, index) => {
+    const looseStation = station as Station & {
+      name?: string;
+      emoji?: string;
+      icon?: string;
+      imageUrl?: string | null;
+      photoUrl?: string | null;
+      position?: number;
+      index?: number;
+    };
+
+    return {
+      id: station.id,
+      name: station.label ?? looseStation.name ?? `Station ${index + 1}`,
+      emoji: looseStation.emoji ?? looseStation.icon ?? '📍',
+      imageUrl: looseStation.imageUrl ?? looseStation.photoUrl ?? null,
+      order:
+        typeof station.order === 'number'
+          ? station.order
+          : typeof looseStation.position === 'number'
+            ? looseStation.position
+            : typeof looseStation.index === 'number'
+              ? looseStation.index
+              : index,
+    };
+  });
+
+  navigation.navigate('Review', {
+    palaceId,
+    initialPalace: {
+      id: palace.id,
+      name: palace.name,
+      emoji: template.emoji,
+      backgroundColor: template.backgroundColour,
+      stationCount: visibleStationCount,
+    },
+    initialStations,
+  });
+};
 
   const renderStationItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<Station>) => (

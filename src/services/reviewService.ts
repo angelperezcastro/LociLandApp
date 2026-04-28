@@ -8,9 +8,9 @@ import {
   Timestamp,
   updateDoc,
   writeBatch,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 
-import { db } from "./firebase";
+import { db } from './firebase';
 
 import type {
   CompleteReviewInput,
@@ -20,11 +20,12 @@ import type {
   ReviewSession,
   ReviewSessionDocument,
   StartReviewInput,
-} from "../types/review";
+} from '../types/review';
 
-const REVIEW_SESSIONS_COLLECTION = "reviewSessions";
-const REVIEW_ANSWERS_SUBCOLLECTION = "answers";
-const PALACES_COLLECTION = "palaces";
+const USERS_COLLECTION = 'users';
+const PALACES_COLLECTION = 'palaces';
+const REVIEW_SESSIONS_COLLECTION = 'reviewSessions';
+const REVIEW_ANSWERS_SUBCOLLECTION = 'answers';
 
 const XP_PER_CORRECT_ANSWER = 10;
 const COMPLETION_BONUS_XP = 20;
@@ -35,9 +36,59 @@ const timestampToDate = (value: Timestamp | null | undefined): Date | null => {
   return value.toDate();
 };
 
+const getPalaceRef = (userId: string, palaceId: string) => {
+  return doc(db, USERS_COLLECTION, userId, PALACES_COLLECTION, palaceId);
+};
+
+const getReviewSessionsCollectionRef = (userId: string, palaceId: string) => {
+  return collection(
+    db,
+    USERS_COLLECTION,
+    userId,
+    PALACES_COLLECTION,
+    palaceId,
+    REVIEW_SESSIONS_COLLECTION,
+  );
+};
+
+const getReviewSessionRef = (
+  userId: string,
+  palaceId: string,
+  sessionId: string,
+) => {
+  return doc(
+    db,
+    USERS_COLLECTION,
+    userId,
+    PALACES_COLLECTION,
+    palaceId,
+    REVIEW_SESSIONS_COLLECTION,
+    sessionId,
+  );
+};
+
+const getReviewAnswerRef = (
+  userId: string,
+  palaceId: string,
+  sessionId: string,
+  stationId: string,
+) => {
+  return doc(
+    db,
+    USERS_COLLECTION,
+    userId,
+    PALACES_COLLECTION,
+    palaceId,
+    REVIEW_SESSIONS_COLLECTION,
+    sessionId,
+    REVIEW_ANSWERS_SUBCOLLECTION,
+    stationId,
+  );
+};
+
 const mapReviewSession = (
   id: string,
-  data: ReviewSessionDocument
+  data: ReviewSessionDocument,
 ): ReviewSession => {
   return {
     id,
@@ -55,7 +106,7 @@ const mapReviewSession = (
 
 const mapReviewAnswer = (
   id: string,
-  data: ReviewAnswerDocument
+  data: ReviewAnswerDocument,
 ): ReviewAnswer => {
   return {
     id,
@@ -94,19 +145,21 @@ const calculateReviewXp = ({
   return correctXp + completionBonus + perfectBonus;
 };
 
-const getPalaceStationCount = async (palaceId: string): Promise<number> => {
-  const palaceRef = doc(db, PALACES_COLLECTION, palaceId);
+const getPalaceStationCount = async (
+  userId: string,
+  palaceId: string,
+): Promise<number> => {
+  const palaceRef = getPalaceRef(userId, palaceId);
   const palaceSnap = await getDoc(palaceRef);
 
   if (!palaceSnap.exists()) {
-    throw new Error("Palace not found.");
+    throw new Error('Palace not found.');
   }
 
   const palaceData = palaceSnap.data();
-
   const stationCount = palaceData.stationCount;
 
-  if (typeof stationCount !== "number") {
+  if (typeof stationCount !== 'number') {
     return 0;
   }
 
@@ -116,77 +169,93 @@ const getPalaceStationCount = async (palaceId: string): Promise<number> => {
 export const startReview = async ({
   palaceId,
   userId,
+  totalStations,
 }: StartReviewInput): Promise<ReviewSession> => {
   if (!palaceId.trim()) {
-    throw new Error("palaceId is required to start a review.");
+    throw new Error('palaceId is required to start a review.');
   }
 
   if (!userId.trim()) {
-    throw new Error("userId is required to start a review.");
+    throw new Error('userId is required to start a review.');
   }
 
-  const totalStations = await getPalaceStationCount(palaceId);
+  const resolvedTotalStations =
+    typeof totalStations === 'number'
+      ? totalStations
+      : await getPalaceStationCount(userId, palaceId);
 
-  if (totalStations < 2) {
-    throw new Error("A palace needs at least 2 stations to start a review.");
+  if (resolvedTotalStations < 2) {
+    throw new Error('A palace needs at least 2 stations to start a review.');
   }
 
-  const sessionRef = await addDoc(collection(db, REVIEW_SESSIONS_COLLECTION), {
-    palaceId,
-    userId,
-    startedAt: serverTimestamp(),
-    completedAt: null,
-    totalStations,
-    correctAnswers: 0,
-    incorrectAnswers: 0,
-    xpEarned: 0,
-    status: "active",
-  });
+  const sessionRef = await addDoc(
+    getReviewSessionsCollectionRef(userId, palaceId),
+    {
+      palaceId,
+      userId,
+      startedAt: serverTimestamp(),
+      completedAt: null,
+      totalStations: resolvedTotalStations,
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      xpEarned: 0,
+      status: 'active',
+    },
+  );
 
   const createdSessionSnap = await getDoc(sessionRef);
 
   if (!createdSessionSnap.exists()) {
-    throw new Error("Review session could not be created.");
+    throw new Error('Review session could not be created.');
   }
 
   return mapReviewSession(
     createdSessionSnap.id,
-    createdSessionSnap.data() as ReviewSessionDocument
+    createdSessionSnap.data() as ReviewSessionDocument,
   );
 };
 
 export const recordAnswer = async ({
+  userId,
+  palaceId,
   sessionId,
   stationId,
   correct,
 }: RecordAnswerInput): Promise<ReviewAnswer> => {
+  if (!userId.trim()) {
+    throw new Error('userId is required to record an answer.');
+  }
+
+  if (!palaceId.trim()) {
+    throw new Error('palaceId is required to record an answer.');
+  }
+
   if (!sessionId.trim()) {
-    throw new Error("sessionId is required to record an answer.");
+    throw new Error('sessionId is required to record an answer.');
   }
 
   if (!stationId.trim()) {
-    throw new Error("stationId is required to record an answer.");
+    throw new Error('stationId is required to record an answer.');
   }
 
-  const sessionRef = doc(db, REVIEW_SESSIONS_COLLECTION, sessionId);
+  const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
   const sessionSnap = await getDoc(sessionRef);
 
   if (!sessionSnap.exists()) {
-    throw new Error("Review session not found.");
+    throw new Error('Review session not found.');
   }
 
   const sessionData = sessionSnap.data() as ReviewSessionDocument;
 
-  if (sessionData.status === "completed") {
-    throw new Error("Cannot record answers in a completed review session.");
+  if (sessionData.status === 'completed') {
+    throw new Error('Cannot record answers in a completed review session.');
   }
 
-  const answerRef = doc(
-    db,
-    REVIEW_SESSIONS_COLLECTION,
+  const answerRef = getReviewAnswerRef(
+    userId,
+    palaceId,
     sessionId,
-    REVIEW_ANSWERS_SUBCOLLECTION,
-    stationId
+    stationId,
   );
 
   const existingAnswerSnap = await getDoc(answerRef);
@@ -233,32 +302,42 @@ export const recordAnswer = async ({
   const updatedAnswerSnap = await getDoc(answerRef);
 
   if (!updatedAnswerSnap.exists()) {
-    throw new Error("Answer could not be recorded.");
+    throw new Error('Answer could not be recorded.');
   }
 
   return mapReviewAnswer(
     updatedAnswerSnap.id,
-    updatedAnswerSnap.data() as ReviewAnswerDocument
+    updatedAnswerSnap.data() as ReviewAnswerDocument,
   );
 };
 
 export const completeReview = async ({
+  userId,
+  palaceId,
   sessionId,
 }: CompleteReviewInput): Promise<ReviewSession> => {
-  if (!sessionId.trim()) {
-    throw new Error("sessionId is required to complete a review.");
+  if (!userId.trim()) {
+    throw new Error('userId is required to complete a review.');
   }
 
-  const sessionRef = doc(db, REVIEW_SESSIONS_COLLECTION, sessionId);
+  if (!palaceId.trim()) {
+    throw new Error('palaceId is required to complete a review.');
+  }
+
+  if (!sessionId.trim()) {
+    throw new Error('sessionId is required to complete a review.');
+  }
+
+  const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
   const sessionSnap = await getDoc(sessionRef);
 
   if (!sessionSnap.exists()) {
-    throw new Error("Review session not found.");
+    throw new Error('Review session not found.');
   }
 
   const sessionData = sessionSnap.data() as ReviewSessionDocument;
 
-  if (sessionData.status === "completed") {
+  if (sessionData.status === 'completed') {
     return mapReviewSession(sessionSnap.id, sessionData);
   }
 
@@ -271,18 +350,18 @@ export const completeReview = async ({
   await updateDoc(sessionRef, {
     completedAt: serverTimestamp(),
     xpEarned,
-    status: "completed",
+    status: 'completed',
   });
 
   const updatedSessionSnap = await getDoc(sessionRef);
 
   if (!updatedSessionSnap.exists()) {
-    throw new Error("Completed review session could not be loaded.");
+    throw new Error('Completed review session could not be loaded.');
   }
 
   return mapReviewSession(
     updatedSessionSnap.id,
-    updatedSessionSnap.data() as ReviewSessionDocument
+    updatedSessionSnap.data() as ReviewSessionDocument,
   );
 };
 

@@ -131,6 +131,7 @@ export function AppNavigator() {
         name="Review"
         component={ReviewScreen}
         options={{
+          headerShown: false,
           animation: 'slide_from_right',
         }}
       />
@@ -145,3 +146,5 @@ export function AppNavigator() {
     </Stack.Navigator>
   );
 }
+
+export default AppNavigator;

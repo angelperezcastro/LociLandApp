@@ -49,6 +49,81 @@ service cloud.firestore {
         && hasValidOptionalImageUri();
     }
 
+    function isValidReviewSessionCreate(uid, palaceId) {
+      return request.resource.data.keys().hasOnly([
+          'palaceId',
+          'userId',
+          'startedAt',
+          'completedAt',
+          'totalStations',
+          'correctAnswers',
+          'incorrectAnswers',
+          'xpEarned',
+          'status'
+        ])
+        && request.resource.data.userId == uid
+        && request.resource.data.palaceId == palaceId
+        && request.resource.data.startedAt is timestamp
+        && request.resource.data.completedAt == null
+        && request.resource.data.totalStations is int
+        && request.resource.data.totalStations >= 2
+        && request.resource.data.totalStations <= 21
+        && request.resource.data.correctAnswers == 0
+        && request.resource.data.incorrectAnswers == 0
+        && request.resource.data.xpEarned == 0
+        && request.resource.data.status == 'active';
+    }
+
+    function isValidReviewSessionUpdate(uid, palaceId) {
+      return request.resource.data.keys().hasOnly([
+          'palaceId',
+          'userId',
+          'startedAt',
+          'completedAt',
+          'totalStations',
+          'correctAnswers',
+          'incorrectAnswers',
+          'xpEarned',
+          'status'
+        ])
+        && resource.data.userId == uid
+        && resource.data.palaceId == palaceId
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.palaceId == resource.data.palaceId
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.totalStations == resource.data.totalStations
+        && request.resource.data.correctAnswers is int
+        && request.resource.data.incorrectAnswers is int
+        && request.resource.data.correctAnswers >= 0
+        && request.resource.data.incorrectAnswers >= 0
+        && request.resource.data.correctAnswers <= request.resource.data.totalStations
+        && request.resource.data.incorrectAnswers <= request.resource.data.totalStations
+        && request.resource.data.correctAnswers + request.resource.data.incorrectAnswers <= request.resource.data.totalStations
+        && request.resource.data.xpEarned is int
+        && request.resource.data.xpEarned >= 0
+        && request.resource.data.xpEarned <= 1000
+        && request.resource.data.status in ['active', 'completed']
+        && (
+          request.resource.data.status == 'active'
+          ? request.resource.data.completedAt == null
+          : request.resource.data.completedAt is timestamp
+        );
+    }
+
+    function isValidReviewAnswer(uid, palaceId, sessionId) {
+      return request.resource.data.keys().hasOnly([
+          'sessionId',
+          'stationId',
+          'correct',
+          'answeredAt'
+        ])
+        && request.resource.data.sessionId == sessionId
+        && request.resource.data.stationId is string
+        && request.resource.data.stationId.size() > 0
+        && request.resource.data.correct is bool
+        && request.resource.data.answeredAt is timestamp;
+    }
+
     match /users/{uid} {
       allow read, create, update: if isOwner(uid);
       allow delete: if false;
@@ -68,6 +143,28 @@ service cloud.firestore {
             && isValidStation(uid, palaceId);
 
           allow delete: if isOwner(uid);
+        }
+
+        match /reviewSessions/{sessionId} {
+          allow read: if isOwner(uid);
+
+          allow create: if isOwner(uid)
+            && isValidReviewSessionCreate(uid, palaceId);
+
+          allow update: if isOwner(uid)
+            && isValidReviewSessionUpdate(uid, palaceId);
+
+          allow delete: if false;
+
+          match /answers/{answerId} {
+            allow read: if isOwner(uid);
+
+            allow create, update: if isOwner(uid)
+              && exists(/databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId))
+              && isValidReviewAnswer(uid, palaceId, sessionId);
+
+            allow delete: if false;
+          }
         }
       }
     }

@@ -1,6 +1,6 @@
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp } from 'firebase/firestore';
 
-export type ReviewSessionStatus = "active" | "completed";
+export type ReviewSessionStatus = 'active' | 'completed';
 
 export interface ReviewSession {
   id: string;
@@ -45,14 +45,19 @@ export interface ReviewAnswerDocument {
 export interface StartReviewInput {
   palaceId: string;
   userId: string;
+  totalStations?: number;
 }
 
 export interface RecordAnswerInput {
+  userId: string;
+  palaceId: string;
   sessionId: string;
   stationId: string;
   correct: boolean;
 }
 
 export interface CompleteReviewInput {
+  userId: string;
+  palaceId: string;
   sessionId: string;
 }
