@@ -12,6 +12,7 @@ import {
 import { colors, spacing } from '../../theme';
 import { getPalaceTemplateById } from '../../assets/templates';
 import type { Palace } from '../../types';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 export interface PalaceCardProps {
   palace: Palace;
@@ -62,7 +63,12 @@ function PalaceCard({
       <View style={styles.footerRow}>
         <View style={styles.stationBadge}>
           <Text style={styles.stationBadgeText}>
-            🚩 {palace.stationCount} {stationLabel}
+            🚩{' '}
+            <AnimatedNumber
+              value={palace.stationCount}
+              style={styles.stationBadgeText}
+            />{' '}
+            {stationLabel}
           </Text>
         </View>
 

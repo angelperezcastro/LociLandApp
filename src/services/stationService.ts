@@ -6,6 +6,7 @@ import {
   increment,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   updateDoc,
   writeBatch,
@@ -70,6 +71,21 @@ const mapStationDocument = (
   createdAt: data.createdAt as Timestamp,
 });
 
+const isProbablyOfflineError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+
+  return (
+    message.includes('offline') ||
+    message.includes('unavailable') ||
+    message.includes('network') ||
+    message.includes('backend')
+  );
+};
+
 export const createStation = async (
   palaceId: string,
   userId: string,
@@ -103,14 +119,27 @@ export const createStation = async (
     createdAt,
   };
 
-  const batch = writeBatch(db);
+  try {
+    await runTransaction(db, async (transaction) => {
+      transaction.set(stationRef, payload);
+      transaction.update(palaceRef, {
+        stationCount: increment(1),
+      });
+    });
+  } catch (error) {
+    if (!isProbablyOfflineError(error)) {
+      throw error;
+    }
 
-  batch.set(stationRef, payload);
-  batch.update(palaceRef, {
-    stationCount: increment(1),
-  });
+    const batch = writeBatch(db);
 
-  await batch.commit();
+    batch.set(stationRef, payload);
+    batch.update(palaceRef, {
+      stationCount: increment(1),
+    });
+
+    await batch.commit();
+  }
 
   return {
     id: stationRef.id,
@@ -204,14 +233,27 @@ export const deleteStation = async (
   const stationRef = getStationDocRef(userId, palaceId, stationId);
   const palaceRef = getPalaceDocRef(userId, palaceId);
 
-  const batch = writeBatch(db);
+  try {
+    await runTransaction(db, async (transaction) => {
+      transaction.delete(stationRef);
+      transaction.update(palaceRef, {
+        stationCount: increment(-1),
+      });
+    });
+  } catch (error) {
+    if (!isProbablyOfflineError(error)) {
+      throw error;
+    }
 
-  batch.delete(stationRef);
-  batch.update(palaceRef, {
-    stationCount: increment(-1),
-  });
+    const batch = writeBatch(db);
 
-  await batch.commit();
+    batch.delete(stationRef);
+    batch.update(palaceRef, {
+      stationCount: increment(-1),
+    });
+
+    await batch.commit();
+  }
 };
 
 export const reorderStations = async (

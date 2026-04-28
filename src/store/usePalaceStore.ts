@@ -16,6 +16,8 @@ import {
   type UpdateStationData,
 } from '../services/stationService';
 
+const EMPTY_STATIONS: Station[] = [];
+
 interface PalaceState {
   palaces: Palace[];
   stations: Record<string, Station[]>;
@@ -63,6 +65,23 @@ interface PalaceState {
   clearError: () => void;
   clearPalaceStore: () => void;
 }
+
+const sortStationsByOrder = (stations: Station[]) =>
+  [...stations].sort((a, b) => a.order - b.order);
+
+const updatePalaceStationCount = (
+  palaces: Palace[],
+  palaceId: string,
+  stationCount: number,
+): Palace[] =>
+  palaces.map((palace) =>
+    palace.id === palaceId
+      ? {
+          ...palace,
+          stationCount: Math.max(0, stationCount),
+        }
+      : palace,
+  );
 
 export const usePalaceStore = create<PalaceState>((set, get) => ({
   palaces: [],
@@ -169,9 +188,16 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
         error: null,
       });
 
-      const loadedStations = await getStations(palaceId, userId);
+      const loadedStations = sortStationsByOrder(
+        await getStations(palaceId, userId),
+      );
 
       set((state) => ({
+        palaces: updatePalaceStationCount(
+          state.palaces,
+          palaceId,
+          loadedStations.length,
+        ),
         stations: {
           ...state.stations,
           [palaceId]: loadedStations,
@@ -208,22 +234,21 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
       );
 
       set((state) => {
-        const currentStations = state.stations[palaceId] ?? [];
+        const currentStations = state.stations[palaceId] ?? EMPTY_STATIONS;
+        const nextStations = sortStationsByOrder([
+          ...currentStations,
+          createdStation,
+        ]);
 
         return {
-          palaces: state.palaces.map((palace) =>
-            palace.id === palaceId
-              ? {
-                  ...palace,
-                  stationCount: palace.stationCount + 1,
-                }
-              : palace,
+          palaces: updatePalaceStationCount(
+            state.palaces,
+            palaceId,
+            nextStations.length,
           ),
           stations: {
             ...state.stations,
-            [palaceId]: [...currentStations, createdStation].sort(
-              (a, b) => a.order - b.order,
-            ),
+            [palaceId]: nextStations,
           },
         };
       });
@@ -253,45 +278,43 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
       await updateStationService(stationId, palaceId, userId, data);
 
       set((state) => {
-        const currentStations = state.stations[palaceId] ?? [];
+        const currentStations = state.stations[palaceId] ?? EMPTY_STATIONS;
+
+        const nextStations = sortStationsByOrder(
+          currentStations.map((station) => {
+            if (station.id !== stationId) {
+              return station;
+            }
+
+            const nextStation: Station = {
+              ...station,
+              ...data,
+              label:
+                data.label !== undefined ? data.label.trim() : station.label,
+              emoji:
+                data.emoji !== undefined ? data.emoji.trim() : station.emoji,
+              memoryText:
+                data.memoryText !== undefined
+                  ? data.memoryText.trim()
+                  : station.memoryText,
+              imageUri:
+                data.imageUri === undefined
+                  ? station.imageUri
+                  : data.imageUri ?? undefined,
+            };
+
+            if (data.imageUri === null) {
+              delete nextStation.imageUri;
+            }
+
+            return nextStation;
+          }),
+        );
 
         return {
           stations: {
             ...state.stations,
-            [palaceId]: currentStations
-              .map((station) => {
-                if (station.id !== stationId) {
-                  return station;
-                }
-
-                const nextStation: Station = {
-                  ...station,
-                  ...data,
-                  label:
-                    data.label !== undefined
-                      ? data.label.trim()
-                      : station.label,
-                  emoji:
-                    data.emoji !== undefined
-                      ? data.emoji.trim()
-                      : station.emoji,
-                  memoryText:
-                    data.memoryText !== undefined
-                      ? data.memoryText.trim()
-                      : station.memoryText,
-                  imageUri:
-                    data.imageUri === undefined
-                      ? station.imageUri
-                      : data.imageUri ?? undefined,
-                };
-
-                if (data.imageUri === null) {
-                  delete nextStation.imageUri;
-                }
-
-                return nextStation;
-              })
-              .sort((a, b) => a.order - b.order),
+            [palaceId]: nextStations,
           },
         };
       });
@@ -312,13 +335,17 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
     palaceId: string,
     userId: string,
   ) => {
+    const previousStations = get().stations[palaceId] ?? EMPTY_STATIONS;
+    const previousPalaces = get().palaces;
+
     try {
       set({ error: null });
 
       await deleteStationService(stationId, palaceId, userId);
 
       set((state) => {
-        const currentStations = state.stations[palaceId] ?? [];
+        const currentStations = state.stations[palaceId] ?? EMPTY_STATIONS;
+
         const nextStations = currentStations
           .filter((station) => station.id !== stationId)
           .map((station, index) => ({
@@ -327,13 +354,10 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
           }));
 
         return {
-          palaces: state.palaces.map((palace) =>
-            palace.id === palaceId
-              ? {
-                  ...palace,
-                  stationCount: Math.max(0, palace.stationCount - 1),
-                }
-              : palace,
+          palaces: updatePalaceStationCount(
+            state.palaces,
+            palaceId,
+            nextStations.length,
           ),
           stations: {
             ...state.stations,
@@ -342,69 +366,76 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
         };
       });
     } catch (error) {
-      set({
+      set((state) => ({
+        palaces: previousPalaces,
+        stations: {
+          ...state.stations,
+          [palaceId]: previousStations,
+        },
         error:
           error instanceof Error
             ? error.message
             : 'Unable to delete station.',
-      });
+      }));
 
       throw error;
     }
   },
 
   reorderStations: async (
-  palaceId: string,
-  userId: string,
-  orderedIds: string[],
-) => {
-  const previousStations = get().stations[palaceId] ?? [];
+    palaceId: string,
+    userId: string,
+    orderedIds: string[],
+  ) => {
+    const previousStations = get().stations[palaceId] ?? EMPTY_STATIONS;
 
-  try {
-    set({ error: null });
+    try {
+      set({ error: null });
 
-    const orderMap = new Map(
-      orderedIds.map((stationId, index) => [stationId, index]),
-    );
+      const orderMap = new Map(
+        orderedIds.map((stationId, index) => [stationId, index]),
+      );
 
-    set((state) => {
-      const currentStations = state.stations[palaceId] ?? [];
+      set((state) => {
+        const currentStations = state.stations[palaceId] ?? EMPTY_STATIONS;
 
-      return {
+        const nextStations = sortStationsByOrder(
+          currentStations.map((station) => ({
+            ...station,
+            order: orderMap.get(station.id) ?? station.order,
+          })),
+        );
+
+        return {
+          stations: {
+            ...state.stations,
+            [palaceId]: nextStations,
+          },
+        };
+      });
+
+      await reorderStationsService(palaceId, userId, orderedIds);
+    } catch (error) {
+      set((state) => ({
         stations: {
           ...state.stations,
-          [palaceId]: currentStations
-            .map((station) => ({
-              ...station,
-              order: orderMap.get(station.id) ?? station.order,
-            }))
-            .sort((a, b) => a.order - b.order),
+          [palaceId]: previousStations,
         },
-      };
-    });
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to reorder stations.',
+      }));
 
-    await reorderStationsService(palaceId, userId, orderedIds);
-  } catch (error) {
-    set((state) => ({
-      stations: {
-        ...state.stations,
-        [palaceId]: previousStations,
-      },
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to reorder stations.',
-    }));
-
-    throw error;
-  }
-},
+      throw error;
+    }
+  },
 
   getPalaceById: (palaceId: string) =>
     get().palaces.find((palace) => palace.id === palaceId),
 
   getStationsByPalaceId: (palaceId: string) =>
-    get().stations[palaceId] ?? [],
+    get().stations[palaceId] ?? EMPTY_STATIONS,
 
   clearError: () => {
     set({ error: null });
