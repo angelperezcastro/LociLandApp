@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,9 +9,9 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import Svg, { Circle } from 'react-native-svg';
+} from "react-native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import Svg, { Circle } from "react-native-svg";
 import Animated, {
   BounceIn,
   FadeIn,
@@ -20,29 +20,29 @@ import Animated, {
   useSharedValue,
   withDelay,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-import { GuideLottie } from '../../components/review/GuideLottie';
-import { auth } from '../../services/firebase';
+import { GuideLottie } from "../../components/review/GuideLottie";
+import { auth } from "../../services/firebase";
 import {
   completeReview,
   recordAnswer,
   startReview,
-} from '../../services/reviewService';
-import { getReviewScreenData } from '../../services/reviewScreenDataService';
+} from "../../services/reviewService";
+import { getReviewScreenData } from "../../services/reviewScreenDataService";
 import type {
   ReviewScreenData,
   ReviewScreenStation,
-} from '../../services/reviewScreenDataService';
-import type { ReviewScreenState } from '../../types/reviewState';
-import type { ReviewSession } from '../../types/review';
+} from "../../services/reviewScreenDataService";
+import type { ReviewScreenState } from "../../types/reviewState";
+import type { ReviewSession } from "../../types/review";
 
-type ReviewAgeGroup = '6-9' | '10-14';
+type ReviewAgeGroup = "6-9" | "10-14";
 
 type ReviewRouteParams = {
   Review: {
     palaceId: string;
-    initialPalace?: ReviewScreenData['palace'];
+    initialPalace?: ReviewScreenData["palace"];
     initialStations?: ReviewScreenStation[];
     ageGroup?: ReviewAgeGroup;
   };
@@ -56,79 +56,84 @@ type RevealResult = {
   gaveUp: boolean;
 };
 
-const DEFAULT_REVIEW_AGE_GROUP: ReviewAgeGroup = '6-9';
+const DEFAULT_REVIEW_AGE_GROUP: ReviewAgeGroup = "6-9";
 
 const INTRO_COPY = {
-  startButton: 'Start the Journey!',
-  loading: 'Preparing your memory walk...',
-  errorTitle: 'Review unavailable',
+  startButton: "Start the Journey!",
+  loading: "Preparing your memory walk...",
+  errorTitle: "Review unavailable",
   notEnoughStations:
-    'This palace needs at least 2 stations before starting a review.',
+    "This palace needs at least 2 stations before starting a review.",
 };
 
 const WALKING_COPY = {
-  prompt: 'What did you place here?',
-  rememberButton: 'I remember!',
+  prompt: "What did you place here?",
+  rememberButton: "I remember!",
 };
 
 const QUESTION_COPY = {
-  title: 'Can you remember it?',
-  subtitle6to9: 'Pick the answer you placed in this station.',
-  subtitle10to14: 'Type what you placed here.',
-  inputPlaceholder: 'Type your answer...',
-  submit: 'Check my answer',
-  giveUp: 'I give up / Show me',
+  title: "Can you remember it?",
+  subtitle6to9: "Pick the answer you placed in this station.",
+  subtitle10to14: "Type what you placed here.",
+  inputPlaceholder: "Type your answer...",
+  submit: "Check my answer",
+  giveUp: "I give up / Show me",
 };
 
 const REVEAL_COPY = {
-  correctTitle: 'Great memory!',
-  correctSubtitle: 'You remembered this station.',
-  incorrectTitle: 'Almost!',
-  nextTime: 'You will get it next time!',
-  answerWas: 'The answer was...',
-  nextStation: 'Next Station',
-  finishReview: 'Finish Review',
+  correctTitle: "Great memory!",
+  correctSubtitle: "You remembered this station.",
+  incorrectTitle: "Almost!",
+  nextTime: "You will get it next time!",
+  answerWas: "The answer was...",
+  nextStation: "Next Station",
+  finishReview: "Finish Review",
 };
 
 const REVIEW_COLORS = {
-  lightFallback: '#F7F7FB',
-  textDark: '#111827',
-  textMuted: '#4B5563',
-  textSoft: '#374151',
-  white: '#FFFFFF',
-  success: '#22C55E',
-  successDark: '#15803D',
-  warning: '#FBBF24',
-  warningDark: '#B45309',
-  orangeSoft: '#FFF4D6',
-  greenSoft: '#DCFCE7',
-  defaultPalaceBackground: '#DDEBFF',
-  overlayLight: 'rgba(255, 255, 255, 0.76)',
-  overlayDark: 'rgba(255, 255, 255, 0.16)',
-  overlayMedium: 'rgba(255, 255, 255, 0.55)',
-  overlayStrong: 'rgba(255, 255, 255, 0.88)',
-  overlayBubble: 'rgba(255, 255, 255, 0.88)',
-  progressTrack: 'rgba(255,255,255,0.55)',
+  lightFallback: "#F7F7FB",
+  textDark: "#111827",
+  textMuted: "#4B5563",
+  textSoft: "#374151",
+  white: "#FFFFFF",
+  success: "#22C55E",
+  successDark: "#15803D",
+  warning: "#FBBF24",
+  warningDark: "#B45309",
+  orangeSoft: "#FFF4D6",
+  greenSoft: "#DCFCE7",
+  defaultPalaceBackground: "#DDEBFF",
+  overlayLight: "rgba(255, 255, 255, 0.76)",
+  overlayDark: "rgba(255, 255, 255, 0.16)",
+  overlayMedium: "rgba(255, 255, 255, 0.55)",
+  overlayStrong: "rgba(255, 255, 255, 0.88)",
+  overlayBubble: "rgba(255, 255, 255, 0.88)",
+  progressTrack: "rgba(255,255,255,0.55)",
+
+  // IMPORTANTE:
+  // Este color se usa tanto en el tile grande/mediano
+  // como en la "superficie" interior para que no haya diferencias de blanco.
+  iconTileSurface: "#F1F4F1",
 };
 
 const PLACEHOLDER_OPTIONS = [
-  'A magic key',
-  'A golden star',
-  'A tiny dragon',
-  'A secret map',
-  'A blue book',
-  'A bright lantern',
-  'A silver crown',
-  'A hidden treasure',
+  "A magic key",
+  "A golden star",
+  "A tiny dragon",
+  "A secret map",
+  "A blue book",
+  "A bright lantern",
+  "A silver crown",
+  "A hidden treasure",
 ];
 
 const CONFETTI_COLORS = [
-  '#22C55E',
-  '#FACC15',
-  '#38BDF8',
-  '#FB7185',
-  '#A78BFA',
-  '#F97316',
+  "#22C55E",
+  "#FACC15",
+  "#38BDF8",
+  "#FB7185",
+  "#A78BFA",
+  "#F97316",
 ];
 
 const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
@@ -140,13 +145,16 @@ const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
   color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
 }));
 
+const ANSWER_OPTION_BUTTON_HEIGHT = 52;
+const ANSWER_OPTION_TEXT_OFFSET_Y = 0;
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const parseHexColor = (hex: string) => {
-  if (!hex.startsWith('#')) return null;
+  if (!hex.startsWith("#")) return null;
 
-  const normalized = hex.replace('#', '');
+  const normalized = hex.replace("#", "");
 
   if (normalized.length !== 6) return null;
 
@@ -159,7 +167,7 @@ const parseHexColor = (hex: string) => {
   return { r, g, b };
 };
 
-const toHex = (value: number) => value.toString(16).padStart(2, '0');
+const toHex = (value: number) => value.toString(16).padStart(2, "0");
 
 const rgbToHsl = ({ r, g, b }: { r: number; g: number; b: number }) => {
   const normalizedR = r / 255;
@@ -243,7 +251,7 @@ const intensifyPastelHex = (hex: string): string => {
   const rgb = parseHexColor(hex);
 
   if (!rgb) {
-    return '#24C55E';
+    return "#24C55E";
   }
 
   const { h, s } = rgbToHsl(rgb);
@@ -252,6 +260,38 @@ const intensifyPastelHex = (hex: string): string => {
     h,
     s: clamp(Math.max(s * 1.8, 0.78), 0.78, 0.95),
     l: 0.42,
+  });
+};
+
+const getAnswerButtonFillHex = (hex: string): string => {
+  const rgb = parseHexColor(hex);
+
+  if (!rgb) {
+    return "#22C55E";
+  }
+
+  const { h, s } = rgbToHsl(rgb);
+
+  return hslToHex({
+    h,
+    s: clamp(Math.max(s * 2.25, 0.82), 0.82, 0.98),
+    l: 0.46,
+  });
+};
+
+const getAnswerButtonBorderHex = (hex: string): string => {
+  const rgb = parseHexColor(hex);
+
+  if (!rgb) {
+    return "#0F9F52";
+  }
+
+  const { h, s } = rgbToHsl(rgb);
+
+  return hslToHex({
+    h,
+    s: clamp(Math.max(s * 2.4, 0.88), 0.88, 1),
+    l: 0.34,
   });
 };
 
@@ -285,10 +325,10 @@ const getStationAnswer = (station: ReviewScreenStation): string => {
 
 const normalizeAnswer = (value: string): string => {
   return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    .replace(/\s+/g, ' ')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 };
@@ -341,7 +381,10 @@ const isFreeTextAnswerCorrect = (input: string, expected: string): boolean => {
   }
 
   const distance = getLevenshteinDistance(normalizedInput, normalizedExpected);
-  const longestLength = Math.max(normalizedInput.length, normalizedExpected.length);
+  const longestLength = Math.max(
+    normalizedInput.length,
+    normalizedExpected.length,
+  );
 
   if (longestLength === 0) {
     return false;
@@ -365,7 +408,9 @@ const createMultipleChoiceOptions = (
   const wrongAnswers = stations
     .filter((station) => station.id !== currentStation.id)
     .map(getStationAnswer)
-    .filter((answer) => normalizeAnswer(answer) !== normalizeAnswer(correctAnswer));
+    .filter(
+      (answer) => normalizeAnswer(answer) !== normalizeAnswer(correctAnswer),
+    );
 
   const uniqueWrongAnswers = Array.from(new Set(wrongAnswers));
 
@@ -373,10 +418,10 @@ const createMultipleChoiceOptions = (
     (option) => normalizeAnswer(option) !== normalizeAnswer(correctAnswer),
   );
 
-  const filledWrongAnswers = [
-    ...uniqueWrongAnswers,
-    ...placeholders,
-  ].slice(0, 3);
+  const filledWrongAnswers = [...uniqueWrongAnswers, ...placeholders].slice(
+    0,
+    3,
+  );
 
   return shuffleArray([correctAnswer, ...filledWrongAnswers]).slice(0, 4);
 };
@@ -439,6 +484,47 @@ const ReviewPrimaryButton = ({
           {label}
         </Text>
       </Pressable>
+    </View>
+  );
+};
+
+const StationIconTile = ({
+  emoji,
+  size = "large",
+}: {
+  emoji: string;
+  size?: "large" | "medium";
+}) => {
+  const safeEmoji = emoji.trim().length > 0 ? emoji : "📍";
+
+  return (
+    <View
+      style={[
+        styles.stationIconTile,
+        size === "large"
+          ? styles.stationIconTileLarge
+          : styles.stationIconTileMedium,
+      ]}
+    >
+      <View
+        style={[
+          styles.stationIconEmojiSurface,
+          size === "large"
+            ? styles.stationIconEmojiSurfaceLarge
+            : styles.stationIconEmojiSurfaceMedium,
+        ]}
+      >
+        <Text
+          style={[
+            styles.stationIconEmoji,
+            size === "large"
+              ? styles.stationIconEmojiLarge
+              : styles.stationIconEmojiMedium,
+          ]}
+        >
+          {safeEmoji}
+        </Text>
+      </View>
     </View>
   );
 };
@@ -550,7 +636,7 @@ const ConfettiPiece = ({
   color: string;
 }) => {
   const progress = useSharedValue(0);
-  const screenHeight = Dimensions.get('window').height;
+  const screenHeight = Dimensions.get("window").height;
 
   useEffect(() => {
     progress.value = withDelay(
@@ -657,7 +743,10 @@ const IntroState = ({
   });
 
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={styles.stateContainer}
+    >
       <View style={styles.introTopSection}>
         <Animated.View entering={BounceIn.duration(900)} style={floatingStyle}>
           <Text style={styles.palaceEmoji}>{data.palace.emoji}</Text>
@@ -686,7 +775,7 @@ const IntroState = ({
 
       <View style={styles.introButtonSection}>
         <ReviewPrimaryButton
-          label={isStarting ? 'Starting...' : INTRO_COPY.startButton}
+          label={isStarting ? "Starting..." : INTRO_COPY.startButton}
           backgroundColor={buttonFillColor}
           textColor={buttonTextColor}
           disabled={isStarting}
@@ -702,7 +791,6 @@ const WalkingState = ({
   currentIndex,
   totalStations,
   textColor,
-  overlayColor,
   buttonFillColor,
   buttonTextColor,
   onRemember,
@@ -711,13 +799,15 @@ const WalkingState = ({
   currentIndex: number;
   totalStations: number;
   textColor: string;
-  overlayColor: string;
   buttonFillColor: string;
   buttonTextColor: string;
   onRemember: () => void;
 }) => {
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={styles.stateContainer}
+    >
       <ProgressBar
         currentIndex={currentIndex}
         totalStations={totalStations}
@@ -728,9 +818,8 @@ const WalkingState = ({
         <Animated.View
           key={station.id}
           entering={SlideInRight.springify().damping(14).mass(0.8)}
-          style={[styles.stationEmojiCard, { backgroundColor: overlayColor }]}
         >
-          <Text style={styles.stationEmoji}>{station.emoji}</Text>
+          <StationIconTile emoji={station.emoji} size="large" />
         </Animated.View>
 
         <Text style={[styles.stationName, { color: textColor }]}>
@@ -770,6 +859,8 @@ const QuestionState = ({
   overlayColor,
   buttonFillColor,
   buttonTextColor,
+  answerButtonFillColor,
+  answerButtonBorderColor,
   onSubmitAnswer,
   onGiveUp,
 }: {
@@ -780,10 +871,12 @@ const QuestionState = ({
   overlayColor: string;
   buttonFillColor: string;
   buttonTextColor: string;
+  answerButtonFillColor: string;
+  answerButtonBorderColor: string;
   onSubmitAnswer: (answer: string) => void;
   onGiveUp: () => void;
 }) => {
-  const [freeTextAnswer, setFreeTextAnswer] = useState('');
+  const [freeTextAnswer, setFreeTextAnswer] = useState("");
 
   const options = useMemo(() => {
     return createMultipleChoiceOptions(station, stations);
@@ -792,26 +885,29 @@ const QuestionState = ({
   const canSubmitFreeText = freeTextAnswer.trim().length > 0;
 
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={styles.stateContainer}
+    >
       <View style={styles.questionHeader}>
         <Text style={[styles.questionTitle, { color: textColor }]}>
           {QUESTION_COPY.title}
         </Text>
         <Text style={[styles.questionSubtitle, { color: textColor }]}>
-          {ageGroup === '6-9'
+          {ageGroup === "6-9"
             ? QUESTION_COPY.subtitle6to9
             : QUESTION_COPY.subtitle10to14}
         </Text>
       </View>
 
       <View style={[styles.questionCard, { backgroundColor: overlayColor }]}>
-        <Text style={styles.questionStationEmoji}>{station.emoji}</Text>
+        <StationIconTile emoji={station.emoji} size="medium" />
 
         <Text style={[styles.questionStationName, { color: textColor }]}>
           {station.name}
         </Text>
 
-        {ageGroup === '10-14' && (
+        {ageGroup === "10-14" && (
           <View style={styles.timerSection}>
             <CountdownTimer />
             <Text style={styles.timerHint}>No pressure. Just focus.</Text>
@@ -819,19 +915,38 @@ const QuestionState = ({
         )}
       </View>
 
-      {ageGroup === '6-9' ? (
+      {ageGroup === "6-9" ? (
         <View style={styles.optionsGrid}>
           {options.map((option) => (
-            <Pressable
+            <View
               key={option}
-              onPress={() => onSubmitAnswer(option)}
-              style={({ pressed }) => [
+              style={[
                 styles.optionButton,
-                pressed && styles.optionButtonPressed,
+                {
+                  backgroundColor: answerButtonFillColor,
+                  borderColor: answerButtonBorderColor,
+                },
               ]}
             >
-              <Text style={styles.optionButtonText}>{option}</Text>
-            </Pressable>
+              <Pressable
+                onPress={() => onSubmitAnswer(option)}
+                style={({ pressed }) => [
+                  styles.optionButtonPressable,
+                  pressed && styles.optionButtonPressed,
+                ]}
+              >
+                <View style={styles.optionButtonContent}>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.78}
+                    style={styles.optionButtonText}
+                  >
+                    {option}
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
           ))}
         </View>
       ) : (
@@ -843,7 +958,13 @@ const QuestionState = ({
             placeholderTextColor="rgba(17,24,39,0.45)"
             autoCapitalize="none"
             autoCorrect={false}
-            style={styles.answerInput}
+            style={[
+              styles.answerInput,
+              {
+                borderColor: answerButtonBorderColor,
+                backgroundColor: REVIEW_COLORS.iconTileSurface,
+              },
+            ]}
           />
 
           <ReviewPrimaryButton
@@ -880,17 +1001,25 @@ const RevealState = ({
 }) => {
   if (result.correct) {
     return (
-      <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+      <Animated.View
+        entering={FadeIn.duration(350)}
+        style={styles.stateContainer}
+      >
         <ConfettiOverlay />
 
         <View style={styles.correctRevealContent}>
-          <Animated.View entering={BounceIn.duration(900)} style={styles.checkmarkCircle}>
+          <Animated.View
+            entering={BounceIn.duration(900)}
+            style={styles.checkmarkCircle}
+          >
             <Text style={styles.checkmarkText}>✓</Text>
           </Animated.View>
 
           <FloatingXp />
 
-          <Text style={styles.correctRevealTitle}>{REVEAL_COPY.correctTitle}</Text>
+          <Text style={styles.correctRevealTitle}>
+            {REVEAL_COPY.correctTitle}
+          </Text>
           <Text style={styles.correctRevealSubtitle}>
             {REVEAL_COPY.correctSubtitle}
           </Text>
@@ -902,7 +1031,7 @@ const RevealState = ({
           <ReviewPrimaryButton
             label={
               isCompleting
-                ? 'Finishing...'
+                ? "Finishing..."
                 : isLastStation
                   ? REVEAL_COPY.finishReview
                   : REVEAL_COPY.nextStation
@@ -918,7 +1047,10 @@ const RevealState = ({
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={styles.stateContainer}
+    >
       <View style={styles.incorrectRevealContent}>
         <View style={styles.almostCard}>
           <Text style={styles.almostEmoji}>🌟</Text>
@@ -926,8 +1058,8 @@ const RevealState = ({
 
           <Text style={styles.almostMessage}>
             {result.gaveUp
-              ? 'Good choice asking for help.'
-              : 'That was close. You are still learning this station.'}
+              ? "Good choice asking for help."
+              : "That was close. You are still learning this station."}
           </Text>
 
           <Text style={styles.answerWas}>{REVEAL_COPY.answerWas}</Text>
@@ -949,7 +1081,7 @@ const RevealState = ({
         <ReviewPrimaryButton
           label={
             isCompleting
-              ? 'Finishing...'
+              ? "Finishing..."
               : isLastStation
                 ? REVEAL_COPY.finishReview
                 : REVEAL_COPY.nextStation
@@ -980,7 +1112,10 @@ const CompleteState = ({
   onBack: () => void;
 }) => {
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={styles.stateContainer}
+    >
       <View style={styles.completeContent}>
         <Text style={styles.completeEmoji}>🏆</Text>
         <Text style={styles.completeTitle}>Memory walk complete!</Text>
@@ -1011,7 +1146,7 @@ const CompleteState = ({
 
 export const ReviewScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<ReviewRouteParams, 'Review'>>();
+  const route = useRoute<RouteProp<ReviewRouteParams, "Review">>();
 
   const {
     palaceId,
@@ -1021,14 +1156,13 @@ export const ReviewScreen = () => {
   } = route.params;
 
   const [data, setData] = useState<ReviewScreenData | null>(null);
-  const [screenState, setScreenState] = useState<ReviewScreenState>('INTRO');
+  const [screenState, setScreenState] = useState<ReviewScreenState>("INTRO");
   const [currentStationIndex, setCurrentStationIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [revealResult, setRevealResult] = useState<RevealResult | null>(null);
   const [answeredResults, setAnsweredResults] = useState<RevealResult[]>([]);
-  const [completedSession, setCompletedSession] = useState<ReviewSession | null>(
-    null,
-  );
+  const [completedSession, setCompletedSession] =
+    useState<ReviewSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
@@ -1064,7 +1198,7 @@ export const ReviewScreen = () => {
         const message =
           error instanceof Error
             ? error.message
-            : 'The review data could not be loaded.';
+            : "The review data could not be loaded.";
 
         setErrorMessage(message);
       } finally {
@@ -1096,6 +1230,12 @@ export const ReviewScreen = () => {
     return intensifyPastelHex(palaceBackgroundColor);
   }, [palaceBackgroundColor]);
 
+  const answerButtonFillColor = palaceBackgroundColor;
+
+  const answerButtonBorderColor = useMemo(() => {
+    return getAnswerButtonBorderHex(palaceBackgroundColor);
+  }, [palaceBackgroundColor]);
+
   const buttonTextColor = REVIEW_COLORS.white;
 
   const currentStation = data?.stations[currentStationIndex] ?? null;
@@ -1103,7 +1243,9 @@ export const ReviewScreen = () => {
     data && currentStationIndex >= data.stations.length - 1,
   );
 
-  const correctAnswers = answeredResults.filter((result) => result.correct).length;
+  const correctAnswers = answeredResults.filter(
+    (result) => result.correct,
+  ).length;
   const totalStations = data?.stations.length ?? 0;
   const fallbackXpEarned = correctAnswers * 10;
 
@@ -1111,7 +1253,7 @@ export const ReviewScreen = () => {
     if (!data) return;
 
     if (data.stations.length < 2) {
-      Alert.alert('Not enough stations', INTRO_COPY.notEnoughStations);
+      Alert.alert("Not enough stations", INTRO_COPY.notEnoughStations);
       return;
     }
 
@@ -1119,8 +1261,8 @@ export const ReviewScreen = () => {
 
     if (!currentUserId) {
       Alert.alert(
-        'Session unavailable',
-        'You need to be logged in before starting a review.',
+        "Session unavailable",
+        "You need to be logged in before starting a review.",
       );
       return;
     }
@@ -1139,14 +1281,14 @@ export const ReviewScreen = () => {
       setAnsweredResults([]);
       setRevealResult(null);
       setCompletedSession(null);
-      setScreenState('WALKING');
+      setScreenState("WALKING");
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'The review session could not be started.';
+          : "The review session could not be started.";
 
-      Alert.alert('Could not start review', message);
+      Alert.alert("Could not start review", message);
     } finally {
       setIsStarting(false);
     }
@@ -1155,13 +1297,13 @@ export const ReviewScreen = () => {
   const handleRemember = () => {
     if (!sessionId) {
       Alert.alert(
-        'Review session missing',
-        'The review session was not created correctly.',
+        "Review session missing",
+        "The review session was not created correctly.",
       );
       return;
     }
 
-    setScreenState('QUESTION');
+    setScreenState("QUESTION");
   };
 
   const handleSubmitAnswer = async (answer: string, gaveUp = false) => {
@@ -1173,8 +1315,8 @@ export const ReviewScreen = () => {
 
     if (!currentUserId) {
       Alert.alert(
-        'Session unavailable',
-        'You need to be logged in to record this answer.',
+        "Session unavailable",
+        "You need to be logged in to record this answer.",
       );
       return;
     }
@@ -1183,7 +1325,7 @@ export const ReviewScreen = () => {
 
     const correct = gaveUp
       ? false
-      : ageGroup === '6-9'
+      : ageGroup === "6-9"
         ? normalizeAnswer(answer) === normalizeAnswer(correctAnswer)
         : isFreeTextAnswerCorrect(answer, correctAnswer);
 
@@ -1215,21 +1357,21 @@ export const ReviewScreen = () => {
       });
 
       setRevealResult(result);
-      setScreenState('REVEAL');
+      setScreenState("REVEAL");
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'The answer could not be recorded.';
+          : "The answer could not be recorded.";
 
-      Alert.alert('Could not record answer', message);
+      Alert.alert("Could not record answer", message);
     } finally {
       setIsSubmittingAnswer(false);
     }
   };
 
   const handleGiveUp = () => {
-    handleSubmitAnswer('', true);
+    handleSubmitAnswer("", true);
   };
 
   const handleNextStation = async () => {
@@ -1238,7 +1380,7 @@ export const ReviewScreen = () => {
     if (!isLastStation) {
       setRevealResult(null);
       setCurrentStationIndex((current) => current + 1);
-      setScreenState('WALKING');
+      setScreenState("WALKING");
       return;
     }
 
@@ -1246,8 +1388,8 @@ export const ReviewScreen = () => {
 
     if (!currentUserId) {
       Alert.alert(
-        'Session unavailable',
-        'You need to be logged in to complete this review.',
+        "Session unavailable",
+        "You need to be logged in to complete this review.",
       );
       return;
     }
@@ -1262,14 +1404,14 @@ export const ReviewScreen = () => {
       });
 
       setCompletedSession(completed);
-      setScreenState('COMPLETE');
+      setScreenState("COMPLETE");
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'The review could not be completed.';
+          : "The review could not be completed.";
 
-      Alert.alert('Could not complete review', message);
+      Alert.alert("Could not complete review", message);
     } finally {
       setIsCompleting(false);
     }
@@ -1286,7 +1428,7 @@ export const ReviewScreen = () => {
   if (errorMessage || !data) {
     return (
       <ReviewErrorState
-        message={errorMessage ?? 'The review data could not be loaded.'}
+        message={errorMessage ?? "The review data could not be loaded."}
         onBack={handleGoBack}
       />
     );
@@ -1294,12 +1436,9 @@ export const ReviewScreen = () => {
 
   return (
     <SafeAreaView
-      style={[
-        styles.screen,
-        { backgroundColor: data.palace.backgroundColor },
-      ]}
+      style={[styles.screen, { backgroundColor: data.palace.backgroundColor }]}
     >
-      {screenState === 'INTRO' && (
+      {screenState === "INTRO" && (
         <IntroState
           data={data}
           textColor={textColor}
@@ -1311,20 +1450,19 @@ export const ReviewScreen = () => {
         />
       )}
 
-      {screenState === 'WALKING' && currentStation && (
+      {screenState === "WALKING" && currentStation && (
         <WalkingState
           station={currentStation}
           currentIndex={currentStationIndex}
           totalStations={data.stations.length}
           textColor={textColor}
-          overlayColor={overlayColor}
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
           onRemember={handleRemember}
         />
       )}
 
-      {screenState === 'QUESTION' && currentStation && (
+      {screenState === "QUESTION" && currentStation && (
         <QuestionState
           station={currentStation}
           stations={data.stations}
@@ -1333,12 +1471,14 @@ export const ReviewScreen = () => {
           overlayColor={overlayColor}
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
+          answerButtonFillColor={answerButtonFillColor}
+          answerButtonBorderColor={answerButtonBorderColor}
           onSubmitAnswer={(answer) => handleSubmitAnswer(answer)}
           onGiveUp={handleGiveUp}
         />
       )}
 
-      {screenState === 'REVEAL' && revealResult && (
+      {screenState === "REVEAL" && revealResult && (
         <RevealState
           result={revealResult}
           isLastStation={isLastStation}
@@ -1349,7 +1489,7 @@ export const ReviewScreen = () => {
         />
       )}
 
-      {screenState === 'COMPLETE' && (
+      {screenState === "COMPLETE" && (
         <CompleteState
           correctAnswers={correctAnswers}
           totalStations={totalStations}
@@ -1379,22 +1519,22 @@ const styles = StyleSheet.create({
 
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 16,
     backgroundColor: REVIEW_COLORS.lightFallback,
   },
 
   loadingText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: REVIEW_COLORS.textSoft,
   },
 
   errorContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 24,
     gap: 16,
     backgroundColor: REVIEW_COLORS.lightFallback,
@@ -1406,34 +1546,34 @@ const styles = StyleSheet.create({
 
   errorTitle: {
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: "900",
     color: REVIEW_COLORS.textDark,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   errorMessage: {
     fontSize: 16,
     lineHeight: 24,
     color: REVIEW_COLORS.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   introTopSection: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 18,
     marginTop: 6,
   },
 
   palaceEmoji: {
     fontSize: 104,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   introHeading: {
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   stationCountPill: {
@@ -1444,21 +1584,21 @@ const styles = StyleSheet.create({
 
   stationCountText: {
     fontSize: 16,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   introGuideSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 28,
   },
 
   walkingGuideSection: {
     marginTop: 34,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
 
@@ -1469,8 +1609,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: REVIEW_COLORS.overlayBubble,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.65)',
-    shadowColor: '#000',
+    borderColor: "rgba(255,255,255,0.65)",
+    shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -1479,50 +1619,50 @@ const styles = StyleSheet.create({
 
   guideSpeechBubbleText: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: "900",
     color: REVIEW_COLORS.textDark,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   introButtonSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 34,
   },
 
   walkingButtonSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 42,
   },
 
   primaryButtonOuter: {
-    width: '86%',
+    width: "86%",
     maxWidth: 340,
     borderRadius: 32,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.white,
-    backgroundColor: 'transparent',
-    shadowColor: '#000',
+    backgroundColor: "transparent",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 16,
     elevation: 5,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   primaryButton: {
-    width: '100%',
+    width: "100%",
     minHeight: 64,
     borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
   },
 
   primaryButtonText: {
     fontSize: 20,
-    fontWeight: '900',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.18)',
+    fontWeight: "900",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.18)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -1541,15 +1681,15 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     borderColor: REVIEW_COLORS.textDark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     backgroundColor: REVIEW_COLORS.overlayLight,
   },
 
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
     color: REVIEW_COLORS.textDark,
   },
 
@@ -1559,73 +1699,120 @@ const styles = StyleSheet.create({
   },
 
   progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   progressLabel: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   progressValue: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   progressTrack: {
     height: 16,
     borderRadius: 999,
     backgroundColor: REVIEW_COLORS.progressTrack,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 999,
   },
 
   walkingContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 16,
     marginTop: 54,
   },
 
-  stationEmojiCard: {
-    width: 170,
-    height: 170,
-    borderRadius: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+  // TILE EXTERIOR
+  stationIconTile: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: REVIEW_COLORS.iconTileSurface,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.92)",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.11,
     shadowRadius: 18,
     elevation: 5,
   },
 
-  stationEmoji: {
+  stationIconTileLarge: {
+    width: 170,
+    height: 170,
+    borderRadius: 42,
+  },
+
+  stationIconTileMedium: {
+    width: 112,
+    height: 112,
+    borderRadius: 32,
+    marginBottom: 14,
+  },
+
+  // SUPERFICIE INTERIOR
+  // Misma base de color que el tile para eliminar cualquier diferencia visual
+  stationIconEmojiSurface: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: REVIEW_COLORS.iconTileSurface,
+  },
+
+  stationIconEmojiSurfaceLarge: {
+    width: 122,
+    height: 122,
+    borderRadius: 24,
+  },
+
+  stationIconEmojiSurfaceMedium: {
+    width: 78,
+    height: 78,
+    borderRadius: 20,
+  },
+
+  stationIconEmoji: {
+    backgroundColor: REVIEW_COLORS.iconTileSurface,
+    includeFontPadding: false,
+    textAlign: "center",
+    textAlignVertical: "center",
+  },
+
+  stationIconEmojiLarge: {
     fontSize: 86,
+    lineHeight: 104,
+  },
+
+  stationIconEmojiMedium: {
+    fontSize: 58,
+    lineHeight: 72,
   },
 
   stationName: {
     fontSize: 36,
     lineHeight: 40,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   walkingPrompt: {
     fontSize: 22,
     lineHeight: 30,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   questionHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 24,
     gap: 8,
   },
@@ -1633,16 +1820,16 @@ const styles = StyleSheet.create({
   questionTitle: {
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   questionSubtitle: {
     maxWidth: 320,
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
     opacity: 0.72,
   },
 
@@ -1650,111 +1837,126 @@ const styles = StyleSheet.create({
     marginTop: 28,
     borderRadius: 34,
     padding: 22,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.54)',
-  },
-
-  questionStationEmoji: {
-    fontSize: 64,
-    marginBottom: 10,
+    borderColor: "rgba(255,255,255,0.54)",
   },
 
   questionStationName: {
     fontSize: 24,
     lineHeight: 30,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   timerSection: {
     marginTop: 18,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 6,
   },
 
   timerWrapper: {
     width: 62,
     height: 62,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   timerText: {
-    position: 'absolute',
+    position: "absolute",
     color: REVIEW_COLORS.textDark,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   timerHint: {
     color: REVIEW_COLORS.textMuted,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: "800",
   },
 
   optionsGrid: {
-    marginTop: 24,
+    width: "100%",
+    marginTop: 22,
     gap: 12,
+    alignItems: "center",
   },
 
   optionButton: {
-    minHeight: 58,
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: REVIEW_COLORS.overlayStrong,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
+    width: "84%",
+    height: ANSWER_OPTION_BUTTON_HEIGHT,
+    borderRadius: ANSWER_OPTION_BUTTON_HEIGHT / 2,
+    borderWidth: 4,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    elevation: 3,
+  },
+
+  optionButtonPressable: {
+    width: "100%",
+    height: "100%",
+  },
+
+  optionButtonContent: {
+    width: "100%",
+    height: "100%",
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   optionButtonPressed: {
-    transform: [{ scale: 0.985 }],
-    opacity: 0.88,
+    opacity: 0.86,
   },
 
   optionButtonText: {
-    color: REVIEW_COLORS.textDark,
+    width: "100%",
+    color: REVIEW_COLORS.white,
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
+    textAlignVertical: "center",
+    includeFontPadding: false,
+    transform: [{ translateY: ANSWER_OPTION_TEXT_OFFSET_Y }],
+    textShadowColor: "rgba(0,0,0,0.18)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   freeTextSection: {
     marginTop: 26,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 18,
   },
 
   answerInput: {
-    width: '100%',
+    width: "100%",
     minHeight: 58,
     borderRadius: 22,
     paddingHorizontal: 18,
     color: REVIEW_COLORS.textDark,
-    backgroundColor: REVIEW_COLORS.overlayStrong,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.75)',
+    borderWidth: 3,
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: "800",
   },
 
   giveUpButton: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: 22,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.44)',
+    backgroundColor: "rgba(255,255,255,0.44)",
   },
 
   giveUpButtonText: {
     color: REVIEW_COLORS.textDark,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: "900",
     opacity: 0.78,
   },
 
@@ -1764,15 +1966,15 @@ const styles = StyleSheet.create({
   },
 
   confettiPiece: {
-    position: 'absolute',
+    position: "absolute",
     top: -28,
     borderRadius: 3,
   },
 
   correctRevealContent: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 14,
   },
 
@@ -1780,12 +1982,12 @@ const styles = StyleSheet.create({
     width: 118,
     height: 118,
     borderRadius: 59,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: REVIEW_COLORS.success,
     borderWidth: 5,
     borderColor: REVIEW_COLORS.white,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -1796,49 +1998,49 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.white,
     fontSize: 72,
     lineHeight: 78,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   floatingXp: {
     color: REVIEW_COLORS.successDark,
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   correctRevealTitle: {
     color: REVIEW_COLORS.textDark,
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   correctRevealSubtitle: {
     color: REVIEW_COLORS.textMuted,
     fontSize: 17,
     lineHeight: 23,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   revealButtonSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 8,
   },
 
   incorrectRevealContent: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 28,
   },
 
   almostCard: {
-    width: '100%',
+    width: "100%",
     borderRadius: 32,
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: REVIEW_COLORS.orangeSoft,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.warning,
@@ -1853,8 +2055,8 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.warningDark,
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   almostMessage: {
@@ -1862,8 +2064,8 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.textDark,
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
     opacity: 0.78,
   },
 
@@ -1872,8 +2074,8 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.warningDark,
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   correctAnswerText: {
@@ -1881,13 +2083,13 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.textDark,
     fontSize: 26,
     lineHeight: 32,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   encouragementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
 
@@ -1898,20 +2100,20 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: REVIEW_COLORS.overlayBubble,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.65)',
+    borderColor: "rgba(255,255,255,0.65)",
   },
 
   encouragementBubbleText: {
     color: REVIEW_COLORS.textDark,
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   completeContent: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 18,
   },
 
@@ -1923,16 +2125,16 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.textDark,
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   completeSubtitle: {
     color: REVIEW_COLORS.textMuted,
     fontSize: 18,
     lineHeight: 25,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   completeXpCard: {
@@ -1949,7 +2151,7 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.successDark,
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   completeEncouragement: {
@@ -1957,35 +2159,7 @@ const styles = StyleSheet.create({
     color: REVIEW_COLORS.textMuted,
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-
-  placeholderCard: {
-    marginTop: 80,
-    padding: 24,
-    borderRadius: 32,
-    backgroundColor: REVIEW_COLORS.overlayStrong,
-    alignItems: 'center',
-    gap: 12,
-  },
-
-  placeholderEmoji: {
-    fontSize: 56,
-  },
-
-  placeholderTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: REVIEW_COLORS.textDark,
-    textAlign: 'center',
-  },
-
-  placeholderText: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: REVIEW_COLORS.textMuted,
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
 });
