@@ -1,8 +1,10 @@
-import * as FileSystem from 'expo-file-system/legacy';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
-import { auth } from './firebase';
+import { storage } from './firebase';
 
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+const PREPARE_IMAGE_TIMEOUT_MS = 15_000;
+const UPLOAD_IMAGE_TIMEOUT_MS = 30_000;
 
 interface UploadStationImageInput {
   userId: string;
@@ -12,21 +14,26 @@ interface UploadStationImageInput {
   contentType?: string;
 }
 
-const getRequiredEnvVar = (key: string): string => {
-  const value = process.env[key];
+const withTimeout = async <T,>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string,
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  if (!value) {
-    throw new Error(`Missing environment variable: ${key}`);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
-
-  return value;
-};
-
-const createDownloadToken = (): string => {
-  const randomPart = Math.random().toString(36).slice(2);
-  const timestampPart = Date.now().toString(36);
-
-  return `${timestampPart}-${randomPart}-${randomPart}`;
 };
 
 const getImageExtensionFromContentType = (contentType?: string): string => {
@@ -41,17 +48,7 @@ const getImageExtensionFromContentType = (contentType?: string): string => {
   return 'jpg';
 };
 
-const getExistingFileSize = (
-  fileInfo: FileSystem.FileInfo,
-): number | undefined => {
-  if (!fileInfo.exists) {
-    return undefined;
-  }
-
-  return typeof fileInfo.size === 'number' ? fileInfo.size : undefined;
-};
-
-const assertUploadInput = async ({
+const assertUploadInput = ({
   userId,
   palaceId,
   stationId,
@@ -72,30 +69,36 @@ const assertUploadInput = async ({
   if (!uri.trim()) {
     throw new Error('storageService: image uri is required.');
   }
-
-  const fileInfo = await FileSystem.getInfoAsync(uri);
-
-  if (!fileInfo.exists) {
-    throw new Error('The selected image file could not be found.');
-  }
-
-  const fileSize = getExistingFileSize(fileInfo);
-
-  if (fileSize !== undefined && fileSize > MAX_IMAGE_SIZE_BYTES) {
-    throw new Error(
-      'This image is too large. Please choose a smaller image under 2 MB.',
-    );
-  }
 };
 
-const getAuthenticatedUploadToken = async (): Promise<string> => {
-  const currentUser = auth.currentUser;
+const getBlobFromUri = (uri: string): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
 
-  if (!currentUser) {
-    throw new Error('You must be logged in to upload station images.');
+    xhr.onload = () => {
+      resolve(xhr.response as Blob);
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('The selected image could not be prepared for upload.'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Preparing the image took too long.'));
+    };
+
+    xhr.responseType = 'blob';
+    xhr.timeout = PREPARE_IMAGE_TIMEOUT_MS;
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
+
+const closeBlobSafely = (blob: Blob) => {
+  const maybeClosableBlob = blob as Blob & { close?: () => void };
+
+  if (typeof maybeClosableBlob.close === 'function') {
+    maybeClosableBlob.close();
   }
-
-  return currentUser.getIdToken(true);
 };
 
 export const uploadStationImage = async ({
@@ -105,7 +108,7 @@ export const uploadStationImage = async ({
   uri,
   contentType = 'image/jpeg',
 }: UploadStationImageInput): Promise<string> => {
-  await assertUploadInput({
+  assertUploadInput({
     userId,
     palaceId,
     stationId,
@@ -113,10 +116,7 @@ export const uploadStationImage = async ({
     contentType,
   });
 
-  const idToken = await getAuthenticatedUploadToken();
-  const storageBucket = getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET');
   const extension = getImageExtensionFromContentType(contentType);
-  const downloadToken = createDownloadToken();
 
   const imagePath = [
     'users',
@@ -128,25 +128,36 @@ export const uploadStationImage = async ({
     `station-image-${Date.now()}.${extension}`,
   ].join('/');
 
-  const encodedImagePath = encodeURIComponent(imagePath);
+  const imageRef = ref(storage, imagePath);
 
-  const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o?uploadType=media&name=${encodedImagePath}`;
+  const imageBlob = await withTimeout(
+    getBlobFromUri(uri),
+    PREPARE_IMAGE_TIMEOUT_MS,
+    'Preparing the image took too long. Please try another photo.',
+  );
 
-  const uploadResult = await FileSystem.uploadAsync(uploadUrl, uri, {
-    httpMethod: 'POST',
-    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': contentType,
-      'x-goog-meta-firebaseStorageDownloadTokens': downloadToken,
-    },
-  });
+  try {
+    if (imageBlob.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error(
+        'This image is too large. Please choose a smaller image under 2 MB.',
+      );
+    }
 
-  if (uploadResult.status < 200 || uploadResult.status >= 300) {
-    throw new Error(
-      `Image upload failed with status ${uploadResult.status}: ${uploadResult.body}`,
+    const uploadResult = await withTimeout(
+      uploadBytes(imageRef, imageBlob, {
+        contentType,
+        customMetadata: {
+          userId,
+          palaceId,
+          stationId,
+        },
+      }),
+      UPLOAD_IMAGE_TIMEOUT_MS,
+      'Image upload took too long. Please check your connection and try again.',
     );
-  }
 
-  return `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedImagePath}?alt=media&token=${downloadToken}`;
+    return await getDownloadURL(uploadResult.ref);
+  } finally {
+    closeBlobSafely(imageBlob);
+  }
 };

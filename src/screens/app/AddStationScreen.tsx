@@ -20,6 +20,7 @@ import { colors, spacing } from '../../theme';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { uploadStationImage } from '../../services/storageService';
+import type { Station } from '../../types';
 
 interface StationFormRouteParams {
   palaceId: string;
@@ -54,7 +55,9 @@ interface EmojiCategory {
   emojis: string[];
 }
 
+const EMPTY_STATIONS: Station[] = [];
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+const SAVE_TIMEOUT_MS = 45_000;
 
 const EMOJI_CATEGORIES: EmojiCategory[] = [
   {
@@ -101,6 +104,28 @@ const getUserIdFromStore = (state: unknown): string | null => {
   );
 };
 
+const withTimeout = async <T,>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string,
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+};
+
 export const AddStationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -115,9 +140,14 @@ export const AddStationScreen = () => {
   const createStation = usePalaceStore((state) => state.createStation);
   const updateStation = usePalaceStore((state) => state.updateStation);
   const loadStations = usePalaceStore((state) => state.loadStations);
-  const existingStations = usePalaceStore((state) =>
-    palaceId ? state.getStationsByPalaceId(palaceId) : [],
-  );
+
+  const existingStations = usePalaceStore((state) => {
+    if (!palaceId) {
+      return EMPTY_STATIONS;
+    }
+
+    return state.stations[palaceId] ?? EMPTY_STATIONS;
+  });
 
   const stationToEdit = useMemo(() => {
     if (!stationId) {
@@ -136,6 +166,7 @@ export const AddStationScreen = () => {
   const [hasHydratedEditForm, setHasHydratedEditForm] =
     useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<string>('');
 
   useEffect(() => {
     if (!isEditMode || !palaceId || !userId || stationToEdit) {
@@ -172,6 +203,14 @@ export const AddStationScreen = () => {
   );
 
   const handleClose = () => {
+    if (isSaving) {
+      Alert.alert(
+        'Saving in progress',
+        'Please wait until the station finishes saving.',
+      );
+      return;
+    }
+
     navigation.goBack();
   };
 
@@ -191,7 +230,7 @@ export const AddStationScreen = () => {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.6,
+      quality: 0.45,
       base64: false,
     });
 
@@ -227,6 +266,7 @@ export const AddStationScreen = () => {
     setSelectedImage({
       uri: asset.uri,
       contentType,
+      isRemote: false,
     });
   };
 
@@ -236,10 +276,33 @@ export const AddStationScreen = () => {
 
   const refreshStationsAndGoBack = async () => {
     if (palaceId && userId) {
+      setSaveStatus('Refreshing palace...');
       await loadStations(palaceId, userId);
     }
 
     navigation.goBack();
+  };
+
+  const uploadImageWithStatus = async ({
+    uploadStationId,
+    image,
+  }: {
+    uploadStationId: string;
+    image: SelectedImage;
+  }): Promise<string> => {
+    setSaveStatus('Uploading photo...');
+
+    return withTimeout(
+      uploadStationImage({
+        userId: userId as string,
+        palaceId,
+        stationId: uploadStationId,
+        uri: image.uri,
+        contentType: image.contentType,
+      }),
+      SAVE_TIMEOUT_MS,
+      'The image upload took too long. Please check your connection and try again.',
+    );
   };
 
   const handleSaveStation = async () => {
@@ -269,21 +332,21 @@ export const AddStationScreen = () => {
 
     try {
       setIsSaving(true);
+      setSaveStatus(isEditMode ? 'Updating station...' : 'Creating station...');
 
       if (isEditMode && stationId) {
         let nextImageUri: string | null | undefined;
 
         if (selectedImage && !selectedImage.isRemote) {
-          nextImageUri = await uploadStationImage({
-            userId,
-            palaceId,
-            stationId,
-            uri: selectedImage.uri,
-            contentType: selectedImage.contentType,
+          nextImageUri = await uploadImageWithStatus({
+            uploadStationId: stationId,
+            image: selectedImage,
           });
         } else if (!selectedImage && stationToEdit?.imageUri) {
           nextImageUri = null;
         }
+
+        setSaveStatus('Saving changes...');
 
         await updateStation(stationId, palaceId, userId, {
           emoji: selectedEmoji,
@@ -304,13 +367,12 @@ export const AddStationScreen = () => {
       });
 
       if (selectedImage) {
-        const imageUri = await uploadStationImage({
-          userId,
-          palaceId,
-          stationId: station.id,
-          uri: selectedImage.uri,
-          contentType: selectedImage.contentType,
+        const imageUri = await uploadImageWithStatus({
+          uploadStationId: station.id,
+          image: selectedImage,
         });
+
+        setSaveStatus('Saving photo link...');
 
         await updateStation(station.id, palaceId, userId, {
           imageUri,
@@ -322,6 +384,7 @@ export const AddStationScreen = () => {
       Alert.alert('Station not saved', getErrorMessage(error));
     } finally {
       setIsSaving(false);
+      setSaveStatus('');
     }
   };
 
@@ -384,6 +447,7 @@ export const AddStationScreen = () => {
                       <Pressable
                         key={`${category.title}-${emoji}`}
                         accessibilityRole="button"
+                        disabled={isSaving}
                         onPress={() => setSelectedEmoji(emoji)}
                         style={[
                           styles.emojiButton,
@@ -407,6 +471,7 @@ export const AddStationScreen = () => {
 
             <TextInput
               value={label}
+              editable={!isSaving}
               onChangeText={setLabel}
               placeholder="Front door"
               placeholderTextColor={colors.muted}
@@ -423,6 +488,7 @@ export const AddStationScreen = () => {
 
             <TextInput
               value={memoryText}
+              editable={!isSaving}
               onChangeText={setMemoryText}
               placeholder="Example: The first planet is Mercury."
               placeholderTextColor={colors.muted}
@@ -449,16 +515,24 @@ export const AddStationScreen = () => {
                 <View style={styles.imageActions}>
                   <Pressable
                     accessibilityRole="button"
+                    disabled={isSaving}
                     onPress={handlePickImage}
-                    style={styles.secondaryImageButton}
+                    style={[
+                      styles.secondaryImageButton,
+                      isSaving && styles.imageButtonDisabled,
+                    ]}
                   >
                     <Text style={styles.secondaryImageText}>Replace photo</Text>
                   </Pressable>
 
                   <Pressable
                     accessibilityRole="button"
+                    disabled={isSaving}
                     onPress={handleRemoveImage}
-                    style={styles.removeImageButton}
+                    style={[
+                      styles.removeImageButton,
+                      isSaving && styles.imageButtonDisabled,
+                    ]}
                   >
                     <Text style={styles.removeImageText}>Remove</Text>
                   </Pressable>
@@ -467,8 +541,12 @@ export const AddStationScreen = () => {
             ) : (
               <Pressable
                 accessibilityRole="button"
+                disabled={isSaving}
                 onPress={handlePickImage}
-                style={styles.photoButton}
+                style={[
+                  styles.photoButton,
+                  isSaving && styles.imageButtonDisabled,
+                ]}
               >
                 <Text style={styles.photoButtonEmoji}>📷</Text>
                 <Text style={styles.photoButtonText}>Choose from gallery</Text>
@@ -486,7 +564,12 @@ export const AddStationScreen = () => {
             ]}
           >
             {isSaving ? (
-              <ActivityIndicator color={colors.text} />
+              <View style={styles.savingContent}>
+                <ActivityIndicator color={colors.text} />
+                <Text style={styles.savingText}>
+                  {saveStatus || 'Saving...'}
+                </Text>
+              </View>
             ) : (
               <Text style={styles.saveButtonText}>
                 {isEditMode ? 'Save Changes' : 'Save Station'}
@@ -700,6 +783,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
   },
+  imageButtonDisabled: {
+    opacity: 0.5,
+  },
   saveButton: {
     minHeight: 60,
     borderRadius: 24,
@@ -723,6 +809,17 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: colors.text,
     fontSize: 18,
+    fontWeight: '900',
+  },
+  savingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  savingText: {
+    color: colors.text,
+    fontSize: 15,
     fontWeight: '900',
   },
 });
