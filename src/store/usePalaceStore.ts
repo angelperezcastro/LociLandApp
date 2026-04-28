@@ -354,44 +354,51 @@ export const usePalaceStore = create<PalaceState>((set, get) => ({
   },
 
   reorderStations: async (
-    palaceId: string,
-    userId: string,
-    orderedIds: string[],
-  ) => {
-    try {
-      set({ error: null });
+  palaceId: string,
+  userId: string,
+  orderedIds: string[],
+) => {
+  const previousStations = get().stations[palaceId] ?? [];
 
-      await reorderStationsService(palaceId, userId, orderedIds);
+  try {
+    set({ error: null });
 
-      set((state) => {
-        const currentStations = state.stations[palaceId] ?? [];
-        const orderMap = new Map(
-          orderedIds.map((stationId, index) => [stationId, index]),
-        );
+    const orderMap = new Map(
+      orderedIds.map((stationId, index) => [stationId, index]),
+    );
 
-        return {
-          stations: {
-            ...state.stations,
-            [palaceId]: currentStations
-              .map((station) => ({
-                ...station,
-                order: orderMap.get(station.id) ?? station.order,
-              }))
-              .sort((a, b) => a.order - b.order),
-          },
-        };
-      });
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Unable to reorder stations.',
-      });
+    set((state) => {
+      const currentStations = state.stations[palaceId] ?? [];
 
-      throw error;
-    }
-  },
+      return {
+        stations: {
+          ...state.stations,
+          [palaceId]: currentStations
+            .map((station) => ({
+              ...station,
+              order: orderMap.get(station.id) ?? station.order,
+            }))
+            .sort((a, b) => a.order - b.order),
+        },
+      };
+    });
+
+    await reorderStationsService(palaceId, userId, orderedIds);
+  } catch (error) {
+    set((state) => ({
+      stations: {
+        ...state.stations,
+        [palaceId]: previousStations,
+      },
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to reorder stations.',
+    }));
+
+    throw error;
+  }
+},
 
   getPalaceById: (palaceId: string) =>
     get().palaces.find((palace) => palace.id === palaceId),

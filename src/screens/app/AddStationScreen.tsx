@@ -28,7 +28,6 @@ interface StationFormRouteParams {
 
 interface SelectedImage {
   uri: string;
-  base64?: string;
   contentType?: string;
   isRemote?: boolean;
 }
@@ -54,6 +53,8 @@ interface EmojiCategory {
   title: string;
   emojis: string[];
 }
+
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 const EMOJI_CATEGORIES: EmojiCategory[] = [
   {
@@ -191,7 +192,7 @@ export const AddStationScreen = () => {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.6,
-      base64: true,
+      base64: false,
     });
 
     if (result.canceled) {
@@ -200,7 +201,7 @@ export const AddStationScreen = () => {
 
     const asset = result.assets[0];
 
-    if (!asset?.uri || !asset.base64) {
+    if (!asset?.uri) {
       Alert.alert(
         'Image not ready',
         'The selected image could not be prepared. Please choose another photo.',
@@ -218,22 +219,27 @@ export const AddStationScreen = () => {
       return;
     }
 
-    const approximateSizeInBytes = Math.floor((asset.base64.length * 3) / 4);
-
-    if (approximateSizeInBytes > 2 * 1024 * 1024) {
+    if (asset.fileSize && asset.fileSize > MAX_IMAGE_SIZE_BYTES) {
       Alert.alert('Image too large', 'Please choose a smaller image under 2 MB.');
       return;
     }
 
     setSelectedImage({
       uri: asset.uri,
-      base64: asset.base64,
       contentType,
     });
   };
 
   const handleRemoveImage = () => {
     setSelectedImage(null);
+  };
+
+  const refreshStationsAndGoBack = async () => {
+    if (palaceId && userId) {
+      await loadStations(palaceId, userId);
+    }
+
+    navigation.goBack();
   };
 
   const handleSaveStation = async () => {
@@ -267,12 +273,12 @@ export const AddStationScreen = () => {
       if (isEditMode && stationId) {
         let nextImageUri: string | null | undefined;
 
-        if (selectedImage?.base64) {
+        if (selectedImage && !selectedImage.isRemote) {
           nextImageUri = await uploadStationImage({
             userId,
             palaceId,
             stationId,
-            base64: selectedImage.base64,
+            uri: selectedImage.uri,
             contentType: selectedImage.contentType,
           });
         } else if (!selectedImage && stationToEdit?.imageUri) {
@@ -286,7 +292,7 @@ export const AddStationScreen = () => {
           ...(nextImageUri !== undefined ? { imageUri: nextImageUri } : {}),
         });
 
-        navigation.goBack();
+        await refreshStationsAndGoBack();
         return;
       }
 
@@ -297,12 +303,12 @@ export const AddStationScreen = () => {
         memoryText: memoryText.trim(),
       });
 
-      if (selectedImage?.base64) {
+      if (selectedImage) {
         const imageUri = await uploadStationImage({
           userId,
           palaceId,
           stationId: station.id,
-          base64: selectedImage.base64,
+          uri: selectedImage.uri,
           contentType: selectedImage.contentType,
         });
 
@@ -311,7 +317,7 @@ export const AddStationScreen = () => {
         });
       }
 
-      navigation.goBack();
+      await refreshStationsAndGoBack();
     } catch (error) {
       Alert.alert('Station not saved', getErrorMessage(error));
     } finally {

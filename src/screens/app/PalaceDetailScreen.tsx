@@ -10,8 +10,13 @@ import {
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import DraggableFlatList, {
+  ScaleDecorator,
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
 
@@ -23,6 +28,8 @@ import { useUserStore } from '../../store/useUserStore';
 import { Button } from '../../components/ui/Button';
 import { StationCard } from '../../components/station/StationCard';
 import type { Station } from '../../types';
+
+const EMPTY_STATIONS: Station[] = [];
 
 type PalaceDetailRoute = {
   params?: {
@@ -68,6 +75,15 @@ function PalaceDetailScreen() {
     null;
 
   const palaces = usePalaceStore((state) => state.palaces);
+
+  const stations = usePalaceStore((state) => {
+    if (!palaceId) {
+      return EMPTY_STATIONS;
+    }
+
+    return state.stations[palaceId] ?? EMPTY_STATIONS;
+  });
+
   const isLoading = usePalaceStore((state) => state.isLoading);
   const isLoadingStations = usePalaceStore(
     (state) => state.isLoadingStations,
@@ -77,9 +93,6 @@ function PalaceDetailScreen() {
   const loadStations = usePalaceStore((state) => state.loadStations);
   const deleteStation = usePalaceStore((state) => state.deleteStation);
   const reorderStations = usePalaceStore((state) => state.reorderStations);
-  const getStationsByPalaceId = usePalaceStore(
-    (state) => state.getStationsByPalaceId,
-  );
 
   const palace = useMemo(() => {
     if (!palaceId) {
@@ -88,14 +101,6 @@ function PalaceDetailScreen() {
 
     return palaces.find((item) => item.id === palaceId);
   }, [palaceId, palaces]);
-
-  const stations: Station[] = useMemo(() => {
-    if (!palaceId) {
-      return [];
-    }
-
-    return getStationsByPalaceId(palaceId);
-  }, [getStationsByPalaceId, palaceId]);
 
   useEffect(() => {
     if (!palaceId || !userId || palace) {
@@ -107,15 +112,19 @@ function PalaceDetailScreen() {
     });
   }, [loadPalaces, palace, palaceId, userId]);
 
-  useEffect(() => {
-    if (!palaceId || !userId) {
-      return;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (!palaceId || !userId) {
+        return undefined;
+      }
 
-    loadStations(palaceId, userId).catch(() => {
-      // The store already keeps the error.
-    });
-  }, [loadStations, palaceId, userId]);
+      loadStations(palaceId, userId).catch(() => {
+        // The store already keeps the error.
+      });
+
+      return undefined;
+    }, [loadStations, palaceId, userId]),
+  );
 
   useEffect(() => {
     if (!error) {
@@ -134,6 +143,14 @@ function PalaceDetailScreen() {
   );
 
   const canStartReview = Boolean(palace && visibleStationCount > 0);
+
+  const stationListRenderKey = useMemo(
+    () =>
+      `${palaceId ?? 'no-palace'}-${stations.length}-${stations
+        .map((station) => `${station.id}:${station.order}:${station.label}`)
+        .join('|')}`,
+    [palaceId, stations],
+  );
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -179,20 +196,22 @@ function PalaceDetailScreen() {
             text: 'Delete',
             style: 'destructive',
             onPress: () => {
-              deleteStation(station.id, palaceId, userId).catch((deleteError) => {
-                Alert.alert(
-                  'Station not deleted',
-                  deleteError instanceof Error
-                    ? deleteError.message
-                    : 'Something went wrong while deleting this station.',
-                );
-              });
+              deleteStation(station.id, palaceId, userId)
+                .then(() => loadStations(palaceId, userId))
+                .catch((deleteError) => {
+                  Alert.alert(
+                    'Station not deleted',
+                    deleteError instanceof Error
+                      ? deleteError.message
+                      : 'Something went wrong while deleting this station.',
+                  );
+                });
             },
           },
         ],
       );
     },
-    [deleteStation, palaceId, userId],
+    [deleteStation, loadStations, palaceId, userId],
   );
 
   const handleDragEnd = useCallback(
@@ -225,15 +244,24 @@ function PalaceDetailScreen() {
 
   const renderStationItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<Station>) => (
-      <StationCard
-        station={item}
-        isActive={isActive}
-        onEdit={handleEditStation}
-        onDelete={handleDeleteStation}
-        onDrag={drag}
-      />
+      <ScaleDecorator>
+        <View style={styles.stationItemWrapper}>
+          <StationCard
+            station={item}
+            isActive={isActive}
+            onEdit={handleEditStation}
+            onDelete={handleDeleteStation}
+            onDrag={drag}
+          />
+        </View>
+      </ScaleDecorator>
     ),
     [handleDeleteStation, handleEditStation],
+  );
+
+  const renderSeparator = useCallback(
+    () => <View style={styles.stationSeparator} />,
+    [],
   );
 
   const renderListHeader = () => {
@@ -276,7 +304,9 @@ function PalaceDetailScreen() {
           <Text style={styles.sectionHint}>
             {hasStations
               ? 'Hold a card and drag it to reorder your route'
-              : 'Add stations to build your memory route'}
+              : visibleStationCount > 0
+                ? 'Loading your stations...'
+                : 'Add stations to build your memory route'}
           </Text>
         </View>
       </>
@@ -284,7 +314,7 @@ function PalaceDetailScreen() {
   };
 
   const renderEmptyList = () => {
-    if (isLoadingStations) {
+    if (isLoadingStations || visibleStationCount > 0) {
       return (
         <View style={styles.loadingStationsCard}>
           <ActivityIndicator size="small" color={colors.text} />
@@ -425,15 +455,21 @@ function PalaceDetailScreen() {
 
       <DraggableFlatList
         data={stations}
+        extraData={stationListRenderKey}
         keyExtractor={(item) => item.id}
         renderItem={renderStationItem}
+        ItemSeparatorComponent={renderSeparator}
         onDragEnd={handleDragEnd}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyList}
         contentContainerStyle={styles.scrollContent}
         containerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-        activationDistance={12}
+        activationDistance={20}
+        autoscrollThreshold={90}
+        autoscrollSpeed={80}
+        dragItemOverflow
+        renderPlaceholder={() => <View style={styles.dragPlaceholder} />}
       />
 
       <TouchableOpacity
@@ -560,6 +596,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: 128,
+  },
+
+  stationItemWrapper: {
+    minHeight: 96,
+  },
+
+  stationSeparator: {
+    height: spacing.md,
+  },
+
+  dragPlaceholder: {
+    minHeight: 96,
+    borderRadius: 28,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.softYellow,
+    opacity: 0.75,
   },
 
   heroCard: {

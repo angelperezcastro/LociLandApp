@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -36,6 +36,7 @@ export function StationCard({
   onDrag,
 }: StationCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const swipeableRef = useRef<Swipeable | null>(null);
 
   const stationColour = useMemo(
     () => STATION_COLOURS[station.order % STATION_COLOURS.length],
@@ -47,12 +48,17 @@ export function StationCard({
       ? station.memoryText.trim()
       : 'No memory text yet.';
 
+  const handleDelete = () => {
+    swipeableRef.current?.close();
+    onDelete(station);
+  };
+
   const renderRightActions = () => (
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityLabel={`Delete ${station.label}`}
       activeOpacity={0.86}
-      onPress={() => onDelete(station)}
+      onPress={handleDelete}
       style={styles.deleteAction}
     >
       <Text style={styles.deleteActionText}>Delete</Text>
@@ -60,12 +66,18 @@ export function StationCard({
   );
 
   return (
-    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      enabled={!isActive}
+    >
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => setIsExpanded((current) => !current)}
         onLongPress={onDrag}
-        delayLongPress={180}
+        delayLongPress={220}
+        disabled={isActive}
         style={[styles.card, isActive && styles.cardActive]}
       >
         <View style={[styles.emojiShell, { backgroundColor: stationColour }]}>
@@ -103,13 +115,15 @@ export function StationCard({
           )}
         </View>
 
-        {station.imageUri ? (
-          <Image source={{ uri: station.imageUri }} style={styles.thumbnail} />
-        ) : (
+        <View style={styles.rightArea}>
+          {station.imageUri ? (
+            <Image source={{ uri: station.imageUri }} style={styles.thumbnail} />
+          ) : null}
+
           <View style={styles.dragHandle}>
             <Text style={styles.dragHandleText}>⋮⋮</Text>
           </View>
-        )}
+        </View>
       </TouchableOpacity>
     </Swipeable>
   );
@@ -117,7 +131,7 @@ export function StationCard({
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 94,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 28,
@@ -140,8 +154,17 @@ const styles = StyleSheet.create({
   },
 
   cardActive: {
-    opacity: 0.86,
-    transform: [{ scale: 1.02 }],
+    opacity: 0.94,
+    transform: [{ scale: 1.03 }],
+    ...Platform.select({
+      ios: {
+        shadowOpacity: 0.22,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 14,
+      },
+    }),
   },
 
   emojiShell: {
@@ -212,9 +235,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
   },
 
+  rightArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+
   thumbnail: {
-    width: 54,
-    height: 54,
+    width: 52,
+    height: 52,
     borderRadius: 18,
     borderWidth: 2,
     borderColor: colors.text,
@@ -223,8 +252,8 @@ const styles = StyleSheet.create({
 
   dragHandle: {
     width: 38,
-    height: 54,
-    borderRadius: 16,
+    minHeight: 30,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -234,7 +263,7 @@ const styles = StyleSheet.create({
 
   dragHandleText: {
     color: colors.muted,
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Nunito_800ExtraBold',
   },
 
