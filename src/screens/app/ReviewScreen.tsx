@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,8 +11,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  RouteProp,
+  useNavigation,
+  usePreventRemove,
+  useRoute,
+} from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import Animated, {
   BounceIn,
@@ -150,6 +157,9 @@ const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
 const XP_PER_CORRECT_ANSWER = 10;
 const PERFECT_SCORE_PERCENTAGE = 1;
 const SUMMARY_COUNTER_DURATION_MS = 900;
+
+const CORRECT_SOUND_SOURCE = require('../../assets/sounds/review-correct.wav');
+const INCORRECT_SOUND_SOURCE = require('../../assets/sounds/review-incorrect.wav');
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -407,6 +417,127 @@ const createMultipleChoiceOptions = (
   );
 
   return shuffleArray([correctAnswer, ...filledWrongAnswers]).slice(0, 4);
+};
+
+
+const safelyRunFeedback = async (callback: () => Promise<void>) => {
+  try {
+    await callback();
+  } catch {
+    // Feedback should never block the review flow.
+  }
+};
+
+const useReviewFeedbackEffects = () => {
+  const correctSoundRef = useRef<Audio.Sound | null>(null);
+  const incorrectSoundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSounds = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+        });
+
+        const [correctSound, incorrectSound] = await Promise.all([
+          Audio.Sound.createAsync(CORRECT_SOUND_SOURCE, {
+            shouldPlay: false,
+            volume: 0.82,
+          }),
+          Audio.Sound.createAsync(INCORRECT_SOUND_SOURCE, {
+            shouldPlay: false,
+            volume: 0.46,
+          }),
+        ]);
+
+        if (!isMounted) {
+          await Promise.all([
+            correctSound.sound.unloadAsync(),
+            incorrectSound.sound.unloadAsync(),
+          ]);
+          return;
+        }
+
+        correctSoundRef.current = correctSound.sound;
+        incorrectSoundRef.current = incorrectSound.sound;
+      } catch {
+        // Sound effects are optional. Keep the review usable if audio fails.
+      }
+    };
+
+    loadSounds();
+
+    return () => {
+      isMounted = false;
+
+      const correctSound = correctSoundRef.current;
+      const incorrectSound = incorrectSoundRef.current;
+
+      correctSoundRef.current = null;
+      incorrectSoundRef.current = null;
+
+      if (correctSound) {
+        correctSound.unloadAsync().catch(() => undefined);
+      }
+
+      if (incorrectSound) {
+        incorrectSound.unloadAsync().catch(() => undefined);
+      }
+    };
+  }, []);
+
+  const playSound = useCallback(async (sound: Audio.Sound | null) => {
+    if (!sound) return;
+
+    try {
+      await sound.stopAsync();
+    } catch {
+      // Some platforms throw if the sound was not playing. Safe to ignore.
+    }
+
+    try {
+      await sound.setPositionAsync(0);
+      await sound.playAsync();
+    } catch {
+      // Sound effects should never block answer recording.
+    }
+  }, []);
+
+  const playTapFeedback = useCallback(() => {
+    safelyRunFeedback(() =>
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+    );
+  }, []);
+
+  const playCorrectFeedback = useCallback(() => {
+    safelyRunFeedback(async () => {
+      await Promise.all([
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+        playSound(correctSoundRef.current),
+      ]);
+    });
+  }, [playSound]);
+
+  const playIncorrectFeedback = useCallback(() => {
+    safelyRunFeedback(async () => {
+      await Promise.all([
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
+        playSound(incorrectSoundRef.current),
+      ]);
+    });
+  }, [playSound]);
+
+  return {
+    playTapFeedback,
+    playCorrectFeedback,
+    playIncorrectFeedback,
+  };
 };
 
 const ReviewLoadingState = () => {
@@ -863,6 +994,7 @@ const QuestionState = ({
   buttonTextColor,
   answerBorderColor,
   answerButtonBackgroundColor,
+  onAnswerSelectionFeedback,
   onSubmitAnswer,
   onGiveUp,
 }: {
@@ -875,6 +1007,7 @@ const QuestionState = ({
   buttonTextColor: string;
   answerBorderColor: string;
   answerButtonBackgroundColor: string;
+  onAnswerSelectionFeedback: () => void;
   onSubmitAnswer: (answer: string) => void;
   onGiveUp: () => void;
 }) => {
@@ -921,7 +1054,10 @@ const QuestionState = ({
             <TouchableOpacity
               key={option}
               activeOpacity={0.84}
-              onPress={() => onSubmitAnswer(option)}
+              onPress={() => {
+                onAnswerSelectionFeedback();
+                onSubmitAnswer(option);
+              }}
               style={[
                 styles.optionButton,
                 {
@@ -964,7 +1100,10 @@ const QuestionState = ({
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
             disabled={!canSubmitFreeText}
-            onPress={() => onSubmitAnswer(freeTextAnswer)}
+            onPress={() => {
+              onAnswerSelectionFeedback();
+              onSubmitAnswer(freeTextAnswer);
+            }}
           />
         </View>
       )}
@@ -1259,7 +1398,7 @@ const CompleteState = ({
 };
 
 export const ReviewScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<ReviewRouteParams, 'Review'>>();
 
   const {
@@ -1268,6 +1407,12 @@ export const ReviewScreen = () => {
     initialStations,
     ageGroup = DEFAULT_REVIEW_AGE_GROUP,
   } = route.params;
+
+  const {
+    playTapFeedback,
+    playCorrectFeedback,
+    playIncorrectFeedback,
+  } = useReviewFeedbackEffects();
 
   const [data, setData] = useState<ReviewScreenData | null>(null);
   const [screenState, setScreenState] = useState<ReviewScreenState>('INTRO');
@@ -1283,6 +1428,32 @@ export const ReviewScreen = () => {
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const shouldConfirmQuitReview = Boolean(sessionId && screenState !== 'COMPLETE');
+
+  usePreventRemove(shouldConfirmQuitReview, ({ data: preventRemoveData }) => {
+    Alert.alert(
+      'Quit review?',
+      'Are you sure you want to quit? Your current review progress will be lost.',
+      [
+        {
+          text: 'Stay',
+          style: 'cancel',
+        },
+        {
+          text: 'Quit',
+          style: 'destructive',
+          onPress: () => navigation.dispatch(preventRemoveData.action),
+        },
+      ],
+    );
+  });
+
+  useEffect(() => {
+    navigation.setOptions?.({
+      gestureEnabled: !shouldConfirmQuitReview,
+    });
+  }, [navigation, shouldConfirmQuitReview]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1441,6 +1612,12 @@ export const ReviewScreen = () => {
         ? normalizeAnswer(answer) === normalizeAnswer(correctAnswer)
         : isFreeTextAnswerCorrect(answer, correctAnswer);
 
+    if (correct) {
+      playCorrectFeedback();
+    } else {
+      playIncorrectFeedback();
+    }
+
     const result: RevealResult = {
       stationId: currentStation.id,
       correct,
@@ -1483,6 +1660,7 @@ export const ReviewScreen = () => {
   };
 
   const handleGiveUp = () => {
+    playTapFeedback();
     handleSubmitAnswer('', true);
   };
 
@@ -1598,6 +1776,7 @@ export const ReviewScreen = () => {
           buttonTextColor={buttonTextColor}
           answerBorderColor={answerBorderColor}
           answerButtonBackgroundColor={palaceBackgroundColor}
+          onAnswerSelectionFeedback={playTapFeedback}
           onSubmitAnswer={(answer) => handleSubmitAnswer(answer)}
           onGiveUp={handleGiveUp}
         />
