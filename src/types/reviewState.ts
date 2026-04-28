@@ -27,12 +27,12 @@ export const REVIEW_STATE_DESCRIPTIONS: Record<ReviewScreenState, string> = {
   NEXT:
     'Move to the next station or finish the session if there are no stations left.',
   COMPLETE:
-    'Show review summary, XP earned, encouragement, and progress.',
+    'Show review summary, XP earned, encouragement, review-again action, and safe navigation back to the palace.',
 };
 
 export const getNextReviewState = (
   currentState: ReviewScreenState,
-  hasMoreStations: boolean
+  hasMoreStations: boolean,
 ): ReviewScreenState => {
   switch (currentState) {
     case 'INTRO':

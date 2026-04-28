@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   increment,
+  runTransaction,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -33,7 +34,12 @@ const PERFECT_REVIEW_BONUS_XP = 30;
 
 const timestampToDate = (value: Timestamp | null | undefined): Date | null => {
   if (!value) return null;
+
   return value.toDate();
+};
+
+const getUserRef = (userId: string) => {
+  return doc(db, USERS_COLLECTION, userId);
 };
 
 const getPalaceRef = (userId: string, palaceId: string) => {
@@ -101,6 +107,7 @@ const mapReviewSession = (
     incorrectAnswers: data.incorrectAnswers,
     xpEarned: data.xpEarned,
     status: data.status,
+    xpAppliedToUser: data.xpAppliedToUser ?? false,
   };
 };
 
@@ -199,6 +206,7 @@ export const startReview = async ({
       correctAnswers: 0,
       incorrectAnswers: 0,
       xpEarned: 0,
+      xpAppliedToUser: false,
       status: 'active',
     },
   );
@@ -328,29 +336,50 @@ export const completeReview = async ({
     throw new Error('sessionId is required to complete a review.');
   }
 
+  const userRef = getUserRef(userId);
   const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
-  const sessionSnap = await getDoc(sessionRef);
 
-  if (!sessionSnap.exists()) {
-    throw new Error('Review session not found.');
-  }
+  await runTransaction(db, async (transaction) => {
+    const sessionSnap = await transaction.get(sessionRef);
 
-  const sessionData = sessionSnap.data() as ReviewSessionDocument;
+    if (!sessionSnap.exists()) {
+      throw new Error('Review session not found.');
+    }
 
-  if (sessionData.status === 'completed') {
-    return mapReviewSession(sessionSnap.id, sessionData);
-  }
+    const sessionData = sessionSnap.data() as ReviewSessionDocument;
 
-  const xpEarned = calculateReviewXp({
-    totalStations: sessionData.totalStations,
-    correctAnswers: sessionData.correctAnswers,
-    incorrectAnswers: sessionData.incorrectAnswers,
-  });
+    const alreadyCompleted = sessionData.status === 'completed';
+    const xpAlreadyApplied = sessionData.xpAppliedToUser === true;
 
-  await updateDoc(sessionRef, {
-    completedAt: serverTimestamp(),
-    xpEarned,
-    status: 'completed',
+    if (alreadyCompleted && xpAlreadyApplied) {
+      return;
+    }
+
+    const xpEarned = alreadyCompleted
+      ? sessionData.xpEarned
+      : calculateReviewXp({
+          totalStations: sessionData.totalStations,
+          correctAnswers: sessionData.correctAnswers,
+          incorrectAnswers: sessionData.incorrectAnswers,
+        });
+
+    const shouldApplyXpToUser = xpEarned > 0 && !xpAlreadyApplied;
+
+    transaction.update(sessionRef, {
+      completedAt: sessionData.completedAt ?? serverTimestamp(),
+      xpEarned,
+      xpAppliedToUser: true,
+      status: 'completed',
+    });
+
+    if (shouldApplyXpToUser) {
+      transaction.update(userRef, {
+        xp: increment(xpEarned),
+        totalXp: increment(xpEarned),
+        reviewXp: increment(xpEarned),
+        updatedAt: serverTimestamp(),
+      });
+    }
   });
 
   const updatedSessionSnap = await getDoc(sessionRef);

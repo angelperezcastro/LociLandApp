@@ -55,6 +55,62 @@ type LooseUserStore = {
   currentUser?: LooseAuthUser | null;
 };
 
+type LooseStation = Station & {
+  name?: string;
+  emoji?: string;
+  icon?: string;
+  imageUrl?: string | null;
+  imageUri?: string | null;
+  photoUrl?: string | null;
+  memoryText?: string;
+  answerText?: string;
+  answer?: string;
+  position?: number;
+  index?: number;
+};
+
+const getStationName = (station: LooseStation, fallbackIndex: number) => {
+  return station.label ?? station.name ?? `Station ${fallbackIndex + 1}`;
+};
+
+const getStationOrder = (station: LooseStation, fallbackIndex: number) => {
+  if (typeof station.order === 'number') {
+    return station.order;
+  }
+
+  if (typeof station.position === 'number') {
+    return station.position;
+  }
+
+  if (typeof station.index === 'number') {
+    return station.index;
+  }
+
+  return fallbackIndex;
+};
+
+const mapStationForReview = (station: Station, index: number) => {
+  const looseStation = station as LooseStation;
+  const stationName = getStationName(looseStation, index);
+
+  return {
+    id: station.id,
+    name: stationName,
+    emoji: looseStation.emoji ?? looseStation.icon ?? '📍',
+    imageUrl:
+      looseStation.imageUri ??
+      looseStation.imageUrl ??
+      looseStation.photoUrl ??
+      null,
+    order: getStationOrder(looseStation, index),
+    answerText:
+      looseStation.memoryText ??
+      looseStation.answerText ??
+      looseStation.answer ??
+      stationName,
+  };
+};
+
 function PalaceDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute() as PalaceDetailRoute;
@@ -258,93 +314,59 @@ function PalaceDetailScreen() {
   );
 
   const handleStartReview = () => {
-  if (!palaceId) {
-    Alert.alert(
-      'Review unavailable',
-      'This palace could not be opened because its route is missing.',
-    );
-    return;
-  }
+    if (!palaceId) {
+      Alert.alert(
+        'Review unavailable',
+        'This palace could not be opened because its route is missing.',
+      );
+      return;
+    }
 
-  if (!canStartReview) {
-    Alert.alert(
-      'Add more stations',
-      'You need at least 2 stations before starting review mode.',
-    );
-    return;
-  }
+    if (!canStartReview) {
+      Alert.alert(
+        'Add more stations',
+        'You need at least 2 stations before starting review mode.',
+      );
+      return;
+    }
 
-  if (!palace || !template) {
-    Alert.alert(
-      'Review unavailable',
-      'This palace is not ready yet. Go back and try again.',
-    );
-    return;
-  }
+    if (!palace || !template) {
+      Alert.alert(
+        'Review unavailable',
+        'This palace is not ready yet. Go back and try again.',
+      );
+      return;
+    }
 
-  if (stations.length < MIN_REVIEW_STATIONS) {
-    Alert.alert(
-      'Stations still loading',
-      'Wait a second until your memory stations are fully loaded.',
-    );
-    return;
-  }
+    if (stations.length < MIN_REVIEW_STATIONS) {
+      Alert.alert(
+        'Stations still loading',
+        'Wait a second until your memory stations are fully loaded.',
+      );
+      return;
+    }
 
-  const initialStations = stations.map((station, index) => {
-    const looseStation = station as Station & {
-      name?: string;
-      emoji?: string;
-      icon?: string;
-      imageUrl?: string | null;
-      imageUri?: string | null;
-      photoUrl?: string | null;
-      memoryText?: string;
-      answerText?: string;
-      answer?: string;
-      position?: number;
-      index?: number;
-    };
+    const initialStations = [...stations]
+      .sort((a, b) => {
+        const firstOrder = typeof a.order === 'number' ? a.order : 0;
+        const secondOrder = typeof b.order === 'number' ? b.order : 0;
 
-    const stationName =
-      station.label ?? looseStation.name ?? `Station ${index + 1}`;
+        return firstOrder - secondOrder;
+      })
+      .map(mapStationForReview);
 
-    return {
-      id: station.id,
-      name: stationName,
-      emoji: looseStation.emoji ?? looseStation.icon ?? '📍',
-      imageUrl:
-        looseStation.imageUri ??
-        looseStation.imageUrl ??
-        looseStation.photoUrl ??
-        null,
-      order:
-        typeof station.order === 'number'
-          ? station.order
-          : typeof looseStation.position === 'number'
-            ? looseStation.position
-            : typeof looseStation.index === 'number'
-              ? looseStation.index
-              : index,
-      answerText:
-        looseStation.memoryText ??
-        looseStation.answerText ??
-        looseStation.answer ??
-        stationName,
-    };
-  });
-
-  navigation.navigate('Review', {
-    palaceId,
-    initialPalace: {
-      id: palace.id,
-      name: palace.name,
-      emoji: template.emoji,
-      backgroundColor: template.backgroundColour,
-      stationCount: visibleStationCount,
-    },
-    initialStations,
-  });
-};
+    navigation.navigate('Review', {
+      palaceId,
+      initialPalace: {
+        id: palace.id,
+        name: palace.name,
+        emoji: template.emoji,
+        backgroundColor: template.backgroundColour,
+        stationCount: initialStations.length,
+      },
+      initialStations,
+    });
+  };
 
   const renderStationItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<Station>) => (

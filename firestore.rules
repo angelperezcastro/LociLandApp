@@ -59,6 +59,7 @@ service cloud.firestore {
           'correctAnswers',
           'incorrectAnswers',
           'xpEarned',
+          'xpAppliedToUser',
           'status'
         ])
         && request.resource.data.userId == uid
@@ -71,7 +72,13 @@ service cloud.firestore {
         && request.resource.data.correctAnswers == 0
         && request.resource.data.incorrectAnswers == 0
         && request.resource.data.xpEarned == 0
+        && request.resource.data.xpAppliedToUser == false
         && request.resource.data.status == 'active';
+    }
+
+    function hasValidReviewXpAppliedFlag() {
+      return !request.resource.data.keys().hasAny(['xpAppliedToUser'])
+        || request.resource.data.xpAppliedToUser is bool;
     }
 
     function isValidReviewSessionUpdate(uid, palaceId) {
@@ -84,6 +91,7 @@ service cloud.firestore {
           'correctAnswers',
           'incorrectAnswers',
           'xpEarned',
+          'xpAppliedToUser',
           'status'
         ])
         && resource.data.userId == uid
@@ -102,11 +110,23 @@ service cloud.firestore {
         && request.resource.data.xpEarned is int
         && request.resource.data.xpEarned >= 0
         && request.resource.data.xpEarned <= 1000
+        && hasValidReviewXpAppliedFlag()
         && request.resource.data.status in ['active', 'completed']
         && (
           request.resource.data.status == 'active'
           ? request.resource.data.completedAt == null
           : request.resource.data.completedAt is timestamp
+        )
+        && (
+          request.resource.data.status == 'active'
+          ? (
+              request.resource.data.xpEarned == 0
+              && (
+                !request.resource.data.keys().hasAny(['xpAppliedToUser'])
+                || request.resource.data.xpAppliedToUser == false
+              )
+            )
+          : true
         );
     }
 

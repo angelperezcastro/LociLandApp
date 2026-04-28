@@ -13,6 +13,7 @@ export interface ReviewSession {
   incorrectAnswers: number;
   xpEarned: number;
   status: ReviewSessionStatus;
+  xpAppliedToUser: boolean;
 }
 
 export interface ReviewSessionDocument {
@@ -25,6 +26,7 @@ export interface ReviewSessionDocument {
   incorrectAnswers: number;
   xpEarned: number;
   status: ReviewSessionStatus;
+  xpAppliedToUser?: boolean;
 }
 
 export interface ReviewAnswer {
