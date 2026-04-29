@@ -1,3 +1,5 @@
+// src/services/reviewService.ts
+
 import {
   addDoc,
   collection,
@@ -11,8 +13,6 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 
-import { db } from './firebase';
-
 import type {
   CompleteReviewInput,
   RecordAnswerInput,
@@ -22,24 +22,19 @@ import type {
   ReviewSessionDocument,
   StartReviewInput,
 } from '../types/review';
+import { XP_REWARDS } from '../utils/levelUtils';
+import { db } from './firebase';
+import { addXP, buildXPEventId } from './xpService';
 
 const USERS_COLLECTION = 'users';
 const PALACES_COLLECTION = 'palaces';
 const REVIEW_SESSIONS_COLLECTION = 'reviewSessions';
 const REVIEW_ANSWERS_SUBCOLLECTION = 'answers';
 
-const XP_PER_CORRECT_ANSWER = 10;
-const COMPLETION_BONUS_XP = 20;
-const PERFECT_REVIEW_BONUS_XP = 30;
-
 const timestampToDate = (value: Timestamp | null | undefined): Date | null => {
   if (!value) return null;
 
   return value.toDate();
-};
-
-const getUserRef = (userId: string) => {
-  return doc(db, USERS_COLLECTION, userId);
 };
 
 const getPalaceRef = (userId: string, palaceId: string) => {
@@ -124,6 +119,36 @@ const mapReviewAnswer = (
   };
 };
 
+const isCompleteReview = ({
+  totalStations,
+  correctAnswers,
+  incorrectAnswers,
+}: {
+  totalStations: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+}): boolean => {
+  const answeredStations = correctAnswers + incorrectAnswers;
+
+  return totalStations > 0 && answeredStations >= totalStations;
+};
+
+const isPerfectReview = ({
+  totalStations,
+  correctAnswers,
+  incorrectAnswers,
+}: {
+  totalStations: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+}): boolean => {
+  return (
+    isCompleteReview({ totalStations, correctAnswers, incorrectAnswers }) &&
+    correctAnswers === totalStations &&
+    incorrectAnswers === 0
+  );
+};
+
 const calculateReviewXp = ({
   totalStations,
   correctAnswers,
@@ -133,23 +158,20 @@ const calculateReviewXp = ({
   correctAnswers: number;
   incorrectAnswers: number;
 }): number => {
-  const answeredStations = correctAnswers + incorrectAnswers;
+  if (!isCompleteReview({ totalStations, correctAnswers, incorrectAnswers })) {
+    return 0;
+  }
 
-  const correctXp = correctAnswers * XP_PER_CORRECT_ANSWER;
+  const perfect = isPerfectReview({
+    totalStations,
+    correctAnswers,
+    incorrectAnswers,
+  });
 
-  const completionBonus =
-    totalStations > 0 && answeredStations >= totalStations
-      ? COMPLETION_BONUS_XP
-      : 0;
-
-  const perfectBonus =
-    totalStations > 0 &&
-    answeredStations >= totalStations &&
-    incorrectAnswers === 0
-      ? PERFECT_REVIEW_BONUS_XP
-      : 0;
-
-  return correctXp + completionBonus + perfectBonus;
+  return (
+    XP_REWARDS.COMPLETE_REVIEW +
+    (perfect ? XP_REWARDS.PERFECT_REVIEW : 0)
+  );
 };
 
 const getPalaceStationCount = async (
@@ -336,8 +358,13 @@ export const completeReview = async ({
     throw new Error('sessionId is required to complete a review.');
   }
 
-  const userRef = getUserRef(userId);
   const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
+
+  let xpEarned = 0;
+  let perfect = false;
+  let totalStations = 0;
+  let correctAnswers = 0;
+  let incorrectAnswers = 0;
 
   await runTransaction(db, async (transaction) => {
     const sessionSnap = await transaction.get(sessionRef);
@@ -348,38 +375,54 @@ export const completeReview = async ({
 
     const sessionData = sessionSnap.data() as ReviewSessionDocument;
 
-    const alreadyCompleted = sessionData.status === 'completed';
-    const xpAlreadyApplied = sessionData.xpAppliedToUser === true;
+    totalStations = sessionData.totalStations;
+    correctAnswers = sessionData.correctAnswers;
+    incorrectAnswers = sessionData.incorrectAnswers;
 
-    if (alreadyCompleted && xpAlreadyApplied) {
-      return;
-    }
+    xpEarned =
+      sessionData.status === 'completed'
+        ? sessionData.xpEarned
+        : calculateReviewXp({
+            totalStations,
+            correctAnswers,
+            incorrectAnswers,
+          });
 
-    const xpEarned = alreadyCompleted
-      ? sessionData.xpEarned
-      : calculateReviewXp({
-          totalStations: sessionData.totalStations,
-          correctAnswers: sessionData.correctAnswers,
-          incorrectAnswers: sessionData.incorrectAnswers,
-        });
-
-    const shouldApplyXpToUser = xpEarned > 0 && !xpAlreadyApplied;
+    perfect = isPerfectReview({
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+    });
 
     transaction.update(sessionRef, {
       completedAt: sessionData.completedAt ?? serverTimestamp(),
       xpEarned,
-      xpAppliedToUser: true,
+      xpAppliedToUser: false,
+      isPerfect: perfect,
       status: 'completed',
+      updatedAt: serverTimestamp(),
     });
+  });
 
-    if (shouldApplyXpToUser) {
-      transaction.update(userRef, {
-        xp: increment(xpEarned),
-        totalXp: increment(xpEarned),
-        reviewXp: increment(xpEarned),
-        updatedAt: serverTimestamp(),
-      });
-    }
+  if (xpEarned > 0) {
+    await addXP(userId, xpEarned, {
+      reason: perfect ? 'perfect_review' : 'complete_review',
+      eventId: buildXPEventId('complete_review', sessionId),
+      metadata: {
+        palaceId,
+        sessionId,
+        totalStations,
+        correctAnswers,
+        incorrectAnswers,
+        isPerfect: perfect,
+      },
+    });
+  }
+
+  await updateDoc(sessionRef, {
+    xpAppliedToUser: true,
+    xpAppliedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 
   const updatedSessionSnap = await getDoc(sessionRef);

@@ -32,6 +32,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GuideLottie } from '../../components/review/GuideLottie';
+import { XP_REWARDS } from '../../utils/levelUtils';
 import { auth } from '../../services/firebase';
 import {
   completeReview,
@@ -154,7 +155,6 @@ const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
   color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
 }));
 
-const XP_PER_CORRECT_ANSWER = 10;
 const PERFECT_SCORE_PERCENTAGE = 1;
 const SUMMARY_COUNTER_DURATION_MS = 900;
 
@@ -847,7 +847,7 @@ const FloatingXp = () => {
 
   return (
     <Animated.Text style={[styles.floatingXp, animatedStyle]}>
-      +10 XP
+      Great!
     </Animated.Text>
   );
 };
@@ -1530,7 +1530,21 @@ export const ReviewScreen = () => {
   const correctAnswers = answeredResults.filter((result) => result.correct)
     .length;
   const totalStations = data?.stations.length ?? 0;
-  const fallbackXpEarned = correctAnswers * XP_PER_CORRECT_ANSWER;
+  const fallbackXpEarned = (() => {
+    const hasCompletedAllStations =
+      totalStations > 0 && answeredResults.length >= totalStations;
+
+    if (!hasCompletedAllStations) {
+      return 0;
+    }
+
+    const isPerfectReview = correctAnswers === totalStations;
+
+    return (
+      XP_REWARDS.COMPLETE_REVIEW +
+      (isPerfectReview ? XP_REWARDS.PERFECT_REVIEW : 0)
+    );
+  })();
 
   const handleStartJourney = async () => {
     if (!data) return;

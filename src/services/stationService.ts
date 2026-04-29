@@ -1,3 +1,5 @@
+// src/services/stationService.ts
+
 import {
   collection,
   deleteField,
@@ -14,8 +16,10 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 
-import { db } from './firebase';
 import type { Station } from '../types';
+import { XP_REWARDS } from '../utils/levelUtils';
+import { db } from './firebase';
+import { addXP, buildXPEventId } from './xpService';
 
 export interface CreateStationData {
   order: number;
@@ -86,6 +90,29 @@ const isProbablyOfflineError = (error: unknown): boolean => {
   );
 };
 
+const awardCreateStationXP = async (
+  userId: string,
+  palaceId: string,
+  stationId: string,
+): Promise<void> => {
+  try {
+    await addXP(userId, XP_REWARDS.ADD_STATION, {
+      reason: 'add_station',
+      eventId: buildXPEventId('add_station', stationId),
+      metadata: {
+        palaceId,
+        stationId,
+      },
+    });
+  } catch (error) {
+    if (isProbablyOfflineError(error)) {
+      return;
+    }
+
+    throw error;
+  }
+};
+
 export const createStation = async (
   palaceId: string,
   userId: string,
@@ -140,6 +167,8 @@ export const createStation = async (
 
     await batch.commit();
   }
+
+  await awardCreateStationXP(userId, palaceId, stationRef.id);
 
   return {
     id: stationRef.id,

@@ -1,3 +1,5 @@
+// src/services/palaceService.ts
+
 import {
   addDoc,
   collection,
@@ -13,9 +15,11 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
-import { db } from './firebase';
-import type { Palace, PalaceTemplateId } from '../types';
 import { isPalaceTemplateId } from '../assets/templates';
+import type { Palace, PalaceTemplateId } from '../types';
+import { XP_REWARDS } from '../utils/levelUtils';
+import { db } from './firebase';
+import { addXP, buildXPEventId } from './xpService';
 
 const getPalacesCollectionRef = (userId: string) => {
   return collection(db, 'users', userId, 'palaces');
@@ -31,12 +35,20 @@ const assertValidUserId = (userId: string) => {
   }
 };
 
+const assertValidPalaceId = (palaceId: string) => {
+  if (!palaceId.trim()) {
+    throw new Error('A valid palaceId is required.');
+  }
+};
+
 const assertValidPalaceName = (name: string) => {
-  if (!name.trim()) {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
     throw new Error('Palace name cannot be empty.');
   }
 
-  if (name.trim().length > 40) {
+  if (trimmedName.length > 40) {
     throw new Error('Palace name cannot be longer than 40 characters.');
   }
 };
@@ -82,6 +94,15 @@ export const createPalace = async (
     createdAt: serverTimestamp(),
   });
 
+  await addXP(userId, XP_REWARDS.CREATE_PALACE, {
+    reason: 'create_palace',
+    eventId: buildXPEventId('create_palace', docRef.id),
+    metadata: {
+      palaceId: docRef.id,
+      templateId,
+    },
+  });
+
   const createdSnapshot = await getDoc(docRef);
 
   if (!createdSnapshot.exists()) {
@@ -120,10 +141,7 @@ export const deletePalace = async (
   userId: string,
 ): Promise<void> => {
   assertValidUserId(userId);
-
-  if (!palaceId.trim()) {
-    throw new Error('A valid palaceId is required.');
-  }
+  assertValidPalaceId(palaceId);
 
   await deleteDoc(getPalaceDocRef(userId, palaceId));
 };

@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type AgeGroup = '6-9' | '10-14';
@@ -47,6 +49,7 @@ export interface UserProfile {
   ageGroup: AgeGroup;
   xp: number;
   level: number;
+  levelTitle?: string;
   streak: number;
   lastActiveDate: Timestamp | null;
   createdAt?: Timestamp;

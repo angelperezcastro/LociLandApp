@@ -1,3 +1,5 @@
+// src/types/user.ts
+
 export type AgeGroup = '6-9' | '10-14';
 
 export type AvatarEmoji =
@@ -18,6 +20,7 @@ export interface UserProfile {
   ageGroup: AgeGroup;
   xp: number;
   level: number;
+  levelTitle?: string;
   streak: number;
   lastActiveDate: string;
 }
