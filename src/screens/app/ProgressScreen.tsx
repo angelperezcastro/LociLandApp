@@ -248,7 +248,14 @@ const WeeklyActivityCard = ({ days }: { days: WeeklyActivityDay[] }) => {
               </Text>
             </View>
 
-            <Text style={styles.dayLabel}>{day.label}</Text>
+            <Text
+              style={[
+                styles.dayLabel,
+                day.isToday ? styles.todayDayLabel : null,
+              ]}
+            >
+              {day.label}
+            </Text>
           </View>
         ))}
       </View>
@@ -322,9 +329,7 @@ const RecentAchievementsCard = ({
       {achievements.length === 0 ? (
         <View style={styles.emptyAchievementBox}>
           <Text style={styles.emptyAchievementEmoji}>🏆</Text>
-          <Text style={styles.emptyAchievementTitle}>
-            No achievements yet
-          </Text>
+          <Text style={styles.emptyAchievementTitle}>No achievements yet</Text>
           <Text style={styles.emptyAchievementText}>
             Create palaces, add stations, and complete reviews to unlock your
             first badge.
@@ -611,22 +616,26 @@ const styles = StyleSheet.create({
 
   weekRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    width: '100%',
   },
 
   weekDay: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'flex-start',
   },
 
   dayCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+    marginBottom: spacing.xs,
   },
 
   dayCircleFilled: {
@@ -645,9 +654,11 @@ const styles = StyleSheet.create({
   },
 
   dayCircleText: {
-    fontSize: 17,
+    fontSize: 16,
+    lineHeight: 20,
     fontWeight: '900',
     color: colors.text,
+    textAlign: 'center',
   },
 
   dayCircleTextFilled: {
@@ -659,6 +670,11 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '900',
     color: `${colors.text}90`,
+    textAlign: 'center',
+  },
+
+  todayDayLabel: {
+    color: colors.accent,
   },
 
   statsGrid: {

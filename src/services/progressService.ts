@@ -61,6 +61,8 @@ export interface ProgressStats {
   recentAchievements: RecentAchievementSummary[];
 }
 
+const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+
 const getUserRef = (userId: string) => {
   return doc(db, USERS_COLLECTION, userId);
 };
@@ -117,39 +119,49 @@ const getLocalDateString = (date: Date): string => {
   )}`;
 };
 
-const getDayLabel = (date: Date): string => {
-  const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-  return labels[date.getDay()];
-};
-
-const getLastSevenDays = (): WeeklyActivityDay[] => {
-  const today = new Date();
-  const todayString = getLocalDateString(today);
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(today);
-
-    date.setHours(12, 0, 0, 0);
-    date.setDate(today.getDate() - (6 - index));
-
-    const dateString = getLocalDateString(date);
-
-    return {
-      dateString,
-      label: getDayLabel(date),
-      reviewed: false,
-      isToday: dateString === todayString,
-    };
-  });
-};
-
 const timestampToDate = (value: unknown): Date | null => {
   if (!isTimestamp(value)) {
     return null;
   }
 
   return value.toDate();
+};
+
+const getStartOfCurrentWeekMonday = (): Date => {
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const jsDay = today.getDay();
+  const daysFromMonday = jsDay === 0 ? 6 : jsDay - 1;
+
+  const monday = new Date(today);
+
+  monday.setDate(today.getDate() - daysFromMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  return monday;
+};
+
+const getCurrentWeekMondayToSunday = (): WeeklyActivityDay[] => {
+  const monday = getStartOfCurrentWeekMonday();
+  const todayString = getLocalDateString(new Date());
+
+  return WEEKDAY_LABELS.map((label, index) => {
+    const date = new Date(monday);
+
+    date.setDate(monday.getDate() + index);
+    date.setHours(0, 0, 0, 0);
+
+    const dateString = getLocalDateString(date);
+
+    return {
+      dateString,
+      label,
+      reviewed: false,
+      isToday: dateString === todayString,
+    };
+  });
 };
 
 const getRecentAchievements = async (
@@ -206,12 +218,8 @@ export const getProgressStats = async (
   const userData = userSnapshot.data();
 
   const totalXP = getSafeNumber(userData.xp);
-  const derivedLevel = getLevelFromXP(totalXP);
-  const currentLevel = getSafeNumber(userData.level, derivedLevel);
-  const levelTitle =
-    typeof userData.levelTitle === 'string'
-      ? userData.levelTitle
-      : getLevelTitle(currentLevel);
+  const currentLevel = getLevelFromXP(totalXP);
+  const levelTitle = getLevelTitle(currentLevel);
 
   const currentStreak = getSafeNumber(userData.streak);
   const bestStreak = getSafeNumber(userData.bestStreak, currentStreak);
@@ -221,6 +229,7 @@ export const getProgressStats = async (
 
   let totalStations = 0;
   let totalReviewsCompleted = 0;
+
   const reviewedDateStrings = new Set<string>();
 
   await Promise.all(
@@ -252,7 +261,7 @@ export const getProgressStats = async (
     }),
   );
 
-  const weeklyActivity = getLastSevenDays().map((day) => ({
+  const weeklyActivity = getCurrentWeekMondayToSunday().map((day) => ({
     ...day,
     reviewed: reviewedDateStrings.has(day.dateString),
   }));
