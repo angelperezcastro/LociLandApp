@@ -9,6 +9,7 @@ import {
 
 import { db } from './firebase';
 import { getLevelFromXP, getLevelTitle } from '../utils/levelUtils';
+import { useLevelUpStore } from '../store/useLevelUpStore';
 
 export type XPGrantReason =
   | 'create_palace'
@@ -55,7 +56,10 @@ const cleanMetadata = (metadata?: XPMetadata): XPMetadata => {
   ) as XPMetadata;
 };
 
-export const buildXPEventId = (reason: XPGrantReason, entityId: string): string => {
+export const buildXPEventId = (
+  reason: XPGrantReason,
+  entityId: string,
+): string => {
   return `${reason}_${entityId}`;
 };
 
@@ -79,7 +83,7 @@ export const addXP = async (
     ? doc(db, 'users', userId, 'xpEvents', options.eventId)
     : null;
 
-  return runTransaction(db, async transaction => {
+  const result = await runTransaction(db, async (transaction) => {
     const eventSnapshot = xpEventRef ? await transaction.get(xpEventRef) : null;
     const userSnapshot = await transaction.get(userRef);
 
@@ -143,4 +147,15 @@ export const addXP = async (
       alreadyAwarded: false,
     };
   });
+
+  if (result.leveledUp && !result.alreadyAwarded) {
+    useLevelUpStore.getState().showLevelUp({
+      previousLevel: result.previousLevel,
+      newLevel: result.newLevel,
+      newXP: result.newXP,
+      levelTitle: result.levelTitle,
+    });
+  }
+
+  return result;
 };

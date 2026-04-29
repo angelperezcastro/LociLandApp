@@ -1,3 +1,5 @@
+// src/navigation/RootNavigator.tsx
+
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -5,6 +7,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import type { RootStackParamList } from './types';
+
+import { LevelUpOverlay } from '../components/gamification/LevelUpOverlay';
+import { StreakBootstrapper } from '../components/gamification/StreakBootstrapper';
+import { StreakCelebrationBanner } from '../components/gamification/StreakCelebrationBanner';
+
 import { onAuthStateChanged } from '../services/auth';
 import { colors } from '../theme';
 import { useUserStore } from '../store/useUserStore';
@@ -55,74 +62,79 @@ export function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="App" component={AppNavigator} />
+
+            <Stack.Screen
+              name="CreatePalace"
+              component={CreatePalaceScreen}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
+
+            <Stack.Screen
+              name="PalaceDetail"
+              component={PalaceDetailScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+
+            <Stack.Screen
+              name="AddStation"
+              component={AddStationScreen}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
+
+            <Stack.Screen
+              name="EditStation"
+              component={EditStationScreen}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
+
+            <Stack.Screen
+              name="Review" component={ReviewScreen} />
+
+            <Stack.Screen
+              name="Achievements"
+              component={AchievementsScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+
+            <Stack.Screen
+              name="ComponentShowcase"
+              component={ComponentShowcaseScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+          </>
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+
       {isAuthenticated ? (
         <>
-          <Stack.Screen name="App" component={AppNavigator} />
-
-          <Stack.Screen
-            name="CreatePalace"
-            component={CreatePalaceScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-
-          <Stack.Screen
-            name="PalaceDetail"
-            component={PalaceDetailScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-
-          <Stack.Screen
-            name="AddStation"
-            component={AddStationScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-
-          <Stack.Screen
-            name="EditStation"
-            component={EditStationScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-
-          <Stack.Screen
-            name="Review"
-            component={ReviewScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-
-          <Stack.Screen
-            name="Achievements"
-            component={AchievementsScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-
-          <Stack.Screen
-            name="ComponentShowcase"
-            component={ComponentShowcaseScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
+          <StreakBootstrapper />
+          <LevelUpOverlay />
+          <StreakCelebrationBanner />
         </>
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+      ) : null}
+    </>
   );
 }
 

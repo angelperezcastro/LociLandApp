@@ -22,5 +22,6 @@ export interface UserProfile {
   level: number;
   levelTitle?: string;
   streak: number;
+  bestStreak?: number;
   lastActiveDate: string;
 }

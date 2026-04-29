@@ -32,6 +32,7 @@ type UpdateUserProfileInput = Partial<
     | 'level'
     | 'levelTitle'
     | 'streak'
+    | 'bestStreak'
     | 'lastActiveDate'
   >
 >;
@@ -59,6 +60,7 @@ export async function createUserProfile(
     level: initialLevel,
     levelTitle: getLevelTitle(initialLevel),
     streak: 0,
+    bestStreak: 0,
     lastActiveDate: getTodayDateString(),
   };
 
@@ -91,10 +93,20 @@ export async function ensureUserProfile(
     const resolvedLevelTitle =
       existing.levelTitle ?? getLevelTitle(resolvedLevel);
 
-    if (!existing.levelTitle) {
+    const resolvedBestStreak =
+      typeof existing.bestStreak === 'number' &&
+      Number.isFinite(existing.bestStreak)
+        ? existing.bestStreak
+        : existing.streak;
+
+    const needsProfileBackfill =
+      !existing.levelTitle || existing.bestStreak === undefined;
+
+    if (needsProfileBackfill) {
       await updateDoc(doc(db, 'users', input.uid), {
         level: resolvedLevel,
         levelTitle: resolvedLevelTitle,
+        bestStreak: resolvedBestStreak,
       });
     }
 
@@ -102,6 +114,7 @@ export async function ensureUserProfile(
       ...existing,
       level: resolvedLevel,
       levelTitle: resolvedLevelTitle,
+      bestStreak: resolvedBestStreak,
     };
   }
 
