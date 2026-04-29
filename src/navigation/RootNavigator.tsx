@@ -8,7 +8,9 @@ import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import type { RootStackParamList } from './types';
 
+import { AchievementUnlockedToast } from '../components/gamification/AchievementUnlockedToast';
 import { LevelUpOverlay } from '../components/gamification/LevelUpOverlay';
+import { NotificationBootstrapper } from '../components/gamification/NotificationBootstrapper';
 import { StreakBootstrapper } from '../components/gamification/StreakBootstrapper';
 import { StreakCelebrationBanner } from '../components/gamification/StreakCelebrationBanner';
 
@@ -103,8 +105,7 @@ export function RootNavigator() {
               }}
             />
 
-            <Stack.Screen
-              name="Review" component={ReviewScreen} />
+            <Stack.Screen name="Review" component={ReviewScreen} />
 
             <Stack.Screen
               name="Achievements"
@@ -130,8 +131,10 @@ export function RootNavigator() {
       {isAuthenticated ? (
         <>
           <StreakBootstrapper />
+          <NotificationBootstrapper />
           <LevelUpOverlay />
           <StreakCelebrationBanner />
+          <AchievementUnlockedToast />
         </>
       ) : null}
     </>

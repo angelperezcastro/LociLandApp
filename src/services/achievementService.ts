@@ -17,6 +17,7 @@ import {
   type AchievementId,
 } from '../assets/achievements';
 import type { AgeGroup } from '../types/user';
+import { useAchievementToastStore } from '../store/useAchievementToastStore';
 import { db } from './firebase';
 import { addXP, buildXPEventId, type AddXPResult } from './xpService';
 
@@ -176,6 +177,15 @@ const cleanMetadata = (
   ) as Record<string, string | number | boolean | null>;
 };
 
+const emitAchievementToast = (achievement: AchievementDefinition) => {
+  useAchievementToastStore.getState().showAchievementToast({
+    achievementId: achievement.id,
+    title: achievement.title,
+    emoji: achievement.emoji,
+    xpReward: achievement.xpReward,
+  });
+};
+
 const getEarnedAchievementIds = async (
   userId: string,
 ): Promise<Set<AchievementId>> => {
@@ -302,13 +312,13 @@ const collectAchievementStats = async (
         const correctAnswers = getSafeNumber(reviewData.correctAnswers);
         const incorrectAnswers = getSafeNumber(reviewData.incorrectAnswers);
 
-        const isPerfect =
+        const perfect =
           reviewData.isPerfect === true ||
           (totalStationsInReview > 0 &&
             correctAnswers === totalStationsInReview &&
             incorrectAnswers === 0);
 
-        if (isPerfect) {
+        if (perfect) {
           totalPerfectReviews += 1;
         }
 
@@ -464,6 +474,10 @@ export const awardAchievement = async (
     }),
     earnedAt: serverTimestamp(),
   });
+
+  if (xpResult.xpAdded > 0) {
+    emitAchievementToast(achievement);
+  }
 
   return {
     achievement,
