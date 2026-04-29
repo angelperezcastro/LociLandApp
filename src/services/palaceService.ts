@@ -18,6 +18,7 @@ import {
 import { isPalaceTemplateId } from '../assets/templates';
 import type { Palace, PalaceTemplateId } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
+import { checkAchievements } from './achievementService';
 import { db } from './firebase';
 import { addXP, buildXPEventId } from './xpService';
 
@@ -50,6 +51,22 @@ const assertValidPalaceName = (name: string) => {
 
   if (trimmedName.length > 40) {
     throw new Error('Palace name cannot be longer than 40 characters.');
+  }
+};
+
+const checkAchievementsSafely = async (
+  userId: string,
+  palaceId: string,
+  templateId: PalaceTemplateId,
+): Promise<void> => {
+  try {
+    await checkAchievements(userId, {
+      type: 'palace_created',
+      palaceId,
+      templateId,
+    });
+  } catch (error) {
+    console.warn('Achievement check after palace creation failed:', error);
   }
 };
 
@@ -102,6 +119,8 @@ export const createPalace = async (
       templateId,
     },
   });
+
+  await checkAchievementsSafely(userId, docRef.id, templateId);
 
   const createdSnapshot = await getDoc(docRef);
 

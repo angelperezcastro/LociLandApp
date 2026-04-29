@@ -18,6 +18,7 @@ import {
 
 import type { Station } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
+import { checkAchievements } from './achievementService';
 import { db } from './firebase';
 import { addXP, buildXPEventId } from './xpService';
 
@@ -113,6 +114,29 @@ const awardCreateStationXP = async (
   }
 };
 
+const checkAchievementsSafely = async ({
+  userId,
+  palaceId,
+  stationId,
+  hasImage,
+}: {
+  userId: string;
+  palaceId: string;
+  stationId: string;
+  hasImage: boolean;
+}): Promise<void> => {
+  try {
+    await checkAchievements(userId, {
+      type: 'station_created',
+      palaceId,
+      stationId,
+      hasImage,
+    });
+  } catch (error) {
+    console.warn('Achievement check after station creation failed:', error);
+  }
+};
+
 export const createStation = async (
   palaceId: string,
   userId: string,
@@ -169,6 +193,13 @@ export const createStation = async (
   }
 
   await awardCreateStationXP(userId, palaceId, stationRef.id);
+
+  await checkAchievementsSafely({
+    userId,
+    palaceId,
+    stationId: stationRef.id,
+    hasImage: Boolean(payload.imageUri),
+  });
 
   return {
     id: stationRef.id,

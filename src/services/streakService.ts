@@ -8,8 +8,9 @@ import {
 } from 'firebase/firestore';
 
 import { XP_REWARDS } from '../utils/levelUtils';
-import { addXP, buildXPEventId, type AddXPResult } from './xpService';
+import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { addXP, buildXPEventId, type AddXPResult } from './xpService';
 
 const USERS_COLLECTION = 'users';
 const SEVEN_DAY_STREAK_TARGET = 7;
@@ -85,6 +86,20 @@ const getDayDifference = (
   return Math.round((newerTime - olderTime) / millisecondsPerDay);
 };
 
+const checkAchievementsSafely = async (
+  userId: string,
+  currentStreak: number,
+): Promise<void> => {
+  try {
+    await checkAchievements(userId, {
+      type: 'streak_updated',
+      currentStreak,
+    });
+  } catch (error) {
+    console.warn('Achievement check after streak update failed:', error);
+  }
+};
+
 export const checkAndUpdateStreak = async (
   userId: string,
 ): Promise<CheckAndUpdateStreakResult> => {
@@ -155,6 +170,8 @@ export const checkAndUpdateStreak = async (
     };
   });
 
+  let finalResult: CheckAndUpdateStreakResult = streakResult;
+
   if (
     streakResult.updatedToday &&
     streakResult.currentStreak === SEVEN_DAY_STREAK_TARGET
@@ -168,12 +185,16 @@ export const checkAndUpdateStreak = async (
       },
     });
 
-    return {
+    finalResult = {
       ...streakResult,
       awardedSevenDayXP: xpResult.xpAdded > 0,
       xpResult,
     };
   }
 
-  return streakResult;
+  if (finalResult.updatedToday) {
+    await checkAchievementsSafely(userId, finalResult.currentStreak);
+  }
+
+  return finalResult;
 };

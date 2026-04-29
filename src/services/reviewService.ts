@@ -23,6 +23,7 @@ import type {
   StartReviewInput,
 } from '../types/review';
 import { XP_REWARDS } from '../utils/levelUtils';
+import { checkAchievements } from './achievementService';
 import { db } from './firebase';
 import { addXP, buildXPEventId } from './xpService';
 
@@ -172,6 +173,58 @@ const calculateReviewXp = ({
     XP_REWARDS.COMPLETE_REVIEW +
     (perfect ? XP_REWARDS.PERFECT_REVIEW : 0)
   );
+};
+
+const getReviewDurationSeconds = (
+  startedAt: Timestamp | null,
+  completedAt: Date,
+): number | null => {
+  if (!startedAt) {
+    return null;
+  }
+
+  const durationMs = completedAt.getTime() - startedAt.toDate().getTime();
+
+  if (!Number.isFinite(durationMs) || durationMs < 0) {
+    return null;
+  }
+
+  return Math.floor(durationMs / 1000);
+};
+
+const checkAchievementsSafely = async ({
+  userId,
+  palaceId,
+  sessionId,
+  isPerfect,
+  durationSeconds,
+  correctAnswers,
+  totalStations,
+  xpEarned,
+}: {
+  userId: string;
+  palaceId: string;
+  sessionId: string;
+  isPerfect: boolean;
+  durationSeconds: number | null;
+  correctAnswers: number;
+  totalStations: number;
+  xpEarned: number;
+}): Promise<void> => {
+  try {
+    await checkAchievements(userId, {
+      type: 'review_completed',
+      palaceId,
+      sessionId,
+      isPerfect,
+      durationSeconds,
+      correctAnswers,
+      totalStations,
+      xpEarned,
+    });
+  } catch (error) {
+    console.warn('Achievement check after review completion failed:', error);
+  }
 };
 
 const getPalaceStationCount = async (
@@ -365,6 +418,8 @@ export const completeReview = async ({
   let totalStations = 0;
   let correctAnswers = 0;
   let incorrectAnswers = 0;
+  let startedAt: Timestamp | null = null;
+  const completedAtClientDate = new Date();
 
   await runTransaction(db, async (transaction) => {
     const sessionSnap = await transaction.get(sessionRef);
@@ -378,6 +433,8 @@ export const completeReview = async ({
     totalStations = sessionData.totalStations;
     correctAnswers = sessionData.correctAnswers;
     incorrectAnswers = sessionData.incorrectAnswers;
+    startedAt =
+      sessionData.startedAt instanceof Timestamp ? sessionData.startedAt : null;
 
     xpEarned =
       sessionData.status === 'completed'
@@ -423,6 +480,20 @@ export const completeReview = async ({
     xpAppliedToUser: true,
     xpAppliedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+  });
+
+  await checkAchievementsSafely({
+    userId,
+    palaceId,
+    sessionId,
+    isPerfect: perfect,
+    durationSeconds: getReviewDurationSeconds(
+      startedAt,
+      completedAtClientDate,
+    ),
+    correctAnswers,
+    totalStations,
+    xpEarned,
   });
 
   const updatedSessionSnap = await getDoc(sessionRef);
