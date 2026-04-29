@@ -1,5 +1,3 @@
-// src/screens/app/ProfileScreen.tsx
-
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -204,22 +202,30 @@ export function ProfileScreen() {
             onPress={handleOpenAchievements}
             disabled={avatarLoading || logoutLoading || passwordLoading}
             style={({ pressed }) => [
-              styles.achievementsButton,
-              pressed ? styles.buttonPressed : null,
+              styles.achievementsFloatingCard,
+              pressed ? styles.achievementsFloatingCardPressed : null,
             ]}
           >
-            <Text style={styles.achievementsButtonEmoji}>🏆</Text>
+            <View style={styles.achievementsFloatingTop}>
+              <View style={styles.achievementsIconContainer}>
+                <Text style={styles.achievementsIcon}>🏆</Text>
+              </View>
+            </View>
 
-            <View style={styles.achievementsButtonTextBlock}>
-              <Text style={styles.achievementsButtonTitle}>
+            <View style={styles.achievementsFloatingContent}>
+              <Text style={styles.achievementsFloatingTitle}>
                 View Achievements
               </Text>
-              <Text style={styles.achievementsButtonSubtitle}>
+              <Text style={styles.achievementsFloatingSubtitle}>
                 Track your memory milestones
               </Text>
             </View>
 
-            <Text style={styles.achievementsButtonArrow}>→</Text>
+            <View style={styles.achievementsFloatingFooter}>
+              <View style={styles.achievementsArrowContainer}>
+                <Text style={styles.achievementsArrow}>→</Text>
+              </View>
+            </View>
           </Pressable>
         </View>
 
@@ -253,7 +259,9 @@ export function ProfileScreen() {
             style={styles.settingRow}
           >
             <Text style={styles.settingLabel}>Change avatar</Text>
-            <Text style={styles.settingValue}>{profile?.avatarEmoji ?? '🦊'}</Text>
+            <Text style={styles.settingValue}>
+              {profile?.avatarEmoji ?? '🦊'}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -424,6 +432,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: `${colors.text}12`,
     marginBottom: spacing.lg,
+    shadowColor: colors.text,
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   sectionTitle: {
@@ -453,55 +466,84 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
 
-  achievementsButton: {
-    minHeight: 76,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    borderWidth: 3,
-    borderColor: colors.text,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  achievementsFloatingCard: {
+    marginTop: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: `${colors.text}10`,
     shadowColor: colors.text,
     shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
 
-  buttonPressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.92,
+  achievementsFloatingCardPressed: {
+    transform: [{ scale: 0.985 }],
+    shadowOpacity: 0.08,
+    elevation: 3,
   },
 
-  achievementsButtonEmoji: {
-    fontSize: 34,
+  achievementsFloatingTop: {
+    marginBottom: spacing.md,
   },
 
-  achievementsButtonTextBlock: {
-    flex: 1,
+  achievementsIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: `${colors.text}10`,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  achievementsButtonTitle: {
-    fontSize: 18,
+  achievementsIcon: {
+    fontSize: 36,
+  },
+
+  achievementsFloatingContent: {
+    marginBottom: spacing.md,
+  },
+
+  achievementsFloatingTitle: {
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '900',
     color: colors.text,
+    marginBottom: spacing.xs,
   },
 
-  achievementsButtonSubtitle: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.text,
-    opacity: 0.68,
+  achievementsFloatingSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+    color: `${colors.text}B0`,
   },
 
-  achievementsButtonArrow: {
-    fontSize: 24,
+  achievementsFloatingFooter: {
+    alignItems: 'flex-start',
+  },
+
+  achievementsArrowContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: `${colors.text}10`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  achievementsArrow: {
+    fontSize: 28,
     fontWeight: '900',
     color: colors.text,
+    lineHeight: 30,
   },
 
   statsRow: {
