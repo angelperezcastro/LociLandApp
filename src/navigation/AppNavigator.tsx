@@ -1,3 +1,5 @@
+// src/navigation/AppNavigator.tsx
+
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,6 +21,12 @@ import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createNativeStackNavigator<AppStackParamList>();
+
+const renderTabIcon = (emoji: string) => {
+  return ({ color }: { color: string }) => (
+    <Text style={{ color, fontSize: 20 }}>{emoji}</Text>
+  );
+};
 
 function MainTabs() {
   return (
@@ -56,9 +64,7 @@ function MainTabs() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>🏠</Text>
-          ),
+          tabBarIcon: renderTabIcon('🏠'),
         }}
       />
 
@@ -67,9 +73,7 @@ function MainTabs() {
         component={ProgressScreen}
         options={{
           tabBarLabel: 'Progress',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>📊</Text>
-          ),
+          tabBarIcon: renderTabIcon('📊'),
         }}
       />
 
@@ -78,9 +82,7 @@ function MainTabs() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>👤</Text>
-          ),
+          tabBarIcon: renderTabIcon('👤'),
         }}
       />
     </Tab.Navigator>
@@ -131,7 +133,6 @@ export function AppNavigator() {
         name="Review"
         component={ReviewScreen}
         options={{
-          headerShown: false,
           animation: 'slide_from_right',
         }}
       />

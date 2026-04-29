@@ -27,6 +27,8 @@ export const colors = {
   homeBackground: '#FFF9E8',
   softYellow: '#FFE7A3',
 
+  surface: '#FFFFFF',
+
   overlay: 'rgba(45, 52, 54, 0.24)',
 } as const;
 
