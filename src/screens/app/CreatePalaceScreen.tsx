@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Timestamp } from 'firebase/firestore';
 
-import { colors, spacing } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
 import { palaceTemplates } from '../../assets/templates';
 import type { Palace, PalaceTemplate, PalaceTemplateId } from '../../types';
 import { auth } from '../../services/firebase';
@@ -45,6 +45,41 @@ type LooseUserStore = {
   user?: LooseAuthUser | null;
   currentUser?: LooseAuthUser | null;
 };
+
+
+const CREATE_PALACE_RADII = {
+  close: 16,
+  step: 13,
+  input: 24,
+  template: 26,
+  checkmark: 12,
+  previewEmpty: 28,
+  submit: 24,
+  success: 32,
+} as const;
+
+const CREATE_PALACE_TEXT_SIZES = {
+  close: 34,
+  topBarTitle: 18,
+  heroEmoji: 58,
+  title: 31,
+  subtitle: 16,
+  step: 17,
+  sectionTitle: 19,
+  inputEmoji: 27,
+  input: 20,
+  characterCount: 13,
+  checkmark: 18,
+  templateEmoji: 44,
+  templateName: 15,
+  previewEmptyEmoji: 38,
+  previewEmptyTitle: 17,
+  previewEmptyText: 14,
+  submitLoading: 14,
+  successEmoji: 70,
+  successTitle: 28,
+  successText: 15,
+} as const;
 
 function CreatePalaceScreen() {
   const navigation = useNavigation<any>();
@@ -297,7 +332,7 @@ function CreatePalaceScreen() {
             <View style={styles.submitArea}>
               <Button
                 title={isSubmitting ? 'Creating palace...' : 'Create Palace!'}
-                variant="primary"
+                variant="secondary"
                 disabled={!canCreate || isSubmitting}
                 onPress={handleCreatePalace}
                 style={[
@@ -420,7 +455,7 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: CREATE_PALACE_RADII.close,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -445,7 +480,7 @@ const styles = StyleSheet.create({
 
   closeText: {
     color: colors.text,
-    fontSize: 34,
+    fontSize: CREATE_PALACE_TEXT_SIZES.close,
     lineHeight: 36,
     fontFamily: 'FredokaOne_400Regular',
     includeFontPadding: false,
@@ -455,7 +490,7 @@ const styles = StyleSheet.create({
 
   topBarTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: CREATE_PALACE_TEXT_SIZES.topBarTitle,
     fontFamily: 'Nunito_800ExtraBold',
   },
 
@@ -501,14 +536,14 @@ const styles = StyleSheet.create({
   },
 
   heroEmoji: {
-    fontSize: 58,
+    fontSize: CREATE_PALACE_TEXT_SIZES.heroEmoji,
     marginBottom: spacing.sm,
   },
 
   title: {
     maxWidth: 330,
     color: colors.text,
-    fontSize: 31,
+    fontSize: CREATE_PALACE_TEXT_SIZES.title,
     lineHeight: 37,
     textAlign: 'center',
     fontFamily: 'FredokaOne_400Regular',
@@ -518,7 +553,7 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 330,
     color: colors.text,
-    fontSize: 16,
+    fontSize: CREATE_PALACE_TEXT_SIZES.subtitle,
     lineHeight: 23,
     textAlign: 'center',
     fontFamily: 'Nunito_600SemiBold',
@@ -538,7 +573,7 @@ const styles = StyleSheet.create({
   stepBadge: {
     width: 34,
     height: 34,
-    borderRadius: 13,
+    borderRadius: CREATE_PALACE_RADII.step,
     overflow: 'hidden',
     marginRight: spacing.sm,
     color: colors.text,
@@ -547,7 +582,7 @@ const styles = StyleSheet.create({
     borderColor: colors.text,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: 17,
+    fontSize: CREATE_PALACE_TEXT_SIZES.step,
     lineHeight: 30,
     fontFamily: 'FredokaOne_400Regular',
     includeFontPadding: false,
@@ -556,14 +591,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     flex: 1,
     color: colors.text,
-    fontSize: 19,
+    fontSize: CREATE_PALACE_TEXT_SIZES.sectionTitle,
     lineHeight: 25,
     fontFamily: 'Nunito_800ExtraBold',
   },
 
   inputShell: {
     minHeight: 68,
-    borderRadius: 24,
+    borderRadius: CREATE_PALACE_RADII.input,
     paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -584,7 +619,7 @@ const styles = StyleSheet.create({
   },
 
   inputEmoji: {
-    fontSize: 27,
+    fontSize: CREATE_PALACE_TEXT_SIZES.inputEmoji,
     marginRight: spacing.sm,
   },
 
@@ -592,15 +627,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 62,
     color: colors.text,
-    fontSize: 20,
+    fontSize: CREATE_PALACE_TEXT_SIZES.input,
     fontFamily: 'Nunito_700Bold',
-    paddingVertical: 0,
+    paddingVertical: spacing.none,
   },
 
   characterCount: {
     marginTop: spacing.sm,
     color: colors.muted,
-    fontSize: 13,
+    fontSize: CREATE_PALACE_TEXT_SIZES.characterCount,
     textAlign: 'right',
     fontFamily: 'Nunito_600SemiBold',
   },
@@ -618,7 +653,7 @@ const styles = StyleSheet.create({
 
   templateCard: {
     minHeight: 128,
-    borderRadius: 26,
+    borderRadius: CREATE_PALACE_RADII.template,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.md,
     alignItems: 'center',
@@ -654,7 +689,7 @@ const styles = StyleSheet.create({
     right: spacing.sm,
     width: 30,
     height: 30,
-    borderRadius: 12,
+    borderRadius: CREATE_PALACE_RADII.checkmark,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -664,19 +699,19 @@ const styles = StyleSheet.create({
 
   checkmarkText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: CREATE_PALACE_TEXT_SIZES.checkmark,
     lineHeight: 22,
     fontFamily: 'FredokaOne_400Regular',
   },
 
   templateEmoji: {
-    fontSize: 44,
+    fontSize: CREATE_PALACE_TEXT_SIZES.templateEmoji,
     marginBottom: spacing.sm,
   },
 
   templateName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: CREATE_PALACE_TEXT_SIZES.templateName,
     lineHeight: 19,
     textAlign: 'center',
     fontFamily: 'Nunito_800ExtraBold',
@@ -687,12 +722,12 @@ const styles = StyleSheet.create({
   },
 
   previewCard: {
-    marginBottom: 0,
+    marginBottom: spacing.none,
   },
 
   previewEmpty: {
     minHeight: 150,
-    borderRadius: 28,
+    borderRadius: CREATE_PALACE_RADII.previewEmpty,
     padding: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -703,13 +738,13 @@ const styles = StyleSheet.create({
   },
 
   previewEmptyEmoji: {
-    fontSize: 38,
+    fontSize: CREATE_PALACE_TEXT_SIZES.previewEmptyEmoji,
     marginBottom: spacing.sm,
   },
 
   previewEmptyTitle: {
     color: colors.text,
-    fontSize: 17,
+    fontSize: CREATE_PALACE_TEXT_SIZES.previewEmptyTitle,
     lineHeight: 22,
     textAlign: 'center',
     fontFamily: 'Nunito_800ExtraBold',
@@ -719,7 +754,7 @@ const styles = StyleSheet.create({
   previewEmptyText: {
     maxWidth: 260,
     color: colors.text,
-    fontSize: 14,
+    fontSize: CREATE_PALACE_TEXT_SIZES.previewEmptyText,
     lineHeight: 20,
     textAlign: 'center',
     fontFamily: 'Nunito_600SemiBold',
@@ -732,12 +767,13 @@ const styles = StyleSheet.create({
 
   submitButton: {
     minHeight: 62,
-    borderRadius: 24,
+    borderRadius: CREATE_PALACE_RADII.submit,
     borderWidth: 3,
   },
 
   submitButtonReady: {
     backgroundColor: colors.softYellow,
+    borderColor: colors.primary,
   },
 
   submitButtonText: {
@@ -754,7 +790,7 @@ const styles = StyleSheet.create({
   submitLoadingText: {
     marginLeft: spacing.sm,
     color: colors.text,
-    fontSize: 14,
+    fontSize: CREATE_PALACE_TEXT_SIZES.submitLoading,
     fontFamily: 'Nunito_700Bold',
     opacity: 0.72,
   },
@@ -771,7 +807,7 @@ const styles = StyleSheet.create({
   successCard: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: 32,
+    borderRadius: CREATE_PALACE_RADII.success,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
     alignItems: 'center',
@@ -792,13 +828,13 @@ const styles = StyleSheet.create({
   },
 
   successEmoji: {
-    fontSize: 70,
+    fontSize: CREATE_PALACE_TEXT_SIZES.successEmoji,
     marginBottom: spacing.sm,
   },
 
   successTitle: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: CREATE_PALACE_TEXT_SIZES.successTitle,
     lineHeight: 34,
     textAlign: 'center',
     fontFamily: 'FredokaOne_400Regular',
@@ -807,7 +843,7 @@ const styles = StyleSheet.create({
 
   successText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: CREATE_PALACE_TEXT_SIZES.successText,
     lineHeight: 22,
     textAlign: 'center',
     fontFamily: 'Nunito_600SemiBold',

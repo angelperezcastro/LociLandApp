@@ -4,6 +4,7 @@ import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  type GestureResponderEvent,
   type PressableProps,
   StyleSheet,
   Text,
@@ -12,8 +13,17 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { colors, radius, shadows, spacing, typography } from '../../theme';
+
+const BUTTON_PRESS_SCALE = 0.96;
+const BUTTON_PRESS_DURATION_MS = 100;
+
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -43,27 +53,55 @@ export function Button({
   rightIcon,
   style,
   textStyle,
+  onPressIn,
+  onPressOut,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const content = children ?? title;
   const textStyleKey = buttonTextStyleByVariant[variant];
+  const pressScale = useSharedValue(1);
+
+  const animatedPressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pressScale.value }],
+  }));
+
+  const handlePressIn = (event: GestureResponderEvent) => {
+    if (!isDisabled) {
+      pressScale.value = withTiming(BUTTON_PRESS_SCALE, {
+        duration: BUTTON_PRESS_DURATION_MS,
+      });
+    }
+
+    onPressIn?.(event);
+  };
+
+  const handlePressOut = (event: GestureResponderEvent) => {
+    pressScale.value = withTiming(1, {
+      duration: BUTTON_PRESS_DURATION_MS,
+    });
+
+    onPressOut?.(event);
+  };
 
   return (
-    <Pressable
-      {...rest}
-      accessibilityRole="button"
-      disabled={isDisabled}
-      style={({ pressed }) => [
-        styles.base,
-        styles[size],
-        styles[variant],
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        pressed && !isDisabled && styles.pressed,
-        style,
-      ]}
-    >
+    <Animated.View style={[animatedPressStyle, fullWidth && styles.fullWidth]}>
+      <Pressable
+        {...rest}
+        accessibilityRole="button"
+        disabled={isDisabled}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={({ pressed }) => [
+          styles.base,
+          styles[size],
+          styles[variant],
+          fullWidth && styles.fullWidth,
+          isDisabled && styles.disabled,
+          pressed && !isDisabled && styles.pressed,
+          style,
+        ]}
+      >
       {loading ? (
         <ActivityIndicator
           color={variant === 'primary' || variant === 'danger' ? colors.white : colors.text}
@@ -83,7 +121,8 @@ export function Button({
           {rightIcon ? <View style={styles.icon}>{rightIcon}</View> : null}
         </View>
       )}
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -140,7 +179,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   pressed: {
-    transform: [{ scale: 0.97 }],
+    opacity: 0.96,
   },
   content: {
     flexDirection: 'row',

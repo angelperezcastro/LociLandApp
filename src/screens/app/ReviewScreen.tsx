@@ -35,6 +35,7 @@ import Animated, {
 
 import { GuideLottie } from '../../components/review/GuideLottie';
 import { useUserStore } from '../../store/useUserStore';
+import { useConfettiStore } from '../../store/useConfettiStore';
 import { normalizeAgeGroup } from '../../utils/ageGroup';
 import { XP_REWARDS } from '../../utils/levelUtils';
 import { auth } from '../../services/firebase';
@@ -1550,6 +1551,7 @@ export const ReviewScreen = () => {
   } = route.params;
 
   const profileAgeGroup = useUserStore((state) => state.profile?.ageGroup);
+  const triggerConfetti = useConfettiStore((state) => state.triggerConfetti);
 
   const effectiveAgeGroup = useMemo<ReviewAgeGroup>(() => {
     return normalizeAgeGroup(routeAgeGroup ?? profileAgeGroup);
@@ -1854,6 +1856,7 @@ export const ReviewScreen = () => {
         sessionId,
       });
 
+      triggerConfetti();
       setCompletedSession(completed);
       setScreenState('COMPLETE');
     } catch (error) {

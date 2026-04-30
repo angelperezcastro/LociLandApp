@@ -1,23 +1,15 @@
-// src/components/palace/DeletePalaceSheet.tsx
-
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
-import {
-  colors,
-  fontSizes,
-  radius,
-  shadows,
-  spacing,
-  typography,
-} from '../../theme';
+import { colors, fontSizes, lineHeights, radius, spacing, typography } from '../../theme';
 import type { Palace } from '../../types';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { Button } from '../ui/Button';
@@ -70,15 +62,19 @@ function DeletePalaceSheet({
   const template = getPalaceTemplateById(palace.templateId);
 
   const handleCancel = () => {
-    if (!isDeleting) {
-      onCancel();
+    if (isDeleting) {
+      return;
     }
+
+    onCancel();
   };
 
   const handleConfirm = () => {
-    if (!isDeleting) {
-      void onConfirm(palace);
+    if (isDeleting) {
+      return;
     }
+
+    void onConfirm(palace);
   };
 
   return (
@@ -121,7 +117,9 @@ function DeletePalaceSheet({
           </Text>
 
           <View style={styles.warningBox}>
-            <Text style={styles.warningText}>This action cannot be undone.</Text>
+            <Text style={styles.warningText}>
+              This action cannot be undone.
+            </Text>
           </View>
 
           <View style={styles.actions}>
@@ -134,13 +132,23 @@ function DeletePalaceSheet({
             />
 
             <Button
-              title={isDeleting ? 'Deleting...' : 'Delete palace'}
-              variant="danger"
-              loading={isDeleting}
+              variant="primary"
               disabled={isDeleting}
               onPress={handleConfirm}
-              style={styles.deleteButton}
-            />
+              style={[
+                styles.deleteButton,
+                isDeleting ? styles.deleteButtonDisabled : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.deleteButtonText,
+                  isDeleting ? styles.deleteButtonTextDisabled : null,
+                ]}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete palace'}
+              </Text>
+            </Button>
           </View>
         </Animated.View>
       </View>
@@ -153,22 +161,35 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
+
   sheet: {
-    alignItems: 'center',
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    borderWidth: 2,
-    borderColor: colors.primarySoft,
-    backgroundColor: colors.bg,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
-    ...shadows.floating,
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderWidth: 2,
+    borderColor: colors.primarySoft,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.18,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 14,
+      },
+    }),
   },
+
   handle: {
     width: 54,
     height: 6,
@@ -176,6 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginBottom: spacing.lg,
   },
+
   emojiShell: {
     width: 92,
     height: 92,
@@ -186,46 +208,79 @@ const styles = StyleSheet.create({
     borderColor: colors.text,
     marginBottom: spacing.md,
   },
+
   emoji: {
-    ...typography.display,
-    fontSize: fontSizes.display + fontSizes.md,
-    lineHeight: 58,
+    fontSize: fontSizes.display,
   },
+
   title: {
-    ...typography.h1,
     color: colors.text,
+    fontSize: fontSizes.xxl,
+    lineHeight: lineHeights.xxl,
     textAlign: 'center',
+    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.sm,
   },
+
   description: {
-    ...typography.bodyStrong,
     maxWidth: 330,
-    color: colors.textSoft,
+    color: colors.text,
+    fontSize: fontSizes.md,
+    lineHeight: lineHeights.md,
     textAlign: 'center',
+    fontFamily: 'Nunito_600SemiBold',
+    opacity: 0.74,
     marginBottom: spacing.md,
   },
+
   warningBox: {
     width: '100%',
     borderRadius: radius.lg,
+    padding: spacing.md,
+    backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: colors.white,
-    padding: spacing.md,
     marginBottom: spacing.lg,
   },
+
   warningText: {
-    ...typography.caption,
     color: colors.muted,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeights.sm,
     textAlign: 'center',
+    fontFamily: 'Nunito_700Bold',
   },
+
   actions: {
     width: '100%',
   },
+
   cancelButton: {
     marginBottom: spacing.md,
+    borderRadius: radius.lg,
   },
+
   deleteButton: {
-    borderColor: colors.text,
+    borderRadius: radius.lg,
+    backgroundColor: colors.emphasisSoft,
+    borderColor: colors.emphasis,
+  },
+
+  deleteButtonDisabled: {
+    backgroundColor: colors.emphasisSoft,
+    borderColor: colors.borderStrong,
+    opacity: 1,
+  },
+
+  deleteButtonText: {
+    color: colors.text,
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: fontSizes.lg,
+    lineHeight: lineHeights.lg,
+  },
+
+  deleteButtonTextDisabled: {
+    color: colors.textSoft,
   },
 });
 

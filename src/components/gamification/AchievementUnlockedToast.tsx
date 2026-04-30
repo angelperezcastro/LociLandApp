@@ -11,17 +11,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  colors,
-  fontFamilies,
-  fontSizes,
-  lineHeights,
-  radius,
-  shadows,
-  spacing,
-  typography,
-} from '../../theme';
+import { colors, fontSizes, lineHeights, radius, spacing, typography } from '../../theme';
 import { useAchievementToastStore } from '../../store/useAchievementToastStore';
 
 const AUTO_DISMISS_MS = 3000;
@@ -31,6 +23,7 @@ export const AchievementUnlockedToast = () => {
   const dismissToast = useAchievementToastStore(
     (state) => state.dismissAchievementToast,
   );
+  const insets = useSafeAreaInsets();
 
   const shimmerX = useSharedValue(-120);
   const scale = useSharedValue(1);
@@ -84,7 +77,12 @@ export const AchievementUnlockedToast = () => {
       entering={FadeInDown.duration(260)}
       exiting={FadeOutUp.duration(180)}
       pointerEvents="box-none"
-      style={styles.wrapper}
+      style={[
+        styles.wrapper,
+        {
+          top: insets.top + spacing.xxxl + spacing.lg,
+        },
+      ]}
     >
       <Pressable
         accessibilityRole="button"
@@ -119,29 +117,38 @@ export const AchievementUnlockedToast = () => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    top: 52,
     left: spacing.md,
     right: spacing.md,
     zIndex: 70,
     elevation: 70,
   },
+
   card: {
     minHeight: 78,
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radius.xxl,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     backgroundColor: colors.bg,
     borderWidth: 3,
     borderColor: colors.primary,
-    ...shadows.floating,
+    shadowColor: colors.text,
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 9,
   },
+
   cardPressed: {
     transform: [{ scale: 0.985 }],
   },
+
   shimmer: {
     position: 'absolute',
     top: -30,
@@ -150,34 +157,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     opacity: 0.52,
   },
+
   emoji: {
     fontSize: fontSizes.display,
-    lineHeight: lineHeights.display,
   },
+
   textColumn: {
     flex: 1,
   },
+
   eyebrow: {
-    ...typography.small,
-    fontFamily: fontFamilies.bodyBold,
+    fontSize: fontSizes.xs,
+    lineHeight: lineHeights.xs,
+    fontWeight: '900',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: colors.accent,
   },
+
   title: {
-    ...typography.h3,
     marginTop: spacing.xxs,
+    fontSize: fontSizes.lg,
+    lineHeight: lineHeights.md,
+    fontWeight: '900',
     color: colors.text,
   },
+
   xpPill: {
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     backgroundColor: colors.secondary,
   },
+
   xpText: {
-    ...typography.small,
-    fontFamily: fontFamilies.bodyBold,
+    fontSize: fontSizes.xs,
+    lineHeight: lineHeights.xs,
+    fontWeight: '900',
     color: colors.text,
   },
 });

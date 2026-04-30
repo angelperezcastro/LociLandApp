@@ -1,7 +1,14 @@
 // src/navigation/AppNavigator.tsx
 
-import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -29,10 +36,49 @@ import {
 const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
-const renderTabIcon = (emoji: string) => {
-  return ({ color }: { color: string }) => (
-    <Text style={[styles.tabIcon, { color }]}>{emoji}</Text>
+const TAB_ICON_BOUNCE_SCALE = 1.18;
+const TAB_ICON_TIMING_MS = 120;
+
+type AnimatedTabIconProps = {
+  emoji: string;
+  color: string;
+  focused: boolean;
+};
+
+function AnimatedTabIcon({ emoji, color, focused }: AnimatedTabIconProps) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (!focused) {
+      scale.value = withTiming(1, { duration: TAB_ICON_TIMING_MS });
+      return;
+    }
+
+    scale.value = withSequence(
+      withTiming(TAB_ICON_BOUNCE_SCALE, { duration: TAB_ICON_TIMING_MS }),
+      withSpring(1, { damping: 8, stiffness: 180 }),
+    );
+  }, [focused, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.Text style={[styles.tabIcon, { color }, animatedStyle]}>
+      {emoji}
+    </Animated.Text>
   );
+}
+
+const renderTabIcon = (emoji: string) => {
+  return ({
+    color,
+    focused,
+  }: {
+    color: string;
+    focused: boolean;
+  }) => <AnimatedTabIcon emoji={emoji} color={color} focused={focused} />;
 };
 
 function MainTabs() {
@@ -95,7 +141,7 @@ export function AppNavigator() {
         name="PalaceDetail"
         component={PalaceDetailScreen}
         options={{
-          animation: 'slide_from_right',
+          animation: 'slide_from_bottom',
         }}
       />
 

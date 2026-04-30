@@ -1,6 +1,6 @@
 // src/components/gamification/LevelUpOverlay.tsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Modal,
   Pressable,
@@ -17,15 +17,40 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 
-import { colors, spacing } from '../../theme';
+import { colors, fontSizes, lineHeights, radius, shadows, spacing } from '../../theme';
 import { useLevelUpStore } from '../../store/useLevelUpStore';
+import { useConfettiStore } from '../../store/useConfettiStore';
 
 const levelUpBurstAnimation = require('../../assets/animations/level-up-burst.json');
+
+
+const LEVEL_UP_SIZES = {
+  cardMaxWidth: 390,
+  burstScale: '120%',
+  titleSize: 46,
+  titleLineHeight: 54,
+  badgeEmoji: 58,
+  badgeLabel: 20,
+  subtitle: 17,
+  levelTitle: 25,
+  levelTitleLineHeight: 31,
+  eyebrow: 15,
+  xp: 15,
+  buttonMinHeight: 56,
+  buttonLabel: 20,
+} as const;
 
 export const LevelUpOverlay = () => {
   const { width } = useWindowDimensions();
   const currentLevelUp = useLevelUpStore((state) => state.currentLevelUp);
   const dismissLevelUp = useLevelUpStore((state) => state.dismissLevelUp);
+  const triggerConfetti = useConfettiStore((state) => state.triggerConfetti);
+
+  useEffect(() => {
+    if (currentLevelUp) {
+      triggerConfetti();
+    }
+  }, [currentLevelUp, triggerConfetti]);
 
   if (!currentLevelUp) {
     return null;
@@ -106,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    backgroundColor: 'rgba(45, 52, 54, 0.72)',
+    backgroundColor: colors.overlay,
   },
 
   animationLayer: {
@@ -116,33 +141,26 @@ const styles = StyleSheet.create({
   },
 
   lottie: {
-    width: '120%',
-    height: '120%',
+    width: LEVEL_UP_SIZES.burstScale,
+    height: LEVEL_UP_SIZES.burstScale,
   },
 
   card: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: LEVEL_UP_SIZES.cardMaxWidth,
     alignItems: 'center',
-    borderRadius: 36,
+    borderRadius: radius.xxl,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     backgroundColor: colors.bg,
     borderWidth: 4,
     borderColor: colors.primary,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 16,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    elevation: 12,
+    ...shadows.floating,
   },
 
   eyebrow: {
-    fontSize: 15,
+    fontSize: LEVEL_UP_SIZES.eyebrow,
     fontWeight: '900',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
@@ -151,8 +169,8 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 46,
-    lineHeight: 54,
+    fontSize: LEVEL_UP_SIZES.titleSize,
+    lineHeight: LEVEL_UP_SIZES.titleLineHeight,
     fontWeight: '900',
     textAlign: 'center',
     color: colors.emphasis,
@@ -162,7 +180,7 @@ const styles = StyleSheet.create({
   badge: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
     borderWidth: 5,
     borderColor: colors.secondary,
@@ -174,23 +192,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '78%',
     height: '78%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    borderRadius: radius.pill,
+    backgroundColor: colors.white,
+    opacity: 0.45,
   },
 
   badgeEmoji: {
-    fontSize: 58,
+    fontSize: LEVEL_UP_SIZES.badgeEmoji,
     marginBottom: spacing.xs,
   },
 
   badgeLevel: {
-    fontSize: 20,
+    fontSize: LEVEL_UP_SIZES.badgeLabel,
     fontWeight: '900',
     color: colors.text,
   },
 
   subtitle: {
-    fontSize: 17,
+    fontSize: LEVEL_UP_SIZES.subtitle,
     fontWeight: '800',
     color: colors.text,
     opacity: 0.76,
@@ -198,8 +217,8 @@ const styles = StyleSheet.create({
 
   levelTitle: {
     marginTop: spacing.xs,
-    fontSize: 25,
-    lineHeight: 31,
+    fontSize: LEVEL_UP_SIZES.levelTitle,
+    lineHeight: LEVEL_UP_SIZES.levelTitleLineHeight,
     fontWeight: '900',
     textAlign: 'center',
     color: colors.text,
@@ -207,29 +226,22 @@ const styles = StyleSheet.create({
 
   xpText: {
     marginTop: spacing.sm,
-    fontSize: 15,
+    fontSize: LEVEL_UP_SIZES.eyebrow,
     fontWeight: '800',
     color: colors.accent,
   },
 
   button: {
     width: '100%',
-    minHeight: 56,
+    minHeight: LEVEL_UP_SIZES.buttonMinHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     marginTop: spacing.xl,
     backgroundColor: colors.softYellow,
     borderWidth: 3,
     borderColor: colors.primary,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 6,
+    ...shadows.elevated,
   },
 
   buttonPressed: {
@@ -238,7 +250,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontSize: 20,
+    fontSize: LEVEL_UP_SIZES.buttonLabel,
     fontWeight: '900',
     color: colors.text,
   },

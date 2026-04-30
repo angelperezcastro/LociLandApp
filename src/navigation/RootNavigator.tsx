@@ -9,6 +9,7 @@ import { AuthNavigator } from './AuthNavigator';
 import type { RootStackParamList } from './types';
 
 import { AchievementUnlockedToast } from '../components/gamification/AchievementUnlockedToast';
+import { GlobalConfetti } from '../components/gamification/GlobalConfetti';
 import { LevelUpOverlay } from '../components/gamification/LevelUpOverlay';
 import { NotificationBootstrapper } from '../components/gamification/NotificationBootstrapper';
 import { StreakBootstrapper } from '../components/gamification/StreakBootstrapper';
@@ -83,7 +84,7 @@ export function RootNavigator() {
               name="PalaceDetail"
               component={PalaceDetailScreen}
               options={{
-                animation: 'slide_from_right',
+                animation: 'slide_from_bottom',
               }}
             />
 
@@ -105,7 +106,13 @@ export function RootNavigator() {
               }}
             />
 
-            <Stack.Screen name="Review" component={ReviewScreen} />
+            <Stack.Screen
+              name="Review"
+              component={ReviewScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
 
             <Stack.Screen
               name="Achievements"
@@ -132,6 +139,7 @@ export function RootNavigator() {
         <>
           <StreakBootstrapper />
           <NotificationBootstrapper />
+          <GlobalConfetti />
           <LevelUpOverlay />
           <StreakCelebrationBanner />
           <AchievementUnlockedToast />

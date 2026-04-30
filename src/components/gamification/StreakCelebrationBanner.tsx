@@ -11,17 +11,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  colors,
-  fontFamilies,
-  fontSizes,
-  lineHeights,
-  radius,
-  shadows,
-  spacing,
-  typography,
-} from '../../theme';
+import { colors, fontSizes, lineHeights, radius, spacing } from '../../theme';
 import { useStreakStore } from '../../store/useStreakStore';
 
 const AUTO_DISMISS_MS = 3600;
@@ -29,6 +21,7 @@ const AUTO_DISMISS_MS = 3600;
 export const StreakCelebrationBanner = () => {
   const celebration = useStreakStore((state) => state.currentCelebration);
   const dismiss = useStreakStore((state) => state.dismissStreakCelebration);
+  const insets = useSafeAreaInsets();
 
   const fireScale = useSharedValue(1);
 
@@ -68,7 +61,12 @@ export const StreakCelebrationBanner = () => {
       entering={FadeInDown.duration(260)}
       exiting={FadeOutUp.duration(200)}
       pointerEvents="box-none"
-      style={styles.wrapper}
+      style={[
+        styles.wrapper,
+        {
+          top: insets.top + spacing.xxxl + spacing.lg,
+        },
+      ]}
     >
       <Pressable
         accessibilityRole="button"
@@ -84,7 +82,9 @@ export const StreakCelebrationBanner = () => {
         </Animated.Text>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>{celebration.currentStreak} day streak!</Text>
+          <Text style={styles.title}>
+            {celebration.currentStreak} day streak!
+          </Text>
 
           <Text style={styles.subtitle}>
             {celebration.awardedSevenDayXP
@@ -102,12 +102,12 @@ export const StreakCelebrationBanner = () => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    top: 52,
     left: spacing.md,
     right: spacing.md,
     zIndex: 50,
     elevation: 50,
   },
+
   card: {
     minHeight: 74,
     flexDirection: 'row',
@@ -119,26 +119,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderWidth: 3,
     borderColor: colors.secondary,
-    ...shadows.elevated,
+    shadowColor: colors.text,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
   },
+
   cardPressed: {
     transform: [{ scale: 0.985 }],
   },
+
   fireEmoji: {
     fontSize: fontSizes.display,
-    lineHeight: lineHeights.display,
   },
+
   copy: {
     flex: 1,
   },
+
   title: {
-    ...typography.h3,
+    fontSize: fontSizes.lg,
+    lineHeight: lineHeights.md,
+    fontWeight: '900',
     color: colors.text,
   },
+
   subtitle: {
-    ...typography.caption,
-    fontFamily: fontFamilies.bodyBold,
     marginTop: spacing.xxs,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeights.sm,
+    fontWeight: '800',
     color: colors.text,
     opacity: 0.72,
   },

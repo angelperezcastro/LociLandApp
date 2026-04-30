@@ -8,7 +8,7 @@ export type RootStackParamList = {
   PalaceDetail: { palaceId?: string } | undefined;
   AddStation: { palaceId: string };
   EditStation: { palaceId: string; stationId: string };
-  Review: { palaceId?: string } | undefined;
+  Review: { palaceId?: string; ageGroup?: '6-9' | '10-14' } | undefined;
   Achievements: undefined;
   ComponentShowcase: undefined;
 };
@@ -33,7 +33,7 @@ export type AppStackParamList = {
   PalaceDetail: { palaceId: string };
   AddStation: { palaceId: string };
   EditStation: { palaceId: string; stationId: string };
-  Review: { palaceId: string };
+  Review: { palaceId: string; ageGroup?: '6-9' | '10-14' };
   Achievements: undefined;
 };
 

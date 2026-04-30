@@ -1,14 +1,20 @@
 // src/components/palace/PalaceCard.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Pressable,
   StyleSheet,
   Text,
   View,
+  type GestureResponderEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
   colors,
@@ -22,6 +28,10 @@ import {
 import { getPalaceTemplateById } from '../../assets/templates';
 import type { Palace } from '../../types';
 import { AnimatedNumber } from '../gamification/AnimatedNumber';
+
+const CARD_PRESS_SCALE = 0.985;
+const CARD_PRESS_DURATION_MS = 120;
+
 
 export interface PalaceCardProps {
   palace: Palace;
@@ -40,20 +50,44 @@ function PalaceCard({
 }: PalaceCardProps) {
   const template = getPalaceTemplateById(palace.templateId);
   const stationLabel = palace.stationCount === 1 ? 'station' : 'stations';
+  const [isPressed, setIsPressed] = useState(false);
+  const pressScale = useSharedValue(1);
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pressScale.value }],
+  }));
+
+  const handlePressIn = (_event: GestureResponderEvent) => {
+    setIsPressed(true);
+    pressScale.value = withTiming(CARD_PRESS_SCALE, {
+      duration: CARD_PRESS_DURATION_MS,
+    });
+  };
+
+  const handlePressOut = (_event: GestureResponderEvent) => {
+    setIsPressed(false);
+    pressScale.value = withTiming(1, {
+      duration: CARD_PRESS_DURATION_MS,
+    });
+  };
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${palace.name}`}
-      onPress={() => onPress?.(palace.id)}
-      onLongPress={() => onLongPress?.(palace.id)}
-      delayLongPress={280}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-        style,
-      ]}
-    >
+    <Animated.View style={animatedCardStyle}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${palace.name}`}
+        onPress={() => onPress?.(palace.id)}
+        onLongPress={() => onLongPress?.(palace.id)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        delayLongPress={280}
+        style={[
+          styles.card,
+          style,
+          { backgroundColor: template.backgroundColour },
+          isPressed && styles.cardPressed,
+        ]}
+      >
       <View style={styles.emojiBox}>
         <Text style={styles.emoji}>{template.emoji}</Text>
       </View>
@@ -93,7 +127,8 @@ function PalaceCard({
           <Text style={styles.reviewButtonText}>Review</Text>
         </Pressable>
       </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -108,8 +143,8 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   cardPressed: {
-    transform: [{ scale: 0.99 }],
-    opacity: 0.96,
+    opacity: 0.98,
+    ...shadows.elevated,
   },
   emojiBox: {
     width: 108,
