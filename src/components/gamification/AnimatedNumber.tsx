@@ -37,7 +37,7 @@ export const AnimatedNumber = ({
     if (duration <= 0) {
       setDisplayedValue(value);
       previousValueRef.current = value;
-      return;
+      return undefined;
     }
 
     const from = previousValueRef.current;
@@ -52,7 +52,6 @@ export const AnimatedNumber = ({
       const elapsed = timestamp - startTimestamp;
       const progress = Math.min(1, elapsed / duration);
       const easedProgress = easeOutCubic(progress);
-
       const nextValue = Math.round(from + (to - from) * easedProgress);
 
       setDisplayedValue(nextValue);

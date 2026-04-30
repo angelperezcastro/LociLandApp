@@ -16,7 +16,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { colors, spacing } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { uploadStationImage } from '../../services/storageService';
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   modalHandle: {
     width: 52,
     height: 6,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
   header: {
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: typography.h1.fontSize,
     fontWeight: '900',
     lineHeight: 30,
   },
@@ -631,20 +631,20 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.accent,
-    fontSize: 13,
+    fontSize: typography.small.fontSize,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
   title: {
     color: colors.text,
-    fontSize: 32,
+    fontSize: typography.h1.fontSize + spacing.xs,
     fontWeight: '900',
     marginTop: spacing.xs,
   },
   subtitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     lineHeight: 22,
     marginTop: spacing.xs,
   },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   section: {
-    borderRadius: 28,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: colors.bg,
@@ -670,12 +670,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 21,
+    fontSize: typography.h2.fontSize,
     fontWeight: '900',
   },
   sectionDescription: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: typography.caption.fontSize,
     lineHeight: 20,
     marginTop: spacing.xs,
     marginBottom: spacing.md,
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     fontWeight: '800',
     marginBottom: spacing.sm,
   },
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   emojiButton: {
     width: '22.7%',
     aspectRatio: 1,
-    borderRadius: 20,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: colors.bg,
@@ -709,18 +709,18 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.04 }],
   },
   emojiText: {
-    fontSize: 30,
+    fontSize: typography.h1.fontSize + spacing.xs,
   },
   input: {
     minHeight: 56,
-    borderRadius: 20,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: colors.bg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     color: colors.text,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '700',
   },
   textArea: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   },
   photoButton: {
     minHeight: 96,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.accent,
@@ -739,16 +739,16 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   photoButtonEmoji: {
-    fontSize: 30,
+    fontSize: typography.h1.fontSize + spacing.xs,
     marginBottom: spacing.xs,
   },
   photoButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '900',
   },
   imagePreviewCard: {
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.text,
     overflow: 'hidden',
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   },
   secondaryImageText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     fontWeight: '900',
   },
   removeImageButton: {
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
   },
   removeImageText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     fontWeight: '900',
   },
   imageButtonDisabled: {
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     minHeight: 60,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: colors.secondary,
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: typography.h3.fontSize,
     fontWeight: '900',
   },
   savingContent: {
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
   },
   savingText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     fontWeight: '900',
   },
 });

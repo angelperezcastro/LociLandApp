@@ -1,15 +1,23 @@
+// src/components/palace/DeletePalaceSheet.tsx
+
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import type { Palace } from '../../types';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { Button } from '../ui/Button';
@@ -62,19 +70,15 @@ function DeletePalaceSheet({
   const template = getPalaceTemplateById(palace.templateId);
 
   const handleCancel = () => {
-    if (isDeleting) {
-      return;
+    if (!isDeleting) {
+      onCancel();
     }
-
-    onCancel();
   };
 
   const handleConfirm = () => {
-    if (isDeleting) {
-      return;
+    if (!isDeleting) {
+      void onConfirm(palace);
     }
-
-    void onConfirm(palace);
   };
 
   return (
@@ -117,9 +121,7 @@ function DeletePalaceSheet({
           </Text>
 
           <View style={styles.warningBox}>
-            <Text style={styles.warningText}>
-              This action cannot be undone.
-            </Text>
+            <Text style={styles.warningText}>This action cannot be undone.</Text>
           </View>
 
           <View style={styles.actions}>
@@ -133,11 +135,11 @@ function DeletePalaceSheet({
 
             <Button
               title={isDeleting ? 'Deleting...' : 'Delete palace'}
-              variant="primary"
+              variant="danger"
+              loading={isDeleting}
               disabled={isDeleting}
               onPress={handleConfirm}
               style={styles.deleteButton}
-              textStyle={styles.deleteButtonText}
             />
           </View>
         </Animated.View>
@@ -151,114 +153,79 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
-
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
-
   sheet: {
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
+    alignItems: 'center',
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    borderWidth: 2,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.bg,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
-    alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.softYellow,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.18,
-        shadowRadius: 18,
-      },
-      android: {
-        elevation: 14,
-      },
-    }),
+    ...shadows.floating,
   },
-
   handle: {
     width: 54,
     height: 6,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.border,
     marginBottom: spacing.lg,
   },
-
   emojiShell: {
     width: 92,
     height: 92,
-    borderRadius: 32,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.text,
     marginBottom: spacing.md,
   },
-
   emoji: {
-    fontSize: 52,
+    ...typography.display,
+    fontSize: fontSizes.display + fontSizes.md,
+    lineHeight: 58,
   },
-
   title: {
+    ...typography.h1,
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 36,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.sm,
   },
-
   description: {
+    ...typography.bodyStrong,
     maxWidth: 330,
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
+    color: colors.textSoft,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.74,
     marginBottom: spacing.md,
   },
-
   warningBox: {
     width: '100%',
-    borderRadius: 22,
-    padding: spacing.md,
-    backgroundColor: colors.white,
+    borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: colors.border,
+    backgroundColor: colors.white,
+    padding: spacing.md,
     marginBottom: spacing.lg,
   },
-
   warningText: {
+    ...typography.caption,
     color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
-    fontFamily: 'Nunito_700Bold',
   },
-
   actions: {
     width: '100%',
   },
-
   cancelButton: {
     marginBottom: spacing.md,
-    borderRadius: 22,
   },
-
   deleteButton: {
-    borderRadius: 22,
-    backgroundColor: colors.emphasis,
     borderColor: colors.text,
-  },
-
-  deleteButtonText: {
-    color: colors.bg,
-    fontFamily: 'Nunito_800ExtraBold',
   },
 });
 

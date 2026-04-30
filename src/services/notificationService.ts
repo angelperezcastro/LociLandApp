@@ -1,6 +1,8 @@
 // src/services/notificationService.ts
 
 import { Platform } from 'react-native';
+
+import { colors } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
@@ -109,7 +111,7 @@ const ensureAndroidNotificationChannel = async (
       importance: notifications.AndroidImportance.DEFAULT,
       sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FFD93D',
+      lightColor: colors.primary,
     },
   );
 };

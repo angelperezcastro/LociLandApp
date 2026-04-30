@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Timestamp } from 'firebase/firestore';
 
-import { colors, spacing } from '../../theme';
+import { colors, fontSizes, radius, spacing, typography } from '../../theme';
 import { palaceTemplates } from '../../assets/templates';
 import type { Palace, PalaceTemplate, PalaceTemplateId } from '../../types';
 import { auth } from '../../services/firebase';
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -444,9 +444,9 @@ const styles = StyleSheet.create({
 
   closeText: {
     color: colors.text,
-    fontSize: 34,
+    fontSize: typography.display.fontSize - spacing.xs,
     lineHeight: 36,
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: typography.h1.fontFamily,
     includeFontPadding: false,
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -454,8 +454,8 @@ const styles = StyleSheet.create({
 
   topBarTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: typography.h3.fontSize,
+    fontFamily: typography.bodyStrong.fontFamily,
   },
 
   topBarSpacer: {
@@ -500,27 +500,27 @@ const styles = StyleSheet.create({
   },
 
   heroEmoji: {
-    fontSize: 58,
+    fontSize: fontSizes.display + spacing.lg,
     marginBottom: spacing.sm,
   },
 
   title: {
     maxWidth: 330,
     color: colors.text,
-    fontSize: 31,
+    fontSize: typography.h1.fontSize + spacing.xs,
     lineHeight: 37,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: typography.h1.fontFamily,
     marginBottom: spacing.sm,
   },
 
   subtitle: {
     maxWidth: 330,
     color: colors.text,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     lineHeight: 23,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: typography.bodySemiBold.fontFamily,
     opacity: 0.72,
   },
 
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   stepBadge: {
     width: 34,
     height: 34,
-    borderRadius: 13,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginRight: spacing.sm,
     color: colors.text,
@@ -546,23 +546,23 @@ const styles = StyleSheet.create({
     borderColor: colors.text,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: 17,
+    fontSize: typography.body.fontSize,
     lineHeight: 30,
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: typography.h1.fontFamily,
     includeFontPadding: false,
   },
 
   sectionTitle: {
     flex: 1,
     color: colors.text,
-    fontSize: 19,
+    fontSize: typography.h3.fontSize,
     lineHeight: 25,
-    fontFamily: 'Nunito_800ExtraBold',
+    fontFamily: typography.bodyStrong.fontFamily,
   },
 
   inputShell: {
     minHeight: 68,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   },
 
   inputEmoji: {
-    fontSize: 27,
+    fontSize: typography.h1.fontSize,
     marginRight: spacing.sm,
   },
 
@@ -591,17 +591,17 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 62,
     color: colors.text,
-    fontSize: 20,
-    fontFamily: 'Nunito_700Bold',
-    paddingVertical: 0,
+    fontSize: typography.h3.fontSize,
+    fontFamily: typography.bodyStrong.fontFamily,
+    paddingVertical: spacing.none,
   },
 
   characterCount: {
     marginTop: spacing.sm,
     color: colors.muted,
-    fontSize: 13,
+    fontSize: typography.small.fontSize,
     textAlign: 'right',
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: typography.bodySemiBold.fontFamily,
   },
 
   templateGrid: {
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
 
   templateCard: {
     minHeight: 128,
-    borderRadius: 26,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.md,
     alignItems: 'center',
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     right: spacing.sm,
     width: 30,
     height: 30,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -663,22 +663,22 @@ const styles = StyleSheet.create({
 
   checkmarkText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: typography.h3.fontSize,
     lineHeight: 22,
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: typography.h1.fontFamily,
   },
 
   templateEmoji: {
-    fontSize: 44,
+    fontSize: typography.display.fontSize + spacing.sm,
     marginBottom: spacing.sm,
   },
 
   templateName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     lineHeight: 19,
     textAlign: 'center',
-    fontFamily: 'Nunito_800ExtraBold',
+    fontFamily: typography.bodyStrong.fontFamily,
   },
 
   previewWrapper: {
@@ -686,12 +686,12 @@ const styles = StyleSheet.create({
   },
 
   previewCard: {
-    marginBottom: 0,
+    marginBottom: spacing.none,
   },
 
   previewEmpty: {
     minHeight: 150,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -702,26 +702,26 @@ const styles = StyleSheet.create({
   },
 
   previewEmptyEmoji: {
-    fontSize: 38,
+    fontSize: typography.display.fontSize + spacing.xs,
     marginBottom: spacing.sm,
   },
 
   previewEmptyTitle: {
     color: colors.text,
-    fontSize: 17,
+    fontSize: typography.body.fontSize,
     lineHeight: 22,
     textAlign: 'center',
-    fontFamily: 'Nunito_800ExtraBold',
+    fontFamily: typography.bodyStrong.fontFamily,
     marginBottom: spacing.xs,
   },
 
   previewEmptyText: {
     maxWidth: 260,
     color: colors.text,
-    fontSize: 14,
+    fontSize: typography.caption.fontSize,
     lineHeight: 20,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: typography.bodySemiBold.fontFamily,
     opacity: 0.64,
   },
 
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
 
   submitButton: {
     minHeight: 62,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 3,
   },
 
@@ -749,8 +749,8 @@ const styles = StyleSheet.create({
   submitLoadingText: {
     marginLeft: spacing.sm,
     color: colors.text,
-    fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
+    fontSize: typography.caption.fontSize,
+    fontFamily: typography.bodyStrong.fontFamily,
     opacity: 0.72,
   },
 
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
   successCard: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: 32,
+    borderRadius: radius.xxl,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
     alignItems: 'center',
@@ -787,25 +787,25 @@ const styles = StyleSheet.create({
   },
 
   successEmoji: {
-    fontSize: 70,
+    fontSize: typography.display.fontSize + spacing.xl + spacing.xs,
     marginBottom: spacing.sm,
   },
 
   successTitle: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: typography.h1.fontSize,
     lineHeight: 34,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: typography.h1.fontFamily,
     marginBottom: spacing.sm,
   },
 
   successText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     lineHeight: 22,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: typography.bodySemiBold.fontFamily,
     opacity: 0.72,
   },
 });

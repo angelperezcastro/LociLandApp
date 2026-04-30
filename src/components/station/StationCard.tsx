@@ -1,7 +1,8 @@
+// src/components/station/StationCard.tsx
+
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Image,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,7 +10,15 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import type { Station } from '../../types';
 
 interface StationCardProps {
@@ -21,11 +30,11 @@ interface StationCardProps {
 }
 
 const STATION_COLOURS = [
-  colors.softYellow,
-  colors.secondary,
-  colors.accent,
-  colors.emphasis,
-  colors.bg,
+  colors.primarySoft,
+  colors.secondarySoft,
+  colors.accentSoft,
+  colors.emphasisSoft,
+  colors.surfaceMuted,
 ];
 
 export function StationCard({
@@ -39,7 +48,7 @@ export function StationCard({
   const swipeableRef = useRef<Swipeable | null>(null);
 
   const stationColour = useMemo(
-    () => STATION_COLOURS[station.order % STATION_COLOURS.length],
+    () => STATION_COLOURS[Math.abs(station.order) % STATION_COLOURS.length],
     [station.order],
   );
 
@@ -108,11 +117,9 @@ export function StationCard({
             {memoryText}
           </Text>
 
-          {isExpanded ? (
-            <Text style={styles.expandHint}>Tap again to collapse</Text>
-          ) : (
-            <Text style={styles.expandHint}>Tap to expand · Hold to reorder</Text>
-          )}
+          <Text style={styles.expandHint}>
+            {isExpanded ? 'Tap again to collapse' : 'Tap to expand · Hold to reorder'}
+          </Text>
         </View>
 
         <View style={styles.rightArea}>
@@ -134,155 +141,115 @@ const styles = StyleSheet.create({
     minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 28,
-    padding: spacing.md,
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.softYellow,
     gap: spacing.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+    ...shadows.card,
   },
-
   cardActive: {
     opacity: 0.94,
     transform: [{ scale: 1.03 }],
-    ...Platform.select({
-      ios: {
-        shadowOpacity: 0.22,
-        shadowRadius: 18,
-      },
-      android: {
-        elevation: 14,
-      },
-    }),
+    ...shadows.elevated,
   },
-
   emojiShell: {
     width: 64,
     height: 64,
-    borderRadius: 22,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.text,
   },
-
   emoji: {
-    fontSize: 34,
+    ...typography.h1,
+    fontSize: fontSizes.xxl + spacing.xs,
+    lineHeight: 40,
   },
-
   content: {
     flex: 1,
     minWidth: 0,
   },
-
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-
   label: {
+    ...typography.h2,
     flex: 1,
     color: colors.text,
-    fontSize: 20,
-    lineHeight: 25,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   editButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 13,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.text,
   },
-
   editIcon: {
-    fontSize: 16,
+    ...typography.caption,
   },
-
   memoryText: {
+    ...typography.caption,
     marginTop: spacing.xs,
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 19,
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.74,
+    color: colors.textSoft,
   },
-
   memoryTextExpanded: {
-    opacity: 0.86,
+    color: colors.text,
   },
-
   expandHint: {
+    ...typography.small,
     marginTop: spacing.xs,
     color: colors.muted,
-    fontSize: 12,
-    fontFamily: 'Nunito_700Bold',
   },
-
   rightArea: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
   },
-
   thumbnail: {
     width: 52,
     height: 52,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: colors.white,
   },
-
   dragHandle: {
     width: 38,
     minHeight: 30,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.border,
   },
-
   dragHandleText: {
+    ...typography.caption,
     color: colors.muted,
-    fontSize: 16,
-    fontFamily: 'Nunito_800ExtraBold',
   },
-
   deleteAction: {
     width: 96,
     marginLeft: spacing.sm,
     marginVertical: spacing.xs,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.emphasis,
     borderWidth: 2,
     borderColor: colors.text,
   },
-
   deleteActionText: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: 'Nunito_800ExtraBold',
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
+    color: colors.white,
   },
 });
 

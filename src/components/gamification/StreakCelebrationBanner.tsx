@@ -1,12 +1,7 @@
 // src/components/gamification/StreakCelebrationBanner.tsx
 
 import React, { useEffect } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeOutUp,
@@ -17,7 +12,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  lineHeights,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import { useStreakStore } from '../../store/useStreakStore';
 
 const AUTO_DISMISS_MS = 3600;
@@ -80,9 +84,7 @@ export const StreakCelebrationBanner = () => {
         </Animated.Text>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>
-            {celebration.currentStreak} day streak!
-          </Text>
+          <Text style={styles.title}>{celebration.currentStreak} day streak!</Text>
 
           <Text style={styles.subtitle}>
             {celebration.awardedSevenDayXP
@@ -106,50 +108,37 @@ const styles = StyleSheet.create({
     zIndex: 50,
     elevation: 50,
   },
-
   card: {
     minHeight: 74,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     backgroundColor: colors.primary,
     borderWidth: 3,
     borderColor: colors.secondary,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 8,
+    ...shadows.elevated,
   },
-
   cardPressed: {
     transform: [{ scale: 0.985 }],
   },
-
   fireEmoji: {
-    fontSize: 38,
+    fontSize: fontSizes.display,
+    lineHeight: lineHeights.display,
   },
-
   copy: {
     flex: 1,
   },
-
   title: {
-    fontSize: 19,
-    fontWeight: '900',
+    ...typography.h3,
     color: colors.text,
   },
-
   subtitle: {
-    marginTop: 2,
-    fontSize: 14,
-    fontWeight: '800',
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
+    marginTop: spacing.xxs,
     color: colors.text,
     opacity: 0.72,
   },

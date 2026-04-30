@@ -3,7 +3,6 @@
 import React from 'react';
 import {
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -17,7 +16,17 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 
-import { colors, spacing } from '../../theme';
+import { Button } from '../ui/Button';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  lineHeights,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import { useLevelUpStore } from '../../store/useLevelUpStore';
 
 const levelUpBurstAnimation = require('../../assets/animations/level-up-burst.json');
@@ -71,29 +80,20 @@ export const LevelUpOverlay = () => {
             <Text style={styles.badgeLevel}>Level {currentLevelUp.newLevel}</Text>
           </View>
 
-          <Text style={styles.subtitle}>
-            You are now a
-          </Text>
+          <Text style={styles.subtitle}>You are now a</Text>
 
-          <Text style={styles.levelTitle}>
-            {currentLevelUp.levelTitle}
-          </Text>
+          <Text style={styles.levelTitle}>{currentLevelUp.levelTitle}</Text>
 
-          <Text style={styles.xpText}>
-            Total XP: {currentLevelUp.newXP}
-          </Text>
+          <Text style={styles.xpText}>Total XP: {currentLevelUp.newXP}</Text>
 
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            fullWidth
+            title="Awesome!"
             accessibilityLabel="Dismiss level up celebration"
             onPress={dismissLevelUp}
-            style={({ pressed }) => [
-              styles.button,
-              pressed ? styles.buttonPressed : null,
-            ]}
-          >
-            <Text style={styles.buttonText}>Awesome!</Text>
-          </Pressable>
+            style={styles.button}
+            textStyle={styles.buttonText}
+          />
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -106,138 +106,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    backgroundColor: 'rgba(45, 52, 54, 0.72)',
+    backgroundColor: colors.overlay,
   },
-
   animationLayer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   lottie: {
     width: '120%',
     height: '120%',
   },
-
   card: {
     width: '100%',
     maxWidth: 390,
     alignItems: 'center',
-    borderRadius: 36,
+    borderRadius: radius.xxl,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     backgroundColor: colors.bg,
     borderWidth: 4,
     borderColor: colors.primary,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 16,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    elevation: 12,
+    ...shadows.floating,
   },
-
   eyebrow: {
-    fontSize: 15,
-    fontWeight: '900',
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
     letterSpacing: 0.7,
     textTransform: 'uppercase',
     color: colors.accent,
     marginBottom: spacing.sm,
   },
-
   title: {
-    fontSize: 46,
-    lineHeight: 54,
-    fontWeight: '900',
+    fontFamily: fontFamilies.heading,
+    fontSize: fontSizes.display,
+    lineHeight: lineHeights.display,
     textAlign: 'center',
     color: colors.emphasis,
     marginBottom: spacing.lg,
   },
-
   badge: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
     borderWidth: 5,
     borderColor: colors.secondary,
     marginBottom: spacing.lg,
     overflow: 'hidden',
   },
-
   badgeGlow: {
     position: 'absolute',
     width: '78%',
     height: '78%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    borderRadius: radius.pill,
+    backgroundColor: colors.white,
+    opacity: 0.45,
   },
-
   badgeEmoji: {
-    fontSize: 58,
+    fontSize: fontSizes.display,
+    lineHeight: lineHeights.display,
     marginBottom: spacing.xs,
   },
-
   badgeLevel: {
-    fontSize: 20,
-    fontWeight: '900',
+    ...typography.h2,
     color: colors.text,
   },
-
   subtitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...typography.bodyStrong,
     color: colors.text,
     opacity: 0.76,
   },
-
   levelTitle: {
+    ...typography.h1,
     marginTop: spacing.xs,
-    fontSize: 25,
-    lineHeight: 31,
-    fontWeight: '900',
     textAlign: 'center',
     color: colors.text,
   },
-
   xpText: {
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
     marginTop: spacing.sm,
-    fontSize: 15,
-    fontWeight: '800',
     color: colors.accent,
   },
-
   button: {
-    width: '100%',
-    minHeight: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
     marginTop: spacing.xl,
-    backgroundColor: colors.accent,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 6,
   },
-
-  buttonPressed: {
-    transform: [{ scale: 0.97 }],
-    opacity: 0.92,
-  },
-
   buttonText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.bg,
+    color: colors.white,
   },
 });

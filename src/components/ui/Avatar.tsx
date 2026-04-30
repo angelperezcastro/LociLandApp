@@ -1,14 +1,17 @@
+// src/components/ui/Avatar.tsx
+
 import React from 'react';
 import {
   Image,
-  Text,
-  View,
   StyleSheet,
+  Text,
   type ImageStyle,
   type StyleProp,
   type TextStyle,
+  View,
   type ViewStyle,
 } from 'react-native';
+
 import { colors } from '../../theme';
 
 type AvatarSize = 'sm' | 'md' | 'lg' | number;
@@ -71,7 +74,9 @@ export function Avatar({
         <Text
           style={[
             styles.emoji,
-            { fontSize: resolvedSize * 0.42 },
+            {
+              fontSize: resolvedSize * 0.42,
+            },
             textStyle,
           ]}
         >

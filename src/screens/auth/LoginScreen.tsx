@@ -15,7 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 
 import type { AuthScreenProps } from '../../navigation/types';
-import { colors, spacing } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 import {
   resetPassword,
   signIn,
@@ -224,7 +224,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
             ]}
           >
             {passwordLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.primaryButtonText}>Log In</Text>
             )}
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   kicker: {
-    fontSize: 14,
+    fontSize: typography.caption.fontSize,
     fontWeight: '800',
     color: colors.secondary,
     marginBottom: spacing.sm,
@@ -283,23 +283,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   title: {
-    fontSize: 34,
+    fontSize: typography.display.fontSize - spacing.xs,
     lineHeight: 40,
     fontWeight: '900',
     color: colors.text,
     marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     lineHeight: 24,
     color: colors.text,
     opacity: 0.85,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
     padding: spacing.lg,
-    shadowColor: '#000000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -309,19 +309,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '800',
     color: colors.text,
     marginBottom: spacing.sm,
   },
   input: {
     minHeight: 56,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#DCE7F5',
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     color: colors.text,
   },
   forgotPasswordLink: {
@@ -329,13 +329,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: typography.caption.fontSize,
     fontWeight: '800',
     color: colors.accent,
   },
   primaryButton: {
     minHeight: 58,
-    borderRadius: 18,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accent,
@@ -343,25 +343,25 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     minHeight: 58,
-    borderRadius: 18,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#DCE7F5',
+    borderColor: colors.border,
     marginTop: spacing.md,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
+    color: colors.white,
+    fontSize: typography.body.fontSize,
     fontWeight: '900',
   },
   googleButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '900',
   },
   registerLink: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   registerLinkText: {
-    fontSize: 15,
+    fontSize: typography.caption.fontSize,
     fontWeight: '900',
     color: colors.accent,
   },

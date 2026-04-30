@@ -1,14 +1,17 @@
+// src/components/ui/Input.tsx
+
 import React, { forwardRef, useState } from 'react';
 import {
-  TextInput,
-  View,
   StyleSheet,
+  TextInput,
   type StyleProp,
   type TextInputProps,
   type TextStyle,
+  View,
   type ViewStyle,
 } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+
+import { colors, radius, spacing, typography } from '../../theme';
 import { Body, Caption } from './Typography';
 
 export interface InputProps extends Omit<TextInputProps, 'style'> {
@@ -32,17 +35,17 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     onBlur,
     ...textInputProps
   },
-  ref
+  ref,
 ) {
   const [isFocused, setIsFocused] = useState(false);
 
   const borderColor = error
     ? colors.emphasis
     : isFocused
-    ? colors.accent
-    : colors.border;
+      ? colors.accent
+      : colors.border;
 
-  const backgroundColor = isFocused ? colors.accentSoft : colors.white;
+  const backgroundColor = isFocused ? colors.accentSoft : colors.surface;
 
   return (
     <View style={style}>
@@ -68,11 +71,13 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       </View>
 
       {error ? (
-        <Caption style={styles.feedbackText} color={colors.emphasis}>
+        <Caption style={styles.feedbackText} color="emphasis">
           {error}
         </Caption>
       ) : helperText ? (
-        <Caption style={styles.feedbackText}>{helperText}</Caption>
+        <Caption style={styles.feedbackText} color="textSoft">
+          {helperText}
+        </Caption>
       ) : null}
     </View>
   );
@@ -85,7 +90,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     minHeight: 56,
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: radius.lg,
     borderWidth: 2,
     paddingHorizontal: spacing.md,
   },

@@ -5,7 +5,7 @@ import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { Body } from '../../components/ui';
 import type { AuthScreenProps } from '../../navigation/types';
 import { setOnboardingSeen } from '../../services/onboardingStorage';
-import { colors, spacing } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
 export function Onboarding03Screen({
   navigation,
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   heroCircle: {
     width: 180,
     height: 180,
-    borderRadius: 90,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroEmoji: {
-    fontSize: 64,
+    fontSize: typography.display.fontSize + spacing.xl,
     lineHeight: 72,
   },
 });

@@ -1,7 +1,17 @@
+// src/components/onboarding/ChoiceCard.tsx
+
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
+
 import { Body, Caption } from '../ui';
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontSizes,
+  lineHeights,
+  radius,
+  shadows,
+  spacing,
+} from '../../theme';
 
 type ChoiceCardProps = {
   emoji: string;
@@ -30,9 +40,7 @@ export function ChoiceCard({
 
       <Body style={styles.title}>{title}</Body>
 
-      {subtitle ? (
-        <Caption style={styles.subtitle}>{subtitle}</Caption>
-      ) : null}
+      {subtitle ? <Caption style={styles.subtitle}>{subtitle}</Caption> : null}
     </TouchableOpacity>
   );
 }
@@ -42,18 +50,14 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 180,
     backgroundColor: colors.white,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...shadows.card,
   },
   cardSelected: {
     backgroundColor: colors.accentSoft,
@@ -63,7 +67,7 @@ const styles = StyleSheet.create({
   emojiCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radius.xxl,
     backgroundColor: colors.bg,
     borderWidth: 2,
     borderColor: colors.border,
@@ -76,8 +80,8 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   emoji: {
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: fontSizes.xxl,
+    lineHeight: lineHeights.xxl,
     textAlign: 'center',
   },
   title: {
@@ -86,6 +90,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: lineHeights.sm,
   },
 });

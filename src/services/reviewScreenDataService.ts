@@ -7,6 +7,7 @@ import {
   where,
 } from 'firebase/firestore';
 
+import { colors } from '../theme';
 import { auth, db } from './firebase';
 
 export type ReviewScreenPalace = {
@@ -33,7 +34,7 @@ export type ReviewScreenData = {
 
 const DEFAULT_PALACE_EMOJI = '🏰';
 const DEFAULT_STATION_EMOJI = '📍';
-const DEFAULT_BACKGROUND_COLOR = '#DDEBFF';
+const DEFAULT_BACKGROUND_COLOR = colors.accentSoft;
 
 const readString = (value: unknown, fallback: string): string => {
   return typeof value === 'string' && value.trim().length > 0

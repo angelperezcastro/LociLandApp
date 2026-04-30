@@ -1,8 +1,8 @@
+// src/screens/app/PalaceDetailScreen.tsx
+
 import React, { useCallback, useEffect, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Alert,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,14 +20,24 @@ import DraggableFlatList, {
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import { auth } from '../../services/firebase';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { Button } from '../../components/ui/Button';
+import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
 import { StationCard } from '../../components/station/StationCard';
 import type { Station } from '../../types';
+import { getUserFriendlyError } from '../../utils/errorMessages';
 
 const EMPTY_STATIONS: Station[] = [];
 const MIN_REVIEW_STATIONS = 2;
@@ -57,12 +67,9 @@ type LooseUserStore = {
 
 type LooseStation = Station & {
   name?: string;
-  emoji?: string;
   icon?: string;
   imageUrl?: string | null;
-  imageUri?: string | null;
   photoUrl?: string | null;
-  memoryText?: string;
   answerText?: string;
   answer?: string;
   position?: number;
@@ -97,11 +104,7 @@ const mapStationForReview = (station: Station, index: number) => {
     id: station.id,
     name: stationName,
     emoji: looseStation.emoji ?? looseStation.icon ?? '📍',
-    imageUrl:
-      looseStation.imageUri ??
-      looseStation.imageUrl ??
-      looseStation.photoUrl ??
-      null,
+    imageUrl: looseStation.imageUri ?? looseStation.imageUrl ?? looseStation.photoUrl ?? null,
     order: getStationOrder(looseStation, index),
     answerText:
       looseStation.memoryText ??
@@ -117,10 +120,7 @@ function PalaceDetailScreen() {
 
   const palaceId = route.params?.palaceId ?? null;
 
-  const userStore = useUserStore(
-    (state) => state as unknown as LooseUserStore,
-  );
-
+  const userStore = useUserStore((state) => state as unknown as LooseUserStore);
   const profile = userStore.profile ?? userStore.userProfile ?? null;
   const storeUser = userStore.user ?? userStore.currentUser ?? null;
   const firebaseUser = auth.currentUser;
@@ -133,7 +133,6 @@ function PalaceDetailScreen() {
     null;
 
   const palaces = usePalaceStore((state) => state.palaces);
-
   const stations = usePalaceStore((state) => {
     if (!palaceId) {
       return EMPTY_STATIONS;
@@ -143,9 +142,7 @@ function PalaceDetailScreen() {
   });
 
   const isLoading = usePalaceStore((state) => state.isLoading);
-  const isLoadingStations = usePalaceStore(
-    (state) => state.isLoadingStations,
-  );
+  const isLoadingStations = usePalaceStore((state) => state.isLoadingStations);
   const error = usePalaceStore((state) => state.error);
   const loadPalaces = usePalaceStore((state) => state.loadPalaces);
   const loadStations = usePalaceStore((state) => state.loadStations);
@@ -183,14 +180,6 @@ function PalaceDetailScreen() {
       return undefined;
     }, [loadStations, palaceId, userId]),
   );
-
-  useEffect(() => {
-    if (!error) {
-      return;
-    }
-
-    Alert.alert('Something went wrong', error);
-  }, [error]);
 
   const template = palace ? getPalaceTemplateById(palace.templateId) : null;
   const hasStations = stations.length > 0;
@@ -236,11 +225,9 @@ function PalaceDetailScreen() {
   };
 
   const handleAddStation = () => {
-    if (!palaceId) {
-      return;
+    if (palaceId) {
+      navigation.navigate('AddStation', { palaceId });
     }
-
-    navigation.navigate('AddStation', { palaceId });
   };
 
   const handleEditStation = useCallback(
@@ -267,10 +254,7 @@ function PalaceDetailScreen() {
         'Delete station?',
         `This will remove "${station.label}" from your palace.`,
         [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
+          { text: 'Cancel', style: 'cancel' },
           {
             text: 'Delete',
             style: 'destructive',
@@ -280,9 +264,10 @@ function PalaceDetailScreen() {
                 .catch((deleteError) => {
                   Alert.alert(
                     'Station not deleted',
-                    deleteError instanceof Error
-                      ? deleteError.message
-                      : 'Something went wrong while deleting this station.',
+                    getUserFriendlyError(
+                      deleteError,
+                      'Something went wrong while deleting this station.',
+                    ),
                   );
                 });
             },
@@ -304,9 +289,10 @@ function PalaceDetailScreen() {
       reorderStations(palaceId, userId, orderedIds).catch((reorderError) => {
         Alert.alert(
           'Stations not reordered',
-          reorderError instanceof Error
-            ? reorderError.message
-            : 'Something went wrong while reordering your stations.',
+          getUserFriendlyError(
+            reorderError,
+            'Something went wrong while reordering your stations.',
+          ),
         );
       });
     },
@@ -385,30 +371,6 @@ function PalaceDetailScreen() {
     [handleDeleteStation, handleEditStation],
   );
 
-  const renderSeparator = useCallback(
-    () => <View style={styles.stationSeparator} />,
-    [],
-  );
-
-  const renderLargePalaceWarning = () => {
-    if (!shouldShowLargePalaceWarning) {
-      return null;
-    }
-
-    return (
-      <View style={styles.largePalaceNotice}>
-        <Text style={styles.largePalaceEmoji}>🏰</Text>
-
-        <View style={styles.largePalaceCopy}>
-          <Text style={styles.largePalaceTitle}>That’s a big palace!</Text>
-          <Text style={styles.largePalaceText}>
-            Smaller palaces are easier to memorise.
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   const renderListHeader = () => {
     if (!palace || !template) {
       return null;
@@ -427,29 +389,33 @@ function PalaceDetailScreen() {
           </View>
 
           <View style={styles.heroTextBlock}>
-            <Text numberOfLines={2} style={styles.palaceName}>
-              {palace.name}
-            </Text>
-
-            <Text style={styles.palaceDescription}>
-              {template.description}
-            </Text>
+            <Text style={styles.palaceName}>{palace.name}</Text>
+            <Text style={styles.palaceDescription}>{template.description}</Text>
 
             <View style={styles.stationCountBadge}>
               <Text style={styles.stationCountText}>
-                🚩 {visibleStationCount}{' '}
-                {visibleStationCount === 1 ? 'station' : 'stations'}
+                🚩 {visibleStationCount} stations
               </Text>
             </View>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Memory stations</Text>
+          <Text style={styles.sectionTitle}>Memory route</Text>
           <Text style={styles.sectionHint}>{sectionHint}</Text>
         </View>
 
-        {renderLargePalaceWarning()}
+        {shouldShowLargePalaceWarning ? (
+          <View style={styles.largePalaceNotice}>
+            <Text style={styles.largePalaceEmoji}>🧭</Text>
+            <View style={styles.largePalaceCopy}>
+              <Text style={styles.largePalaceTitle}>That is a big palace!</Text>
+              <Text style={styles.largePalaceText}>
+                Smaller palaces are easier to memorise.
+              </Text>
+            </View>
+          </View>
+        ) : null}
       </>
     );
   };
@@ -457,10 +423,11 @@ function PalaceDetailScreen() {
   const renderEmptyList = () => {
     if (isLoadingStations || visibleStationCount > 0) {
       return (
-        <View style={styles.loadingStationsCard}>
-          <ActivityIndicator size="small" color={colors.text} />
-          <Text style={styles.loadingStationsText}>Loading stations...</Text>
-        </View>
+        <LoadingState
+          title="Loading stations..."
+          message="Preparing this memory route."
+          variant="card"
+        />
       );
     }
 
@@ -473,18 +440,17 @@ function PalaceDetailScreen() {
             loop
             style={styles.emptyAnimation}
           />
-          <Text style={styles.emptyEmoji}>📍</Text>
+          <Text style={styles.emptyEmoji}>🚩</Text>
         </View>
 
         <Text style={styles.emptyTitle}>Add your first memory station!</Text>
-
         <Text style={styles.emptyText}>
-          Stations are the stops in your palace. Place ideas, words, dates, or
-          images inside each one.
+          Choose a place in your palace and place something you want to
+          remember there.
         </Text>
 
         <Button
-          title="＋ Add station"
+          title="Add station"
           variant="primary"
           onPress={handleAddStation}
           style={styles.emptyButton}
@@ -495,19 +461,14 @@ function PalaceDetailScreen() {
 
   if (!palaceId) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerState}>
-          <Text style={styles.centerEmoji}>🏛️</Text>
-          <Text style={styles.centerTitle}>Palace not found</Text>
-          <Text style={styles.centerText}>
-            This palace could not be opened because its route is missing.
-          </Text>
-
-          <Button
-            title="Go Back"
-            variant="primary"
-            onPress={handleGoBack}
-            style={styles.centerButton}
+          <ErrorState
+            fullScreen
+            title="Palace route missing"
+            message="Go back and open this palace again."
+            onAction={handleGoBack}
+            actionLabel="Back"
           />
         </View>
       </SafeAreaView>
@@ -516,10 +477,12 @@ function PalaceDetailScreen() {
 
   if (!palace && isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={colors.text} />
-          <Text style={styles.loadingText}>Loading palace...</Text>
+          <LoadingState
+            title="Opening palace..."
+            message="Getting this memory palace ready."
+          />
         </View>
       </SafeAreaView>
     );
@@ -527,19 +490,14 @@ function PalaceDetailScreen() {
 
   if (!palace || !template) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerState}>
-          <Text style={styles.centerEmoji}>🔎</Text>
-          <Text style={styles.centerTitle}>Palace not found</Text>
-          <Text style={styles.centerText}>
-            This palace is not available locally yet. Go back and try again.
-          </Text>
-
-          <Button
-            title="Go Back"
-            variant="primary"
-            onPress={handleGoBack}
-            style={styles.centerButton}
+          <ErrorState
+            fullScreen
+            title="Palace not found"
+            message={error ?? 'This palace could not be loaded.'}
+            onAction={handleGoBack}
+            actionLabel="Back home"
           />
         </View>
       </SafeAreaView>
@@ -548,7 +506,7 @@ function PalaceDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View pointerEvents="none" style={styles.patternLayer}>
+      <View style={styles.patternLayer} pointerEvents="none">
         <View
           style={[
             styles.patternCircleLarge,
@@ -572,7 +530,7 @@ function PalaceDetailScreen() {
       <View style={styles.topBar}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Go back to Home"
+          accessibilityLabel="Go back"
           activeOpacity={0.86}
           onPress={handleGoBack}
           style={styles.backButton}
@@ -581,26 +539,22 @@ function PalaceDetailScreen() {
         </TouchableOpacity>
 
         <Button
-          title="Start Review"
-          variant="primary"
+          title={canStartReview ? 'Start Review' : 'Need 2 stations'}
+          variant={canStartReview ? 'secondary' : 'outline'}
           disabled={!canStartReview}
           onPress={handleStartReview}
-          fullWidth={false}
-          style={[
-            styles.reviewButton,
-            canStartReview && styles.reviewButtonEnabled,
-          ]}
+          style={styles.reviewButton}
           textStyle={styles.reviewButtonText}
         />
       </View>
 
       <DraggableFlatList
+        key={stationListRenderKey}
         data={stations}
-        extraData={stationListRenderKey}
         keyExtractor={(item) => item.id}
         renderItem={renderStationItem}
-        ItemSeparatorComponent={renderSeparator}
         onDragEnd={handleDragEnd}
+        ItemSeparatorComponent={() => <View style={styles.stationSeparator} />}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyList}
         contentContainerStyle={styles.scrollContent}
@@ -635,43 +589,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.homeBackground,
   },
-
   patternLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
-
   patternCircleLarge: {
     position: 'absolute',
     top: 88,
     right: -80,
     width: 210,
     height: 210,
-    borderRadius: 105,
+    borderRadius: radius.pill,
     opacity: 0.22,
   },
-
   patternCircleSmall: {
     position: 'absolute',
     top: 310,
     left: -52,
     width: 132,
     height: 132,
-    borderRadius: 66,
+    borderRadius: radius.pill,
     opacity: 0.18,
   },
-
   patternBlob: {
     position: 'absolute',
     bottom: 110,
     right: 28,
     width: 92,
     height: 92,
-    borderRadius: 34,
+    borderRadius: radius.xl,
     opacity: 0.16,
     transform: [{ rotate: '18deg' }],
   },
-
   topBar: {
     minHeight: 62,
     paddingHorizontal: spacing.lg,
@@ -679,112 +628,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   backButton: {
     width: 46,
     height: 46,
-    borderRadius: 17,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.12,
-        shadowRadius: 9,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    ...shadows.soft,
   },
-
   backButtonText: {
+    ...typography.display,
     color: colors.text,
-    fontSize: 42,
     lineHeight: 42,
-    fontFamily: 'FredokaOne_400Regular',
-    includeFontPadding: false,
     textAlign: 'center',
     textAlignVertical: 'center',
-    marginTop: Platform.OS === 'android' ? -3 : -1,
+    includeFontPadding: false,
   },
-
   reviewButton: {
     minHeight: 46,
-    alignSelf: 'auto',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 18,
     borderWidth: 2,
-    backgroundColor: colors.white,
   },
-
-  reviewButtonEnabled: {
-    backgroundColor: colors.softYellow,
-  },
-
   reviewButtonText: {
-    fontSize: 14,
-    lineHeight: 18,
-    fontFamily: 'Nunito_800ExtraBold',
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   listContainer: {
     flex: 1,
   },
-
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: 128,
+    paddingBottom: spacing.xxxl * 2,
   },
-
   stationItemWrapper: {
     minHeight: 96,
   },
-
   stationSeparator: {
     height: spacing.md,
   },
-
   dragPlaceholder: {
     minHeight: 96,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     backgroundColor: colors.white,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.softYellow,
+    borderColor: colors.primarySoft,
     opacity: 0.75,
   },
-
   heroCard: {
-    borderRadius: 34,
-    padding: spacing.lg,
-    backgroundColor: colors.bg,
+    borderRadius: radius.xxl,
     borderWidth: 2,
-    borderColor: colors.softYellow,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.bg,
+    padding: spacing.lg,
     marginBottom: spacing.xl,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.13,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    ...shadows.card,
   },
-
   palaceEmojiShell: {
     width: 118,
     height: 118,
-    borderRadius: 38,
+    borderRadius: radius.xxl,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
@@ -792,165 +700,92 @@ const styles = StyleSheet.create({
     borderColor: colors.text,
     marginBottom: spacing.lg,
   },
-
   palaceEmoji: {
-    fontSize: 68,
+    ...typography.display,
+    fontSize: fontSizes.display + fontSizes.xxl + spacing.xs,
+    lineHeight: 74,
   },
-
   heroTextBlock: {
     alignItems: 'center',
   },
-
   palaceName: {
+    ...typography.h1,
     maxWidth: 330,
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 40,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.sm,
   },
-
   palaceDescription: {
+    ...typography.bodyStrong,
     maxWidth: 320,
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
+    color: colors.textSoft,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.72,
     marginBottom: spacing.md,
   },
-
   stationCountBadge: {
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.white,
+    borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.text,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-
   stationCountText: {
+    ...typography.caption,
     color: colors.text,
-    fontSize: 14,
-    fontFamily: 'Nunito_800ExtraBold',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   sectionHeader: {
     marginBottom: spacing.md,
   },
-
   sectionTitle: {
+    ...typography.h2,
     color: colors.text,
-    fontSize: 24,
-    lineHeight: 30,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   sectionHint: {
+    ...typography.small,
     marginTop: spacing.xs,
     color: colors.muted,
-    fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   largePalaceNotice: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 2,
-    borderColor: colors.softYellow,
+    borderColor: colors.primarySoft,
     backgroundColor: colors.bg,
+    padding: spacing.md,
     marginBottom: spacing.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    ...shadows.soft,
   },
-
   largePalaceEmoji: {
-    fontSize: 34,
+    ...typography.h1,
+    fontSize: fontSizes.xxl,
   },
-
   largePalaceCopy: {
     flex: 1,
   },
-
   largePalaceTitle: {
+    ...typography.bodyStrong,
     color: colors.text,
-    fontSize: 17,
-    lineHeight: 22,
-    fontFamily: 'Nunito_800ExtraBold',
   },
-
   largePalaceText: {
-    marginTop: 2,
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 19,
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.74,
+    ...typography.caption,
+    marginTop: spacing.xxs,
+    color: colors.textSoft,
   },
-
-  loadingStationsCard: {
-    borderRadius: 26,
-    padding: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.softYellow,
-    gap: spacing.sm,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-
-  loadingStationsText: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: 'Nunito_700Bold',
-  },
-
   emptyStateCard: {
-    borderRadius: 34,
+    alignItems: 'center',
+    borderRadius: radius.xxl,
+    borderWidth: 2,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.bg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
-    alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.softYellow,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    ...shadows.card,
   },
-
   emptyIllustration: {
     width: 158,
     height: 158,
@@ -958,122 +793,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-
   emptyAnimation: {
     position: 'absolute',
     width: 158,
     height: 158,
   },
-
   emptyEmoji: {
-    fontSize: 70,
+    ...typography.display,
+    fontSize: fontSizes.display + fontSizes.xxl + spacing.xs + spacing.xxs,
+    lineHeight: 76,
   },
-
   emptyTitle: {
+    ...typography.h1,
     maxWidth: 310,
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.sm,
   },
-
   emptyText: {
+    ...typography.bodyStrong,
     maxWidth: 320,
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
+    color: colors.textSoft,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.72,
     marginBottom: spacing.lg,
   },
-
   emptyButton: {
     minHeight: 58,
-    borderRadius: 22,
+    borderRadius: radius.xl,
     borderWidth: 3,
-    backgroundColor: colors.softYellow,
+    backgroundColor: colors.primarySoft,
   },
-
   fab: {
     position: 'absolute',
     right: spacing.lg,
     bottom: spacing.xl,
     width: 68,
     height: 68,
-    borderRadius: 26,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.softYellow,
+    backgroundColor: colors.primarySoft,
     borderWidth: 3,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.24,
-        shadowRadius: 14,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
+    ...shadows.floating,
   },
-
   fabText: {
+    ...typography.display,
     color: colors.text,
-    fontSize: 42,
+    fontSize: fontSizes.display + spacing.xs,
     lineHeight: 42,
-    fontFamily: 'FredokaOne_400Regular',
     textAlign: 'center',
     textAlignVertical: 'center',
     includeFontPadding: false,
-    marginTop: Platform.OS === 'android' ? -2 : 0,
   },
-
   centerState: {
     flex: 1,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  centerEmoji: {
-    fontSize: 74,
-    marginBottom: spacing.md,
-  },
-
-  centerTitle: {
-    color: colors.text,
-    fontSize: 30,
-    lineHeight: 36,
-    textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
-    marginBottom: spacing.sm,
-  },
-
-  centerText: {
-    maxWidth: 310,
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
-    textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.72,
-    marginBottom: spacing.xl,
-  },
-
-  centerButton: {
-    maxWidth: 260,
-  },
-
-  loadingText: {
-    marginTop: spacing.md,
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: 'Nunito_700Bold',
   },
 });
 

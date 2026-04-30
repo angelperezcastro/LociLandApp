@@ -1,113 +1,183 @@
+// src/components/ui/Button.tsx
+
 import React from 'react';
 import {
-  Text,
-  TouchableOpacity,
+  ActivityIndicator,
+  Pressable,
+  type PressableProps,
   StyleSheet,
+  Text,
   type StyleProp,
   type TextStyle,
-  type TouchableOpacityProps,
+  View,
   type ViewStyle,
 } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+import { colors, radius, shadows, spacing, typography } from '../../theme';
 
-export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
-  title: string;
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
+type ButtonSize = 'sm' | 'md' | 'lg';
+
+type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+  title?: string;
+  children?: React.ReactNode;
   variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  loading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
-  fullWidth?: boolean;
-}
+};
 
 export function Button({
   title,
+  children,
   variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  loading = false,
+  disabled = false,
+  leftIcon,
+  rightIcon,
   style,
   textStyle,
-  fullWidth = true,
-  disabled = false,
-  ...touchableProps
+  ...rest
 }: ButtonProps) {
-  const isGhost = variant === 'ghost';
+  const isDisabled = disabled || loading;
+  const content = children ?? title;
+  const textStyleKey = buttonTextStyleByVariant[variant];
 
   return (
-    <TouchableOpacity
+    <Pressable
+      {...rest}
       accessibilityRole="button"
-      activeOpacity={0.88}
-      disabled={disabled}
-      style={[
+      disabled={isDisabled}
+      style={({ pressed }) => [
         styles.base,
+        styles[size],
+        styles[variant],
         fullWidth && styles.fullWidth,
-        variant === 'primary' && styles.primary,
-        variant === 'secondary' && styles.secondary,
-        variant === 'ghost' && styles.ghost,
-        disabled && styles.disabled,
+        isDisabled && styles.disabled,
+        pressed && !isDisabled && styles.pressed,
         style,
       ]}
-      {...touchableProps}
     >
-      <Text
-        style={[
-          styles.textBase,
-          isGhost ? styles.ghostText : styles.filledText,
-          disabled && styles.disabledText,
-          textStyle,
-        ]}
-      >
-        {title}
-      </Text>
-    </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator
+          color={variant === 'primary' || variant === 'danger' ? colors.white : colors.text}
+        />
+      ) : (
+        <View style={styles.content}>
+          {leftIcon ? <View style={styles.icon}>{leftIcon}</View> : null}
+
+          {typeof content === 'string' ? (
+            <Text style={[styles.text, styles[textStyleKey], textStyle]}>
+              {content}
+            </Text>
+          ) : (
+            content
+          )}
+
+          {rightIcon ? <View style={styles.icon}>{rightIcon}</View> : null}
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 56,
-    alignSelf: 'stretch',
+    minHeight: 48,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: 20,
     borderWidth: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    elevation: 4,
+    ...shadows.soft,
+  },
+  sm: {
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+  },
+  md: {
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+  },
+  lg: {
+    minHeight: 56,
+    paddingHorizontal: spacing.xl,
   },
   fullWidth: {
     width: '100%',
   },
   primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primaryBorder,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   secondary: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   ghost: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.transparent,
+    borderColor: colors.transparent,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  outline: {
+    backgroundColor: colors.surface,
     borderColor: colors.accent,
-    shadowOpacity: 0.08,
-    elevation: 2,
+  },
+  danger: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
   },
   disabled: {
-    opacity: 0.55,
+    backgroundColor: colors.disabled,
+    borderColor: colors.disabled,
+    opacity: 0.7,
   },
-  textBase: {
-    ...typography.bodySemiBold,
+  pressed: {
+    transform: [{ scale: 0.97 }],
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    marginHorizontal: spacing.xs,
+  },
+  text: {
+    ...typography.button,
     textAlign: 'center',
   },
-  filledText: {
+  primaryText: {
+    color: colors.white,
+  },
+  secondaryText: {
     color: colors.text,
   },
   ghostText: {
     color: colors.accent,
   },
-  disabledText: {
-    color: colors.muted,
+  outlineText: {
+    color: colors.accent,
+  },
+  dangerText: {
+    color: colors.white,
   },
 });
+
+const buttonTextStyleByVariant: Record<
+  ButtonVariant,
+  'primaryText' | 'secondaryText' | 'ghostText' | 'outlineText' | 'dangerText'
+> = {
+  primary: 'primaryText',
+  secondary: 'secondaryText',
+  ghost: 'ghostText',
+  outline: 'outlineText',
+  danger: 'dangerText',
+};

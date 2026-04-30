@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { colors, radius, spacing, typography } from '../../theme';
 
 type ActionVariant = 'primary' | 'secondary' | 'ghost';
 
@@ -38,52 +39,13 @@ export function PlaceholderScreen({
   actions = [],
 }: PlaceholderScreenProps) {
   return (
-    <ScrollView
-      contentContainerStyle={{
-        flexGrow: 1,
-        padding: spacing.lg,
-        justifyContent: 'center',
-        backgroundColor: colors.bg,
-      }}
-    >
-      <View
-        style={{
-          backgroundColor: colors.white,
-          borderRadius: 28,
-          padding: spacing.xl,
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}
-      >
-        <Text
-          style={[
-            typography.h1,
-            {
-              color: colors.text,
-              textAlign: 'center',
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          {title}
-        </Text>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.card}>
+        <Text style={styles.title}>{title}</Text>
 
-        {subtitle ? (
-          <Text
-            style={[
-              typography.body,
-              {
-                color: colors.text,
-                textAlign: 'center',
-                marginBottom: spacing.xl,
-              },
-            ]}
-          >
-            {subtitle}
-          </Text>
-        ) : null}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
-        <View style={{ gap: spacing.md }}>
+        <View style={styles.actions}>
           {actions.map((action) => {
             const variant = action.variant ?? 'primary';
 
@@ -91,21 +53,20 @@ export function PlaceholderScreen({
               <Pressable
                 key={action.label}
                 onPress={action.onPress}
-                style={{
-                  backgroundColor: getButtonBackground(variant),
-                  paddingVertical: spacing.md,
-                  paddingHorizontal: spacing.lg,
-                  borderRadius: 18,
-                  borderWidth: variant === 'ghost' ? 1 : 0,
-                  borderColor: colors.border,
-                }}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: getButtonBackground(variant),
+                    borderWidth: variant === 'ghost' ? 1 : 0,
+                  },
+                ]}
               >
                 <Text
                   style={[
                     typography.bodySemiBold,
+                    styles.actionText,
                     {
                       color: getButtonTextColor(variant),
-                      textAlign: 'center',
                     },
                   ]}
                 >
@@ -119,3 +80,43 @@ export function PlaceholderScreen({
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    padding: spacing.lg,
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
+  },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  title: {
+    ...typography.h1,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  actions: {
+    gap: spacing.md,
+  },
+  actionButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderColor: colors.border,
+  },
+  actionText: {
+    textAlign: 'center',
+  },
+});

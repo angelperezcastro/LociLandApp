@@ -1,26 +1,41 @@
+// src/components/ui/Card.tsx
+
 import React, { type PropsWithChildren } from 'react';
 import {
-  View,
   StyleSheet,
+  View,
   type StyleProp,
   type ViewProps,
   type ViewStyle,
 } from 'react-native';
-import { colors, spacing } from '../../theme';
+
+import { colors, radius, shadows, spacing } from '../../theme';
+
+type CardVariant = 'default' | 'soft' | 'accent' | 'success' | 'warning';
 
 export interface CardProps extends PropsWithChildren<ViewProps> {
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
+  variant?: CardVariant;
 }
 
 export function Card({
   children,
   style,
   padded = true,
+  variant = 'default',
   ...viewProps
 }: CardProps) {
   return (
-    <View style={[styles.base, padded && styles.padded, style]} {...viewProps}>
+    <View
+      style={[
+        styles.base,
+        styles[variant],
+        padded && styles.padded,
+        style,
+      ]}
+      {...viewProps}
+    >
       {children}
     </View>
   );
@@ -28,15 +43,25 @@ export function Card({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: radius.xl,
+    borderWidth: 2,
     borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    ...shadows.card,
+  },
+  default: {
+    backgroundColor: colors.surface,
+  },
+  soft: {
+    backgroundColor: colors.surfaceSoft,
+  },
+  accent: {
+    backgroundColor: colors.accentSoft,
+  },
+  success: {
+    backgroundColor: colors.secondarySoft,
+  },
+  warning: {
+    backgroundColor: colors.warningSoft,
   },
   padded: {
     padding: spacing.lg,

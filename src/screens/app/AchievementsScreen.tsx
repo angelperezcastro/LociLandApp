@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -25,9 +24,20 @@ import {
   type EarnedAchievement,
 } from '../../services/achievementService';
 import { auth } from '../../services/firebase';
-import { colors, spacing } from '../../theme';
+import { ErrorState, LoadingState } from '../../components/feedback';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
+import { getUserFriendlyError } from '../../utils/errorMessages';
 
 const GRID_COLUMNS = 3;
+const MIN_CARD_WIDTH = 96;
 
 const isTimestamp = (value: unknown): value is Timestamp => {
   return value instanceof Timestamp;
@@ -71,8 +81,9 @@ export const AchievementsScreen = () => {
 
   const horizontalPadding = spacing.md * 2;
   const columnGap = spacing.sm * (GRID_COLUMNS - 1);
-  const cardWidth = Math.floor(
-    (width - horizontalPadding - columnGap) / GRID_COLUMNS,
+  const cardWidth = Math.max(
+    MIN_CARD_WIDTH,
+    Math.floor((width - horizontalPadding - columnGap) / GRID_COLUMNS),
   );
 
   const loadAchievements = useCallback(async () => {
@@ -86,16 +97,12 @@ export const AchievementsScreen = () => {
 
     try {
       setErrorMessage(null);
-
       const earned = await getEarnedAchievements(currentUserId);
       setEarnedAchievements(earned);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Achievements could not be loaded.';
-
-      setErrorMessage(message);
+      setErrorMessage(
+        getUserFriendlyError(error, 'Achievements could not be loaded.'),
+      );
     }
   }, []);
 
@@ -129,11 +136,7 @@ export const AchievementsScreen = () => {
     }
   };
 
-  const renderAchievement = ({
-    item,
-  }: {
-    item: AchievementDefinition;
-  }) => {
+  const renderAchievement = ({ item }: { item: AchievementDefinition }) => {
     const earnedAchievement = earnedAchievementMap[item.id];
     const isEarned = Boolean(earnedAchievement);
 
@@ -150,9 +153,24 @@ export const AchievementsScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen}>
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.centerStateText}>Loading achievements...</Text>
+        <LoadingState
+          title="Loading achievements..."
+          message="Checking your unlocked memory badges."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (errorMessage && earnedAchievements.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.errorShell}>
+          <ErrorState
+            fullScreen
+            title="Could not load achievements"
+            message={errorMessage}
+            onAction={handleRefresh}
+          />
         </View>
       </SafeAreaView>
     );
@@ -218,12 +236,6 @@ export const AchievementsScreen = () => {
                 Locked achievements stay mysterious until you earn them.
               </Text>
             </View>
-
-            {errorMessage ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{errorMessage}</Text>
-              </View>
-            ) : null}
           </View>
         }
       />
@@ -246,9 +258,7 @@ const AchievementCard = ({
     <View
       style={[
         styles.achievementCard,
-        {
-          width,
-        },
+        { width },
         isEarned ? styles.achievementCardEarned : styles.achievementCardLocked,
       ]}
     >
@@ -305,272 +315,191 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-
+  errorShell: {
+    flex: 1,
+    padding: spacing.lg,
+  },
   content: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
   },
-
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-
-  centerStateText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-  },
-
   header: {
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
-
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     marginBottom: spacing.lg,
   },
-
   backButton: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
     borderWidth: 3,
     borderColor: colors.text,
   },
-
   pressed: {
     transform: [{ scale: 0.96 }],
     opacity: 0.9,
   },
-
   backButtonText: {
-    marginTop: -3,
-    fontSize: 38,
-    lineHeight: 40,
-    fontWeight: '900',
+    ...typography.display,
     color: colors.text,
+    lineHeight: 40,
+    marginTop: -3,
   },
-
   titleBlock: {
     flex: 1,
   },
-
   screenTitle: {
-    fontSize: 34,
-    lineHeight: 39,
-    fontWeight: '900',
+    ...typography.h1,
     color: colors.text,
   },
-
   screenSubtitle: {
+    ...typography.caption,
     marginTop: spacing.xs,
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: '700',
-    color: colors.text,
-    opacity: 0.72,
+    color: colors.textSoft,
   },
-
   progressCard: {
-    borderRadius: 30,
-    padding: spacing.md,
-    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
     borderWidth: 3,
     borderColor: colors.text,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.13,
-    shadowRadius: 14,
-    elevation: 5,
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    ...shadows.card,
   },
-
   progressTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
   },
-
   progressTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '900',
+    ...typography.bodyStrong,
     color: colors.text,
   },
-
   progressPercent: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '900',
+    ...typography.bodyStrong,
     color: colors.accent,
   },
-
   progressTrack: {
     height: 16,
     overflow: 'hidden',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.bg,
     borderWidth: 2,
     borderColor: colors.text,
   },
-
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.secondary,
   },
-
   progressHint: {
+    ...typography.small,
     marginTop: spacing.sm,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '800',
-    color: colors.text,
-    opacity: 0.68,
+    color: colors.textSoft,
   },
-
-  errorBox: {
-    marginTop: spacing.md,
-    borderRadius: 22,
-    padding: spacing.md,
-    backgroundColor: colors.emphasis,
-  },
-
-  errorText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '800',
-    color: colors.bg,
-  },
-
   gridRow: {
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-
   achievementCard: {
     minHeight: 190,
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: radius.xl,
+    borderWidth: 3,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.sm,
-    borderWidth: 3,
   },
-
   achievementCardEarned: {
     backgroundColor: colors.bg,
     borderColor: colors.secondary,
   },
-
   achievementCardLocked: {
     backgroundColor: colors.bg,
     borderColor: colors.text,
     opacity: 0.48,
   },
-
   emojiCircle: {
     width: 62,
     height: 62,
-    borderRadius: 31,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
     borderWidth: 3,
   },
-
   emojiCircleEarned: {
     backgroundColor: colors.primary,
     borderColor: colors.secondary,
   },
-
   emojiCircleLocked: {
     backgroundColor: colors.bg,
     borderColor: colors.text,
   },
-
   achievementEmoji: {
-    fontSize: 31,
+    ...typography.h1,
+    fontSize: fontSizes.xxl,
+    lineHeight: 34,
   },
-
   lockedEmoji: {
     opacity: 0.7,
   },
-
   achievementTitle: {
+    ...typography.caption,
     minHeight: 42,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '900',
     textAlign: 'center',
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   lockedAchievementTitle: {
     color: colors.text,
   },
-
   achievementDescription: {
+    ...typography.small,
     minHeight: 38,
     marginTop: spacing.xs,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '700',
     textAlign: 'center',
-    color: colors.text,
-    opacity: 0.68,
+    color: colors.textSoft,
   },
-
   mysteryText: {
+    ...typography.small,
     minHeight: 38,
     marginTop: spacing.xs,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '800',
     textAlign: 'center',
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   earnedDatePill: {
     marginTop: 'auto',
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    borderRadius: radius.pill,
     backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-
   earnedDateText: {
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '900',
+    ...typography.small,
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   lockedPill: {
     marginTop: 'auto',
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    borderRadius: radius.pill,
     backgroundColor: colors.text,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-
   lockedPillText: {
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '900',
+    ...typography.small,
     color: colors.bg,
+    fontFamily: fontFamilies.bodyBold,
   },
 });
+
+export default AchievementsScreen;

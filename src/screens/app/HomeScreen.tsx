@@ -1,16 +1,9 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+// src/screens/app/HomeScreen.tsx
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
-  Animated,
   FlatList,
-  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -22,7 +15,15 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import type { Palace } from '../../types';
 import { auth } from '../../services/firebase';
 import { getPalaceTemplateById } from '../../assets/templates';
@@ -31,6 +32,8 @@ import { useUserStore } from '../../store/useUserStore';
 import { PalaceCard } from '../../components/palace/PalaceCard';
 import { DeletePalaceSheet } from '../../components/palace/DeletePalaceSheet';
 import { Button } from '../../components/ui/Button';
+import { ErrorState, LoadingState } from '../../components/feedback';
+import { getUserFriendlyError } from '../../utils/errorMessages';
 
 type LooseUserProfile = {
   id?: string;
@@ -61,9 +64,7 @@ export default function HomeScreen() {
   const [palaceToDelete, setPalaceToDelete] = useState<Palace | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const userStore = useUserStore(
-    (state) => state as unknown as LooseUserStore,
-  );
+  const userStore = useUserStore((state) => state as unknown as LooseUserStore);
 
   const profile = userStore.profile ?? userStore.userProfile ?? null;
   const storeUser = userStore.user ?? userStore.currentUser ?? null;
@@ -96,8 +97,7 @@ export default function HomeScreen() {
   const deletePalace = usePalaceStore((state) => state.deletePalace);
   const clearError = usePalaceStore((state) => state.clearError);
 
-  const showInitialLoading =
-    isLoading && palaces.length === 0 && !isRefreshing;
+  const showInitialLoading = isLoading && palaces.length === 0 && !isRefreshing;
 
   useEffect(() => {
     if (!userId) {
@@ -105,22 +105,9 @@ export default function HomeScreen() {
     }
 
     loadPalaces(userId).catch(() => {
-      // Store handles the error. Alert is handled below.
+      // The store owns the user-facing error value.
     });
   }, [loadPalaces, userId]);
-
-  useEffect(() => {
-    if (!error) {
-      return;
-    }
-
-    Alert.alert('Something went wrong', error, [
-      {
-        text: 'OK',
-        onPress: clearError,
-      },
-    ]);
-  }, [clearError, error]);
 
   const handleCreatePalace = () => {
     navigation.navigate('CreatePalace');
@@ -142,18 +129,12 @@ export default function HomeScreen() {
     setIsRefreshing(true);
 
     try {
+      clearError();
       await loadPalaces(userId);
-    } catch (caughtError) {
-      const message =
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Could not refresh your palaces.';
-
-      Alert.alert('Refresh failed', message);
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadPalaces, userId]);
+  }, [clearError, loadPalaces, userId]);
 
   const handleRequestDelete = useCallback(
     (palaceId: string) => {
@@ -173,11 +154,9 @@ export default function HomeScreen() {
   );
 
   const handleCancelDelete = () => {
-    if (isDeleting) {
-      return;
+    if (!isDeleting) {
+      setPalaceToDelete(null);
     }
-
-    setPalaceToDelete(null);
   };
 
   const handleConfirmDelete = async (palace: Palace) => {
@@ -192,12 +171,10 @@ export default function HomeScreen() {
       await deletePalace(palace.id, userId);
       setPalaceToDelete(null);
     } catch (caughtError) {
-      const message =
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Could not delete this palace.';
-
-      Alert.alert('Delete failed', message);
+      Alert.alert(
+        'Delete failed',
+        getUserFriendlyError(caughtError, 'Could not delete this palace.'),
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -226,7 +203,40 @@ export default function HomeScreen() {
 
   const renderEmptyState = () => {
     if (showInitialLoading) {
-      return <HomeLoadingState />;
+      return (
+        <View style={styles.loadingState}>
+          <LoadingState
+            title="Loading your palaces..."
+            message="Getting your memory worlds ready."
+            showSkeleton
+            skeletonCount={3}
+          />
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyState}>
+          <ErrorState
+            title="Could not load your palaces"
+            message={error}
+            onAction={handleRefresh}
+          />
+        </View>
+      );
+    }
+
+    if (!userId) {
+      return (
+        <View style={styles.emptyState}>
+          <ErrorState
+            title="Account still loading"
+            message="Wait a moment and pull down to refresh."
+            onAction={handleRefresh}
+          />
+        </View>
+      );
     }
 
     return (
@@ -238,13 +248,11 @@ export default function HomeScreen() {
             loop
             style={styles.emptyAnimation}
           />
-
           <Text style={styles.emptyWizardEmoji}>🧙‍♂️</Text>
         </View>
 
         <View style={styles.emptyCopy}>
           <Text style={styles.emptyTitle}>Create your first palace!</Text>
-
           <Text style={styles.emptyText}>
             Pick a magical place, add memory stations, and start building your
             own memory journey.
@@ -296,15 +304,20 @@ export default function HomeScreen() {
             onRefresh={handleRefresh}
             tintColor={colors.text}
             colors={[colors.text]}
-            progressBackgroundColor={colors.softYellow}
+            progressBackgroundColor={colors.primarySoft}
           />
         }
         showsVerticalScrollIndicator={false}
       />
 
+      {palaces.length > 0 && error ? (
+        <View style={styles.inlineErrorPill}>
+          <Text style={styles.inlineErrorText}>Sync issue · pull to refresh</Text>
+        </View>
+      ) : null}
+
       {palaces.length > 0 && isLoading && !isRefreshing ? (
         <View style={styles.loadingPill}>
-          <ActivityIndicator color={colors.text} />
           <Text style={styles.loadingPillText}>Syncing palaces...</Text>
         </View>
       ) : null}
@@ -335,154 +348,66 @@ export default function HomeScreen() {
   );
 }
 
-function HomeLoadingState() {
-  return (
-    <View style={styles.loadingState}>
-      <Text style={styles.loadingTitle}>Loading your palaces...</Text>
-
-      <SkeletonPalaceCard />
-      <SkeletonPalaceCard />
-      <SkeletonPalaceCard />
-    </View>
-  );
-}
-
-function SkeletonPalaceCard() {
-  const opacity = useRef(new Animated.Value(0.42)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.76,
-          duration: 720,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.42,
-          duration: 720,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-
-    return () => {
-      animation.stop();
-    };
-  }, [opacity]);
-
-  return (
-    <Animated.View style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonEmoji} />
-
-      <View style={styles.skeletonContent}>
-        <View style={styles.skeletonLineLarge} />
-        <View style={styles.skeletonLineSmall} />
-
-        <View style={styles.skeletonFooter}>
-          <View style={styles.skeletonBadge} />
-          <View style={styles.skeletonButton} />
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.homeBackground,
   },
-
   listContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
-
   header: {
     marginBottom: spacing.xl,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-
   greetingBlock: {
     flex: 1,
     paddingRight: spacing.md,
   },
-
   greeting: {
+    ...typography.h1,
     color: colors.text,
-    fontSize: 31,
+    fontSize: fontSizes.xxl + spacing.xs - 1,
     lineHeight: 37,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   subtitle: {
+    ...typography.bodyStrong,
     marginTop: spacing.xs,
-    color: colors.text,
-    fontSize: 17,
-    lineHeight: 24,
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.72,
+    color: colors.textSoft,
   },
-
   avatarCircle: {
     width: 74,
     height: 74,
-    borderRadius: 27,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.softYellow,
+    backgroundColor: colors.primarySoft,
     borderWidth: 3,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 7 },
-        shadowOpacity: 0.18,
-        shadowRadius: 11,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    ...shadows.card,
   },
-
   avatarEmoji: {
-    fontSize: 39,
+    ...typography.display,
+    fontSize: fontSizes.display,
   },
-
   palaceItemShell: {
     marginBottom: spacing.xl,
     padding: spacing.md,
-    borderRadius: 38,
+    borderRadius: radius.xxl,
     borderWidth: 2,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.13,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    ...shadows.card,
   },
-
   palaceCardInsideShell: {
-    marginBottom: 0,
     backgroundColor: colors.bg,
     borderColor: colors.white,
     elevation: 0,
     shadowOpacity: 0,
   },
-
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -491,7 +416,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
   },
-
   emptyIllustrationWrapper: {
     width: 178,
     height: 178,
@@ -499,196 +423,102 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
-
   emptyAnimation: {
     position: 'absolute',
     width: 178,
     height: 178,
   },
-
   emptyWizardEmoji: {
-    fontSize: 82,
+    ...typography.display,
+    fontSize: fontSizes.display * 2 + spacing.sm + spacing.xs,
+    lineHeight: 88,
   },
-
   emptyCopy: {
     width: '100%',
     alignItems: 'center',
     marginBottom: spacing.lg,
   },
-
   emptyTitle: {
+    ...typography.h1,
     maxWidth: 340,
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 36,
     textAlign: 'center',
-    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.sm,
   },
-
   emptyText: {
+    ...typography.bodyStrong,
     maxWidth: 340,
-    color: colors.text,
-    fontSize: 17,
-    lineHeight: 25,
+    color: colors.textSoft,
     textAlign: 'center',
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.72,
   },
-
   emptyButtonWrapper: {
     width: '100%',
     maxWidth: 340,
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
-
   emptyButton: {
     minHeight: 64,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 3,
-    backgroundColor: colors.softYellow,
+    backgroundColor: colors.primarySoft,
   },
-
   loadingState: {
     width: '100%',
     paddingTop: spacing.md,
   },
-
-  loadingTitle: {
-    marginBottom: spacing.lg,
-    color: colors.text,
-    fontSize: 18,
-    textAlign: 'center',
-    fontFamily: 'Nunito_800ExtraBold',
-  },
-
-  skeletonCard: {
-    minHeight: 168,
-    borderRadius: 28,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderWidth: 2,
-    borderColor: colors.softYellow,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 14,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-
-  skeletonEmoji: {
-    width: 86,
-    height: 86,
-    borderRadius: 28,
-    backgroundColor: colors.softYellow,
-    borderWidth: 2,
-    borderColor: colors.border,
-    marginRight: spacing.md,
-  },
-
-  skeletonContent: {
-    flex: 1,
-  },
-
-  skeletonLineLarge: {
-    width: '82%',
-    height: 22,
-    borderRadius: 999,
-    backgroundColor: colors.softYellow,
-    marginBottom: spacing.sm,
-  },
-
-  skeletonLineSmall: {
-    width: '100%',
-    height: 16,
-    borderRadius: 999,
-    backgroundColor: colors.border,
-    marginBottom: spacing.lg,
-  },
-
-  skeletonFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  skeletonBadge: {
-    width: 104,
-    height: 34,
-    borderRadius: 999,
-    backgroundColor: colors.softYellow,
-  },
-
-  skeletonButton: {
-    width: 76,
-    height: 34,
-    borderRadius: 999,
-    backgroundColor: colors.border,
-  },
-
   loadingPill: {
     position: 'absolute',
     top: spacing.lg,
     alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.softYellow,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
     borderWidth: 2,
     borderColor: colors.text,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-
   loadingPillText: {
-    marginLeft: spacing.sm,
+    ...typography.caption,
     color: colors.text,
-    fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: fontFamilies.bodyBold,
   },
-
+  inlineErrorPill: {
+    position: 'absolute',
+    top: spacing.lg,
+    alignSelf: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: colors.emphasisSoft,
+    borderWidth: 2,
+    borderColor: colors.emphasis,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  inlineErrorText: {
+    ...typography.caption,
+    color: colors.emphasis,
+    fontFamily: fontFamilies.bodyBold,
+  },
   fab: {
     position: 'absolute',
     right: spacing.lg,
     width: 68,
     height: 68,
-    borderRadius: 26,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.softYellow,
+    backgroundColor: colors.primarySoft,
     borderWidth: 3,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.24,
-        shadowRadius: 14,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
+    ...shadows.floating,
   },
-
   fabText: {
+    ...typography.display,
     color: colors.text,
-    fontSize: 42,
+    fontSize: fontSizes.display + spacing.xs,
     lineHeight: 42,
-    fontFamily: 'FredokaOne_400Regular',
     textAlign: 'center',
     textAlignVertical: 'center',
     includeFontPadding: false,
-    marginTop: Platform.OS === 'android' ? -2 : 0,
   },
 });

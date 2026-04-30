@@ -1,6 +1,7 @@
+// src/components/palace/PalaceCard.tsx
+
 import React from 'react';
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -9,10 +10,18 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import { getPalaceTemplateById } from '../../assets/templates';
 import type { Palace } from '../../types';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { AnimatedNumber } from '../gamification/AnimatedNumber';
 
 export interface PalaceCardProps {
   palace: Palace;
@@ -30,7 +39,6 @@ function PalaceCard({
   style,
 }: PalaceCardProps) {
   const template = getPalaceTemplateById(palace.templateId);
-
   const stationLabel = palace.stationCount === 1 ? 'station' : 'stations';
 
   return (
@@ -46,10 +54,8 @@ function PalaceCard({
         style,
       ]}
     >
-      <View style={styles.topRow}>
-        <View style={styles.emojiBox}>
-          <Text style={styles.emoji}>{template.emoji}</Text>
-        </View>
+      <View style={styles.emojiBox}>
+        <Text style={styles.emoji}>{template.emoji}</Text>
       </View>
 
       <Text numberOfLines={2} style={styles.title}>
@@ -93,124 +99,80 @@ function PalaceCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-    borderRadius: 30,
-    backgroundColor: colors.bg,
+    gap: spacing.md,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.white,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 14,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    backgroundColor: colors.bg,
+    padding: spacing.lg,
+    ...shadows.card,
   },
-
   cardPressed: {
     transform: [{ scale: 0.99 }],
     opacity: 0.96,
   },
-
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-  },
-
   emojiBox: {
     width: 108,
     height: 108,
-    borderRadius: 30,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
     borderWidth: 3,
     borderColor: colors.text,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.08,
-        shadowRadius: 9,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    ...shadows.soft,
   },
-
   emoji: {
-    fontSize: 58,
+    ...typography.display,
+    fontSize: fontSizes.display + fontSizes.xl,
+    lineHeight: 64,
   },
-
   title: {
+    ...typography.h1,
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 36,
-    fontFamily: 'FredokaOne_400Regular',
-    marginBottom: spacing.sm,
   },
-
   description: {
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
-    fontFamily: 'Nunito_600SemiBold',
-    opacity: 0.74,
-    marginBottom: spacing.lg,
+    ...typography.bodyStrong,
+    color: colors.textSoft,
   },
-
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     columnGap: spacing.md,
   },
-
   stationBadge: {
     flexShrink: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    backgroundColor: colors.white,
+    borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.text,
-  },
-
-  stationBadgeText: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 18,
-    fontFamily: 'Nunito_800ExtraBold',
-  },
-
-  reviewButton: {
-    minWidth: 104,
+    backgroundColor: colors.white,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  stationBadgeText: {
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
+    color: colors.text,
+  },
+  reviewButton: {
+    minWidth: 104,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
-    backgroundColor: colors.white,
+    borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.accent,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-
   reviewButtonPressed: {
     opacity: 0.88,
   },
-
   reviewButtonText: {
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
     color: colors.accent,
-    fontSize: 15,
-    lineHeight: 19,
-    fontFamily: 'Nunito_800ExtraBold',
   },
 });
 

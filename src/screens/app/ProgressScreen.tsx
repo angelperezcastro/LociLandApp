@@ -2,8 +2,6 @@
 
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -14,6 +12,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 
 import { AnimatedNumber } from '../../components/gamification/AnimatedNumber';
+import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
 import {
   getProgressStats,
   type ProgressStats,
@@ -21,7 +20,16 @@ import {
   type WeeklyActivityDay,
 } from '../../services/progressService';
 import { useUserStore } from '../../store/useUserStore';
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
+import { getUserFriendlyError } from '../../utils/errorMessages';
 
 const formatAchievementDate = (date: Date | null): string => {
   if (!date) {
@@ -51,17 +59,12 @@ export function ProgressScreen() {
 
     try {
       setErrorMessage(null);
-
       const nextStats = await getProgressStats(profile.uid);
-
       setStats(nextStats);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Progress data could not be loaded.';
-
-      setErrorMessage(message);
+      setErrorMessage(
+        getUserFriendlyError(error, 'Progress data could not be loaded.'),
+      );
     }
   }, [profile?.uid]);
 
@@ -100,9 +103,38 @@ export function ProgressScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen}>
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.centerStateText}>Loading your progress...</Text>
+        <LoadingState
+          title="Loading your progress..."
+          message="Preparing your memory stats."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (errorMessage && !stats) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.stateShell}>
+          <ErrorState
+            fullScreen
+            title="Could not load progress"
+            message={errorMessage}
+            onAction={handleRefresh}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.stateShell}>
+          <EmptyState
+            icon="📊"
+            title="No progress yet"
+            message="Complete a review session to start filling this screen."
+          />
         </View>
       </SafeAreaView>
     );
@@ -129,33 +161,17 @@ export function ProgressScreen() {
         </View>
 
         {errorMessage ? (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>Could not load progress</Text>
-            <Text style={styles.errorText}>{errorMessage}</Text>
-
-            <Pressable
-              onPress={handleRefresh}
-              style={({ pressed }) => [
-                styles.retryButton,
-                pressed ? styles.buttonPressed : null,
-              ]}
-            >
-              <Text style={styles.retryButtonText}>Try again</Text>
-            </Pressable>
+          <View style={styles.inlineErrorCard}>
+            <Text style={styles.inlineErrorTitle}>Could not refresh progress</Text>
+            <Text style={styles.inlineErrorText}>{errorMessage}</Text>
           </View>
         ) : null}
 
-        {stats ? (
-          <>
-            <TotalXpCard stats={stats} />
-            <LevelCard stats={stats} />
-            <WeeklyActivityCard days={stats.weeklyActivity} />
-            <StatsGrid stats={stats} />
-            <RecentAchievementsCard
-              achievements={stats.recentAchievements}
-            />
-          </>
-        ) : null}
+        <TotalXpCard stats={stats} />
+        <LevelCard stats={stats} />
+        <WeeklyActivityCard days={stats.weeklyActivity} />
+        <StatsGrid stats={stats} />
+        <RecentAchievementsCard achievements={stats.recentAchievements} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -269,29 +285,10 @@ const StatsGrid = ({ stats }: { stats: ProgressStats }) => {
       <Text style={styles.sectionTitle}>Stats</Text>
 
       <View style={styles.statsGrid}>
-        <StatTile
-          emoji="🏛️"
-          value={stats.totalPalaces}
-          label="Palaces created"
-        />
-
-        <StatTile
-          emoji="🚩"
-          value={stats.totalStations}
-          label="Stations added"
-        />
-
-        <StatTile
-          emoji="🧠"
-          value={stats.totalReviewsCompleted}
-          label="Reviews completed"
-        />
-
-        <StatTile
-          emoji="🔥"
-          value={stats.bestStreak}
-          label="Best streak"
-        />
+        <StatTile emoji="🏛️" value={stats.totalPalaces} label="Palaces created" />
+        <StatTile emoji="🚩" value={stats.totalStations} label="Stations added" />
+        <StatTile emoji="🧠" value={stats.totalReviewsCompleted} label="Reviews completed" />
+        <StatTile emoji="🔥" value={stats.bestStreak} label="Best streak" />
       </View>
     </View>
   );
@@ -309,9 +306,7 @@ const StatTile = ({
   return (
     <View style={styles.statTile}>
       <Text style={styles.statEmoji}>{emoji}</Text>
-
       <AnimatedNumber value={value} style={styles.statValue} />
-
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -376,427 +371,300 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-
+  stateShell: {
+    flex: 1,
+    padding: spacing.lg,
+  },
   content: {
     padding: spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: spacing.xxxl * 2,
   },
-
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.bg,
-  },
-
-  centerStateText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-  },
-
   header: {
     marginBottom: spacing.lg,
   },
-
   screenTitle: {
-    fontSize: 38,
-    lineHeight: 44,
-    fontWeight: '900',
+    ...typography.display,
     color: colors.text,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   screenSubtitle: {
+    ...typography.bodyStrong,
     marginTop: spacing.xs,
-    fontSize: 16,
-    lineHeight: 23,
-    fontWeight: '700',
-    color: `${colors.text}B3`,
+    color: colors.textSoft,
   },
-
-  errorCard: {
-    borderRadius: 28,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    backgroundColor: colors.surface,
+  inlineErrorCard: {
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: colors.emphasis,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
-
-  errorTitle: {
-    fontSize: 19,
-    fontWeight: '900',
+  inlineErrorTitle: {
+    ...typography.h3,
     color: colors.emphasis,
     marginBottom: spacing.xs,
   },
-
-  errorText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
+  inlineErrorText: {
+    ...typography.caption,
     color: colors.text,
-    marginBottom: spacing.md,
   },
-
-  retryButton: {
-    minHeight: 48,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.emphasis,
-  },
-
-  retryButtonText: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: colors.surface,
-  },
-
-  buttonPressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.9,
-  },
-
   heroCard: {
     minHeight: 190,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: 34,
+    borderRadius: radius.xxl,
+    backgroundColor: colors.accent,
     padding: spacing.xl,
     marginBottom: spacing.lg,
-    backgroundColor: colors.accent,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 7,
+    ...shadows.elevated,
   },
-
   heroTextBlock: {
     flex: 1,
   },
-
   heroEyebrow: {
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '900',
+    ...typography.caption,
     textTransform: 'uppercase',
     letterSpacing: 0.7,
     color: colors.surface,
-    opacity: 0.86,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   totalXpNumber: {
+    ...typography.display,
     marginTop: spacing.xs,
-    fontSize: 42,
+    color: colors.surface,
+    fontSize: fontSizes.display + spacing.xs,
     lineHeight: 50,
-    fontWeight: '900',
-    color: colors.surface,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   heroSubtitle: {
+    ...typography.caption,
     marginTop: spacing.sm,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '800',
     color: colors.surface,
-    opacity: 0.86,
   },
-
   heroBadge: {
     width: 76,
     height: 76,
-    borderRadius: 26,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: `${colors.surface}30`,
+    backgroundColor: colors.accentSoft,
     borderWidth: 2,
-    borderColor: `${colors.surface}70`,
+    borderColor: colors.surface,
   },
-
   heroBadgeEmoji: {
-    fontSize: 40,
+    ...typography.display,
+    fontSize: fontSizes.display,
   },
-
   sectionCard: {
-    borderRadius: 34,
+    borderRadius: radius.xxl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: spacing.xl,
     marginBottom: spacing.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: `${colors.text}10`,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 4,
+    ...shadows.card,
   },
-
   sectionTitle: {
-    fontSize: 25,
-    lineHeight: 31,
-    fontWeight: '900',
+    ...typography.h2,
     color: colors.text,
-    fontFamily: 'FredokaOne_400Regular',
     marginBottom: spacing.xs,
   },
-
   sectionSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: `${colors.text}A8`,
+    ...typography.caption,
+    color: colors.textSoft,
     marginBottom: spacing.lg,
   },
-
   levelTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     marginBottom: spacing.sm,
   },
-
   levelBadge: {
-    borderRadius: 18,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
     backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: `${colors.text}12`,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-
   levelBadgeText: {
-    fontSize: 15,
-    lineHeight: 19,
-    fontWeight: '900',
+    ...typography.caption,
+    fontFamily: fontFamilies.bodyBold,
     color: colors.text,
   },
-
   levelTitle: {
+    ...typography.h3,
     flex: 1,
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: '900',
     color: colors.text,
   },
-
   levelSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: `${colors.text}A8`,
+    ...typography.caption,
+    color: colors.textSoft,
     marginBottom: spacing.md,
   },
-
   progressTrack: {
     height: 18,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     overflow: 'hidden',
-    backgroundColor: colors.muted,
+    backgroundColor: colors.surfaceMuted,
   },
-
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
-
   progressPercentText: {
+    ...typography.small,
     marginTop: spacing.sm,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '800',
-    color: `${colors.text}99`,
+    color: colors.textSoft,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   weekRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     width: '100%',
   },
-
   weekDay: {
     flex: 1,
     minWidth: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-
   dayCircle: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     marginBottom: spacing.xs,
   },
-
   dayCircleFilled: {
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-
   dayCircleEmpty: {
-    backgroundColor: colors.muted,
-    borderColor: `${colors.text}10`,
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
   },
-
   todayCircle: {
     borderColor: colors.accent,
     borderWidth: 3,
   },
-
   dayCircleText: {
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: '900',
+    ...typography.caption,
     color: colors.text,
     textAlign: 'center',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   dayCircleTextFilled: {
     color: colors.surface,
   },
-
   dayLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '900',
-    color: `${colors.text}90`,
+    ...typography.small,
+    color: colors.textSoft,
     textAlign: 'center',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   todayDayLabel: {
     color: colors.accent,
   },
-
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-
   statTile: {
     width: '48%',
     minHeight: 142,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.md,
     backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: `${colors.text}08`,
+    padding: spacing.md,
   },
-
   statEmoji: {
-    fontSize: 32,
+    ...typography.h1,
+    fontSize: fontSizes.xxl,
     marginBottom: spacing.sm,
   },
-
   statValue: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '900',
+    ...typography.h1,
     color: colors.accent,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   statLabel: {
-    marginTop: spacing.xs,
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '800',
+    ...typography.small,
+    width: '100%',
     textAlign: 'center',
-    color: colors.text,
-    opacity: 0.78,
+    color: colors.textSoft,
+    fontFamily: fontFamilies.bodyBold,
+    marginTop: spacing.xs,
   },
-
   emptyAchievementBox: {
     minHeight: 170,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 28,
-    padding: spacing.lg,
+    borderRadius: radius.xl,
     backgroundColor: colors.bg,
+    padding: spacing.lg,
   },
-
   emptyAchievementEmoji: {
-    fontSize: 42,
+    ...typography.display,
     marginBottom: spacing.sm,
   },
-
   emptyAchievementTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '900',
+    ...typography.h3,
     color: colors.text,
     marginBottom: spacing.xs,
   },
-
   emptyAchievementText: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '700',
+    ...typography.small,
     textAlign: 'center',
-    color: `${colors.text}A8`,
+    color: colors.textSoft,
   },
-
   achievementCarousel: {
     gap: spacing.md,
     paddingRight: spacing.md,
   },
-
   recentAchievementCard: {
     width: 150,
     minHeight: 180,
-    borderRadius: 28,
-    padding: spacing.md,
+    borderRadius: radius.xl,
     backgroundColor: colors.bg,
     borderWidth: 2,
     borderColor: colors.secondary,
+    padding: spacing.md,
   },
-
   recentAchievementEmoji: {
-    fontSize: 38,
+    ...typography.display,
+    fontSize: fontSizes.display + spacing.xxs,
     marginBottom: spacing.sm,
   },
-
   recentAchievementTitle: {
+    ...typography.caption,
     minHeight: 42,
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '900',
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   recentAchievementDate: {
+    ...typography.small,
     marginTop: spacing.sm,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-    color: `${colors.text}A8`,
+    color: colors.textSoft,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   recentAchievementXpPill: {
     alignSelf: 'flex-start',
     marginTop: 'auto',
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-
   recentAchievementXpText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '900',
+    ...typography.small,
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
 });

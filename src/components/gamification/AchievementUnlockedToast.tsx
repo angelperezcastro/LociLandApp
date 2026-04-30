@@ -12,7 +12,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  lineHeights,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import { useAchievementToastStore } from '../../store/useAchievementToastStore';
 
 const AUTO_DISMISS_MS = 3000;
@@ -116,77 +125,59 @@ const styles = StyleSheet.create({
     zIndex: 70,
     elevation: 70,
   },
-
   card: {
     minHeight: 78,
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: 30,
+    borderRadius: radius.xxl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     backgroundColor: colors.bg,
     borderWidth: 3,
     borderColor: colors.primary,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 9,
+    ...shadows.floating,
   },
-
   cardPressed: {
     transform: [{ scale: 0.985 }],
   },
-
   shimmer: {
     position: 'absolute',
     top: -30,
     bottom: -30,
     width: 82,
-    backgroundColor: 'rgba(255,255,255,0.52)',
+    backgroundColor: colors.white,
+    opacity: 0.52,
   },
-
   emoji: {
-    fontSize: 38,
+    fontSize: fontSizes.display,
+    lineHeight: lineHeights.display,
   },
-
   textColumn: {
     flex: 1,
   },
-
   eyebrow: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '900',
+    ...typography.small,
+    fontFamily: fontFamilies.bodyBold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: colors.accent,
   },
-
   title: {
-    marginTop: 2,
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: '900',
+    ...typography.h3,
+    marginTop: spacing.xxs,
     color: colors.text,
   },
-
   xpPill: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     backgroundColor: colors.secondary,
   },
-
   xpText: {
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '900',
+    ...typography.small,
+    fontFamily: fontFamilies.bodyBold,
     color: colors.text,
   },
 });

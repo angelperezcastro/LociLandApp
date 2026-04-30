@@ -9,7 +9,7 @@ import Animated, {
 
 import { Screen } from '../layout';
 import { Button, Body, Caption, H1 } from '../ui';
-import { colors, spacing } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
 
 type OnboardingLayoutProps = {
   title: string;
@@ -94,7 +94,7 @@ export function OnboardingLayout({
   return (
     <Screen
       scroll
-      backgroundColor={colors.bg}
+      backgroundColor="bg"
       contentContainerStyle={styles.scrollContent}
       style={styles.inner}
     >
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   skipButton: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,

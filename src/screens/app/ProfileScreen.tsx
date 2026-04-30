@@ -1,3 +1,5 @@
+// src/screens/app/ProfileScreen.tsx
+
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +16,16 @@ import { useNavigation } from '@react-navigation/native';
 import { resetPassword, signOut } from '../../services/auth';
 import { updateUserProfile } from '../../services/userProfile';
 import { useUserStore } from '../../store/useUserStore';
-import { colors, spacing } from '../../theme';
+import { EmptyState } from '../../components/feedback';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from '../../theme';
 import type { AvatarEmoji } from '../../types/user';
 import {
   getLevelTitle,
@@ -75,6 +86,7 @@ export function ProfileScreen() {
   );
 
   const avatarRows = useMemo(() => chunkArray(AVATAR_OPTIONS, 4), []);
+  const isBusy = avatarLoading || logoutLoading || passwordLoading;
 
   const handleOpenAchievements = () => {
     navigation.navigate('Achievements');
@@ -128,7 +140,6 @@ export function ProfileScreen() {
 
     try {
       setAvatarLoading(true);
-
       await updateUserProfile(profile.uid, { avatarEmoji });
 
       setUserProfile({
@@ -144,6 +155,20 @@ export function ProfileScreen() {
     }
   };
 
+  if (!profile) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.stateShell}>
+          <EmptyState
+            icon="👤"
+            title="Profile not ready"
+            message="Log in again if your profile does not appear in a moment."
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <>
       <ScrollView
@@ -153,11 +178,11 @@ export function ProfileScreen() {
       >
         <View style={styles.heroCard}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatar}>{profile?.avatarEmoji ?? '🦊'}</Text>
+            <Text style={styles.avatar}>{profile.avatarEmoji ?? '🦊'}</Text>
           </View>
 
-          <Text style={styles.name}>{profile?.displayName ?? 'Explorer'}</Text>
-          <Text style={styles.email}>{profile?.email ?? 'No email found'}</Text>
+          <Text style={styles.name}>{profile.displayName ?? 'Explorer'}</Text>
+          <Text style={styles.email}>{profile.email ?? 'No email found'}</Text>
 
           <View style={styles.levelBadge}>
             <Text style={styles.levelBadgeText}>
@@ -166,9 +191,7 @@ export function ProfileScreen() {
           </View>
 
           <View style={styles.streakPill}>
-            <Text style={styles.streakText}>
-              🔥 {currentStreak} days in a row
-            </Text>
+            <Text style={styles.streakText}>🔥 {currentStreak} days in a row</Text>
           </View>
         </View>
 
@@ -200,16 +223,14 @@ export function ProfileScreen() {
 
           <Pressable
             onPress={handleOpenAchievements}
-            disabled={avatarLoading || logoutLoading || passwordLoading}
+            disabled={isBusy}
             style={({ pressed }) => [
               styles.achievementsFloatingCard,
               pressed ? styles.achievementsFloatingCardPressed : null,
             ]}
           >
-            <View style={styles.achievementsFloatingTop}>
-              <View style={styles.achievementsIconContainer}>
-                <Text style={styles.achievementsIcon}>🏆</Text>
-              </View>
+            <View style={styles.achievementsIconContainer}>
+              <Text style={styles.achievementsIcon}>🏆</Text>
             </View>
 
             <View style={styles.achievementsFloatingContent}>
@@ -221,10 +242,8 @@ export function ProfileScreen() {
               </Text>
             </View>
 
-            <View style={styles.achievementsFloatingFooter}>
-              <View style={styles.achievementsArrowContainer}>
-                <Text style={styles.achievementsArrow}>→</Text>
-              </View>
+            <View style={styles.achievementsArrowContainer}>
+              <Text style={styles.achievementsArrow}>→</Text>
             </View>
           </Pressable>
         </View>
@@ -233,20 +252,9 @@ export function ProfileScreen() {
           <Text style={styles.sectionTitle}>Stats</Text>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalPalaces}</Text>
-              <Text style={styles.statLabel}>Palaces</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalStations}</Text>
-              <Text style={styles.statLabel}>Stations</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalReviews}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
+            <StatCard value={stats.totalPalaces} label="Palaces" />
+            <StatCard value={stats.totalStations} label="Stations" />
+            <StatCard value={stats.totalReviews} label="Reviews" />
           </View>
         </View>
 
@@ -255,18 +263,16 @@ export function ProfileScreen() {
 
           <Pressable
             onPress={() => setAvatarModalVisible(true)}
-            disabled={avatarLoading || logoutLoading || passwordLoading}
+            disabled={isBusy}
             style={styles.settingRow}
           >
             <Text style={styles.settingLabel}>Change avatar</Text>
-            <Text style={styles.settingValue}>
-              {profile?.avatarEmoji ?? '🦊'}
-            </Text>
+            <Text style={styles.settingValue}>{profile.avatarEmoji ?? '🦊'}</Text>
           </Pressable>
 
           <Pressable
             onPress={handleChangePassword}
-            disabled={avatarLoading || logoutLoading || passwordLoading}
+            disabled={isBusy}
             style={styles.settingRow}
           >
             <Text style={styles.settingLabel}>Change password</Text>
@@ -279,7 +285,7 @@ export function ProfileScreen() {
 
           <Pressable
             onPress={handleLogout}
-            disabled={avatarLoading || logoutLoading || passwordLoading}
+            disabled={isBusy}
             style={[styles.settingRow, styles.logoutRow]}
           >
             <Text style={styles.logoutLabel}>Log out</Text>
@@ -306,7 +312,7 @@ export function ProfileScreen() {
               {avatarRows.map((row, rowIndex) => (
                 <View key={`row-${rowIndex}`} style={styles.avatarRow}>
                   {row.map((avatarEmoji) => {
-                    const isSelected = avatarEmoji === profile?.avatarEmoji;
+                    const isSelected = avatarEmoji === profile.avatarEmoji;
 
                     return (
                       <Pressable
@@ -318,9 +324,7 @@ export function ProfileScreen() {
                           isSelected ? styles.avatarOptionSelected : null,
                         ]}
                       >
-                        <Text style={styles.avatarOptionEmoji}>
-                          {avatarEmoji}
-                        </Text>
+                        <Text style={styles.avatarOptionEmoji}>{avatarEmoji}</Text>
                       </Pressable>
                     );
                   })}
@@ -342,248 +346,202 @@ export function ProfileScreen() {
   );
 }
 
+function StatCard({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
   },
-
+  stateShell: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
   contentContainer: {
     padding: spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: spacing.xxxl * 2,
   },
-
   heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: spacing.xl,
     alignItems: 'center',
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: `${colors.text}12`,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
     marginBottom: spacing.lg,
-    shadowColor: colors.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    ...shadows.card,
   },
-
   avatarCircle: {
     width: 112,
     height: 112,
-    borderRadius: 56,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
     marginBottom: spacing.md,
   },
-
   avatar: {
-    fontSize: 52,
+    ...typography.display,
+    fontSize: fontSizes.display + fontSizes.md,
+    lineHeight: 58,
   },
-
   name: {
-    fontSize: 28,
-    fontWeight: '900',
+    ...typography.h1,
     color: colors.text,
     marginBottom: spacing.xs,
-    fontFamily: 'FredokaOne_400Regular',
     textAlign: 'center',
   },
-
   email: {
-    fontSize: 14,
-    color: `${colors.text}B3`,
+    ...typography.caption,
+    color: colors.textSoft,
     marginBottom: spacing.md,
   },
-
   levelBadge: {
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
-    borderRadius: 18,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
   },
-
   levelBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    ...typography.caption,
+    color: colors.white,
     textAlign: 'center',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   streakPill: {
+    borderRadius: radius.lg,
     backgroundColor: colors.secondary,
-    borderRadius: 18,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-
   streakText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    ...typography.caption,
+    color: colors.white,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: spacing.xl,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: `${colors.text}12`,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
     marginBottom: spacing.lg,
-    shadowColor: colors.text,
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    ...shadows.soft,
   },
-
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: '900',
+    ...typography.h2,
     color: colors.text,
     marginBottom: spacing.sm,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   sectionSubtitle: {
-    fontSize: 14,
-    color: `${colors.text}B3`,
+    ...typography.caption,
+    color: colors.textSoft,
     marginBottom: spacing.md,
   },
-
   progressTrack: {
     height: 18,
-    borderRadius: 999,
-    backgroundColor: `${colors.text}14`,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
     overflow: 'hidden',
   },
-
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
-
   achievementsFloatingCard: {
     marginTop: spacing.sm,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: spacing.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: `${colors.text}10`,
-    shadowColor: colors.text,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    ...shadows.card,
   },
-
   achievementsFloatingCardPressed: {
     transform: [{ scale: 0.985 }],
-    shadowOpacity: 0.08,
-    elevation: 3,
+    opacity: 0.92,
   },
-
-  achievementsFloatingTop: {
-    marginBottom: spacing.md,
-  },
-
   achievementsIconContainer: {
     width: 64,
     height: 64,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: `${colors.text}10`,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.md,
   },
-
   achievementsIcon: {
-    fontSize: 36,
+    ...typography.display,
+    fontSize: fontSizes.display,
   },
-
   achievementsFloatingContent: {
     marginBottom: spacing.md,
   },
-
   achievementsFloatingTitle: {
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '900',
+    ...typography.h3,
     color: colors.text,
     marginBottom: spacing.xs,
   },
-
   achievementsFloatingSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: `${colors.text}B0`,
+    ...typography.caption,
+    color: colors.textSoft,
   },
-
-  achievementsFloatingFooter: {
-    alignItems: 'flex-start',
-  },
-
   achievementsArrowContainer: {
     width: 52,
     height: 52,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: `${colors.text}10`,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   achievementsArrow: {
-    fontSize: 28,
-    fontWeight: '900',
+    ...typography.h1,
     color: colors.text,
-    lineHeight: 30,
   },
-
   statsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     alignItems: 'stretch',
   },
-
   statCard: {
     flex: 1,
     minHeight: 140,
+    borderRadius: radius.xl,
     backgroundColor: colors.bg,
-    borderRadius: 24,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   statValue: {
-    fontSize: 26,
-    fontWeight: '900',
+    ...typography.h1,
     color: colors.accent,
     marginBottom: spacing.xs,
-    fontFamily: 'FredokaOne_400Regular',
   },
-
   statLabel: {
+    ...typography.small,
     width: '100%',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-    color: colors.text,
-    opacity: 0.85,
+    color: colors.textSoft,
     textAlign: 'center',
+    fontFamily: fontFamilies.bodyBold,
   },
-
   settingRow: {
     minHeight: 60,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     backgroundColor: colors.bg,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
@@ -591,106 +549,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   logoutRow: {
-    marginBottom: 0,
+    marginBottom: spacing.none,
   },
-
   settingLabel: {
-    fontSize: 15,
-    fontWeight: '800',
+    ...typography.caption,
     color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   settingValue: {
-    fontSize: 22,
+    ...typography.h2,
   },
-
   settingAction: {
-    fontSize: 14,
-    fontWeight: '900',
+    ...typography.caption,
     color: colors.accent,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   logoutLabel: {
-    fontSize: 15,
-    fontWeight: '900',
+    ...typography.caption,
     color: colors.emphasis,
+    fontFamily: fontFamilies.bodyBold,
   },
-
   logoutValue: {
-    fontSize: 20,
-    fontWeight: '900',
+    ...typography.h3,
     color: colors.emphasis,
   },
-
   modalBackdrop: {
     flex: 1,
-    backgroundColor: '#00000055',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
   },
-
   modalCard: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: spacing.xl,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: `${colors.text}12`,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
   },
-
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '900',
+    ...typography.h2,
     color: colors.text,
     marginBottom: spacing.lg,
-    fontFamily: 'FredokaOne_400Regular',
     textAlign: 'center',
   },
-
   avatarGrid: {
     marginBottom: spacing.lg,
     gap: spacing.md,
   },
-
   avatarRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-
   avatarOption: {
     width: '22%',
     aspectRatio: 1,
-    borderRadius: 20,
-    backgroundColor: colors.bg,
+    borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: `${colors.text}14`,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   avatarOptionSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary,
   },
-
   avatarOptionEmoji: {
-    fontSize: 28,
+    ...typography.h1,
+    fontSize: fontSizes.xxl,
   },
-
   closeModalButton: {
     minHeight: 54,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accent,
   },
-
   closeModalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
+    ...typography.bodyStrong,
+    color: colors.white,
   },
 });

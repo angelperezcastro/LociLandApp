@@ -1,7 +1,7 @@
 // src/navigation/AppNavigator.tsx
 
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -17,14 +17,21 @@ import { EditStationScreen } from '../screens/app/EditStationScreen';
 import { ReviewScreen } from '../screens/app/ReviewScreen';
 import { AchievementsScreen } from '../screens/app/AchievementsScreen';
 
-import { colors } from '../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+} from '../theme';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 const renderTabIcon = (emoji: string) => {
   return ({ color }: { color: string }) => (
-    <Text style={{ color, fontSize: 20 }}>{emoji}</Text>
+    <Text style={[styles.tabIcon, { color }]}>{emoji}</Text>
   );
 };
 
@@ -36,27 +43,8 @@ function MainTabs() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '800',
-          marginBottom: 4,
-        },
-        tabBarStyle: {
-          height: 82,
-          paddingTop: 8,
-          paddingBottom: 10,
-          backgroundColor: colors.white,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          position: 'absolute',
-          shadowColor: colors.text,
-          shadowOpacity: 0.12,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: -4 },
-          elevation: 12,
-        },
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarStyle: styles.tabBar,
       }}
     >
       <Tab.Screen
@@ -149,3 +137,26 @@ export function AppNavigator() {
 }
 
 export default AppNavigator;
+
+const styles = StyleSheet.create({
+  tabIcon: {
+    fontSize: fontSizes.xl,
+  },
+  tabBarLabel: {
+    fontFamily: fontFamilies.bodyBold,
+    fontSize: fontSizes.xs,
+    marginBottom: spacing.xs,
+  },
+  tabBar: {
+    height: 82,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm + spacing.xxs,
+    backgroundColor: colors.white,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    position: 'absolute',
+    ...shadows.elevated,
+  },
+});
