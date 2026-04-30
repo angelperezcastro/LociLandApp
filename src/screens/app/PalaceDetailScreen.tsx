@@ -38,6 +38,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/feedback'
 import { StationCard } from '../../components/station/StationCard';
 import type { Station } from '../../types';
 import { getUserFriendlyError } from '../../utils/errorMessages';
+import { normalizeAgeGroup } from '../../utils/ageGroup';
 
 const EMPTY_STATIONS: Station[] = [];
 const MIN_REVIEW_STATIONS = 2;
@@ -52,6 +53,7 @@ type PalaceDetailRoute = {
 type LooseUserProfile = {
   id?: string;
   uid?: string;
+  ageGroup?: string | null;
 };
 
 type LooseAuthUser = {
@@ -131,6 +133,8 @@ function PalaceDetailScreen() {
     storeUser?.uid ??
     firebaseUser?.uid ??
     null;
+
+  const reviewAgeGroup = normalizeAgeGroup(profile?.ageGroup);
 
   const palaces = usePalaceStore((state) => state.palaces);
   const stations = usePalaceStore((state) => {
@@ -343,6 +347,7 @@ function PalaceDetailScreen() {
 
     navigation.navigate('Review', {
       palaceId,
+      ageGroup: reviewAgeGroup,
       initialPalace: {
         id: palace.id,
         name: palace.name,

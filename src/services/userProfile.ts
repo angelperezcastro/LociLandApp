@@ -3,6 +3,7 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 import { getLevelTitle } from '../utils/levelUtils';
+import { normalizeAgeGroup } from '../utils/ageGroup';
 import type { AgeGroup, AvatarEmoji, UserProfile } from '../types/user';
 import { db } from './firebase';
 
@@ -45,6 +46,29 @@ function getInitialUserLevel() {
   return 1;
 }
 
+function normalizeUserProfile(rawProfile: UserProfile): UserProfile {
+  return {
+    ...rawProfile,
+    ageGroup: normalizeAgeGroup(rawProfile.ageGroup),
+    level:
+      typeof rawProfile.level === 'number' && Number.isFinite(rawProfile.level)
+        ? rawProfile.level
+        : getInitialUserLevel(),
+    levelTitle:
+      rawProfile.levelTitle ??
+      getLevelTitle(
+        typeof rawProfile.level === 'number' && Number.isFinite(rawProfile.level)
+          ? rawProfile.level
+          : getInitialUserLevel(),
+      ),
+    bestStreak:
+      typeof rawProfile.bestStreak === 'number' &&
+      Number.isFinite(rawProfile.bestStreak)
+        ? rawProfile.bestStreak
+        : rawProfile.streak,
+  };
+}
+
 export async function createUserProfile(
   input: CreateUserProfileInput,
 ): Promise<UserProfile> {
@@ -55,7 +79,7 @@ export async function createUserProfile(
     displayName: input.displayName.trim(),
     email: input.email.trim(),
     avatarEmoji: input.avatarEmoji,
-    ageGroup: input.ageGroup,
+    ageGroup: normalizeAgeGroup(input.ageGroup),
     xp: 0,
     level: initialLevel,
     levelTitle: getLevelTitle(initialLevel),
@@ -76,7 +100,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 
-  return snapshot.data() as UserProfile;
+  return normalizeUserProfile(snapshot.data() as UserProfile);
 }
 
 export async function ensureUserProfile(
@@ -85,6 +109,8 @@ export async function ensureUserProfile(
   const existing = await getUserProfile(input.uid);
 
   if (existing) {
+    const normalizedAgeGroup = normalizeAgeGroup(existing.ageGroup);
+
     const resolvedLevel =
       typeof existing.level === 'number' && Number.isFinite(existing.level)
         ? existing.level
@@ -100,10 +126,13 @@ export async function ensureUserProfile(
         : existing.streak;
 
     const needsProfileBackfill =
-      !existing.levelTitle || existing.bestStreak === undefined;
+      !existing.levelTitle ||
+      existing.bestStreak === undefined ||
+      existing.ageGroup !== normalizedAgeGroup;
 
     if (needsProfileBackfill) {
       await updateDoc(doc(db, 'users', input.uid), {
+        ageGroup: normalizedAgeGroup,
         level: resolvedLevel,
         levelTitle: resolvedLevelTitle,
         bestStreak: resolvedBestStreak,
@@ -112,6 +141,7 @@ export async function ensureUserProfile(
 
     return {
       ...existing,
+      ageGroup: normalizedAgeGroup,
       level: resolvedLevel,
       levelTitle: resolvedLevelTitle,
       bestStreak: resolvedBestStreak,
@@ -123,7 +153,7 @@ export async function ensureUserProfile(
     email: input.email,
     displayName: input.displayName?.trim() || 'Explorer',
     avatarEmoji: input.avatarEmoji ?? '🦊',
-    ageGroup: input.ageGroup ?? '10-14',
+    ageGroup: normalizeAgeGroup(input.ageGroup ?? '10-14'),
   });
 }
 
@@ -134,6 +164,10 @@ export async function updateUserProfile(
   const payload: UpdateUserProfileInput = {
     ...data,
   };
+
+  if (data.ageGroup) {
+    payload.ageGroup = normalizeAgeGroup(data.ageGroup);
+  }
 
   if (typeof data.level === 'number') {
     payload.levelTitle = data.levelTitle ?? getLevelTitle(data.level);
