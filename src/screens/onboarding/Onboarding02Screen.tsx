@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { GuideCharacter } from '../../components/guide';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { ChoiceCard } from '../../components/onboarding/ChoiceCard';
 import type { AuthScreenProps } from '../../navigation/types';
@@ -23,6 +24,7 @@ export function Onboarding02Screen({
     <OnboardingLayout
       title="Pick your favourite place"
       description="Choose a world you would love to walk through in your imagination."
+      illustration={<GuideCharacter mood="pointing" size="lg" withBubble />}
       primaryActionLabel="Next"
       onPrimaryAction={() => navigation.navigate('Onboarding03')}
       primaryActionDisabled={!selectedPlace}

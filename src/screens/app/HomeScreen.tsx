@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import {
@@ -29,6 +28,7 @@ import { auth } from '../../services/firebase';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
+import { GuideCharacter } from '../../components/guide';
 import { PalaceCard } from '../../components/palace/PalaceCard';
 import { DeletePalaceSheet } from '../../components/palace/DeletePalaceSheet';
 import { Button } from '../../components/ui/Button';
@@ -242,13 +242,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.emptyState}>
         <View style={styles.emptyIllustrationWrapper}>
-          <LottieView
-            source={require('../../assets/animations/wizard-beckoning.json')}
-            autoPlay
-            loop
-            style={styles.emptyAnimation}
-          />
-          <Text style={styles.emptyWizardEmoji}>🧙‍♂️</Text>
+          <GuideCharacter mood="idle" size="xl" withBubble />
         </View>
 
         <View style={styles.emptyCopy}>
@@ -422,16 +416,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
-  },
-  emptyAnimation: {
-    position: 'absolute',
-    width: 178,
-    height: 178,
-  },
-  emptyWizardEmoji: {
-    ...typography.display,
-    fontSize: fontSizes.display * 2 + spacing.sm + spacing.xs,
-    lineHeight: 88,
   },
   emptyCopy: {
     width: '100%',

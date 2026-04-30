@@ -1095,7 +1095,7 @@ const WalkingState = ({
                 ? REVIEW_DIMENSIONS.walkingGuideCompact
                 : REVIEW_DIMENSIONS.walkingGuide
             }
-            variant="encourage"
+            variant="pointing"
           />
 
           <View style={styles.guideSpeechBubble}>
@@ -1292,7 +1292,7 @@ const RevealState = ({
             {REVEAL_COPY.correctSubtitle}
           </Text>
 
-          <GuideLottie size={170} variant="encourage" />
+          <GuideLottie size={170} variant="happy" />
         </View>
 
         <View style={styles.revealButtonSection}>
@@ -1332,7 +1332,7 @@ const RevealState = ({
         </View>
 
         <View style={styles.encouragementRow}>
-          <GuideLottie size={120} variant="encourage" />
+          <GuideLottie size={120} variant="thinking" />
 
           <View style={styles.encouragementBubble}>
             <Text style={styles.encouragementBubbleText}>
@@ -1498,6 +1498,8 @@ const CompleteState = ({
         </Animated.Text>
 
         <Text style={styles.completeTitle}>Memory walk complete!</Text>
+
+        <GuideLottie size={120} variant="happy" />
 
         <View style={styles.completeScoreCard}>
           <Text style={styles.completeScoreLabel}>{scoreLabel}</Text>

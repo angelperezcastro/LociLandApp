@@ -1,12 +1,31 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import LottieView from 'lottie-react-native';
 
-type GuideVariant = 'forward' | 'encourage';
+import {
+  GuideCharacter,
+  type GuideCharacterMood,
+} from '../guide';
+
+type GuideVariant =
+  | 'forward'
+  | 'encourage'
+  | 'idle'
+  | 'happy'
+  | 'thinking'
+  | 'pointing';
 
 type GuideLottieProps = {
   size?: number;
   variant?: GuideVariant;
+};
+
+const GUIDE_MOOD_BY_VARIANT: Record<GuideVariant, GuideCharacterMood> = {
+  forward: 'pointing',
+  encourage: 'idle',
+  idle: 'idle',
+  happy: 'happy',
+  thinking: 'thinking',
+  pointing: 'pointing',
 };
 
 export function GuideLottie({
@@ -15,13 +34,10 @@ export function GuideLottie({
 }: GuideLottieProps) {
   return (
     <View style={[styles.root, { width: size, height: size }]}>
-      <LottieView
-        source={require('../../assets/animations/review-guide.json')}
-        autoPlay
-        loop
-        speed={variant === 'forward' ? 1 : 0.9}
-        resizeMode="contain"
-        style={styles.animation}
+      <GuideCharacter
+        mood={GUIDE_MOOD_BY_VARIANT[variant]}
+        size={size}
+        withBubble={false}
       />
     </View>
   );
@@ -35,10 +51,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
     backgroundColor: 'transparent',
-  },
-
-  animation: {
-    width: '100%',
-    height: '100%',
   },
 });
