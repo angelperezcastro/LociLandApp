@@ -1,24 +1,26 @@
 // src/screens/app/ProfileScreen.tsx
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import {
   deleteCurrentUserAccount,
   resetPassword,
   signOut,
 } from '../../services/auth';
-import { updateUserProfile } from '../../services/userProfile';
+import { getUserProfile, updateUserProfile } from '../../services/userProfile';
+import { getProgressStats, type ProgressStats } from '../../services/progressService';
 import { useUserStore } from '../../store/useUserStore';
 import {
   colors,
@@ -92,6 +94,34 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+
+function getCurrentStreakFromWeeklyActivity(
+  days: ProgressStats['weeklyActivity'] | undefined,
+): number {
+  if (!days || days.length === 0) {
+    return 0;
+  }
+
+  const orderedDays = [...days].sort((firstDay, secondDay) =>
+    firstDay.dateString.localeCompare(secondDay.dateString),
+  );
+
+  const todayIndex = orderedDays.findIndex((day) => day.isToday);
+  const endIndex = todayIndex >= 0 ? todayIndex : orderedDays.length - 1;
+
+  let streak = 0;
+
+  for (let index = endIndex; index >= 0; index -= 1) {
+    if (!orderedDays[index]?.reviewed) {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
+}
+
 function isRecentLoginRequired(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -120,16 +150,33 @@ export function ProfileScreen() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [ageModalVisible, setAgeModalVisible] = useState(false);
+  const [progressStats, setProgressStats] = useState<ProgressStats | null>(null);
+  const [profileRefreshLoading, setProfileRefreshLoading] = useState(false);
 
-  const currentLevel = profile?.level ?? 1;
-  const currentXp = profile?.xp ?? 0;
-  const currentStreak = profile?.streak ?? 0;
-  const levelTitle = profile?.levelTitle ?? getLevelTitle(currentLevel);
+  const progressStatsWithStreak = progressStats as
+    | (ProgressStats & { currentStreak?: number })
+    | null;
+
+  const currentLevel = progressStats?.currentLevel ?? profile?.level ?? 1;
+  const currentXp = progressStats?.totalXP ?? profile?.xp ?? 0;
+  const derivedCurrentStreak = getCurrentStreakFromWeeklyActivity(
+    progressStats?.weeklyActivity,
+  );
+  const currentStreak =
+    typeof progressStatsWithStreak?.currentStreak === 'number'
+      ? progressStatsWithStreak.currentStreak
+      : derivedCurrentStreak > 0
+        ? derivedCurrentStreak
+        : profile?.streak ?? 0;
+  const levelTitle =
+    progressStats?.levelTitle ?? profile?.levelTitle ?? getLevelTitle(currentLevel);
   const currentAgeGroup = normalizeAgeGroup(profile?.ageGroup);
 
-  const nextLevelXp = getXpForNextLevel(currentLevel);
-  const xpRemaining = getXpRemainingForNextLevel(currentXp);
-  const xpProgressPercent = getProgressPercent(currentXp);
+  const nextLevelXp = progressStats?.xpForNextLevel ?? getXpForNextLevel(currentLevel);
+  const xpRemaining =
+    progressStats?.xpRemainingForNextLevel ?? getXpRemainingForNextLevel(currentXp);
+  const xpProgressPercent =
+    progressStats?.progressPercent ?? getProgressPercent(currentXp);
 
   const isBusy =
     logoutLoading ||
@@ -140,12 +187,64 @@ export function ProfileScreen() {
 
   const stats = useMemo(
     () => ({
-      totalPalaces: 0,
-      totalStations: 0,
-      totalReviews: 0,
+      totalPalaces: progressStats?.totalPalaces ?? 0,
+      totalStations: progressStats?.totalStations ?? 0,
+      totalReviews: progressStats?.totalReviewsCompleted ?? 0,
     }),
-    [],
+    [progressStats],
   );
+
+  const loadProfileMetrics = useCallback(async () => {
+    if (!profile?.uid) {
+      setProgressStats(null);
+      return;
+    }
+
+    const [freshProfile, nextProgressStats] = await Promise.all([
+      getUserProfile(profile.uid),
+      getProgressStats(profile.uid),
+    ]);
+
+    if (freshProfile) {
+      setUserProfile(freshProfile);
+    }
+
+    setProgressStats(nextProgressStats);
+  }, [profile?.uid, setUserProfile]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const run = async () => {
+        try {
+          await loadProfileMetrics();
+        } catch {
+          if (isActive) {
+            setProgressStats(null);
+          }
+        }
+      };
+
+      void run();
+
+      return () => {
+        isActive = false;
+      };
+    }, [loadProfileMetrics]),
+  );
+
+  const handleRefreshProfile = async () => {
+    setProfileRefreshLoading(true);
+
+    try {
+      await loadProfileMetrics();
+    } catch {
+      Alert.alert('Error', 'Could not refresh your profile data.');
+    } finally {
+      setProfileRefreshLoading(false);
+    }
+  };
 
   const avatarRows = useMemo(() => chunkArray(AVATAR_OPTIONS, 4), []);
 
@@ -287,6 +386,13 @@ export function ProfileScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={profileRefreshLoading}
+            onRefresh={handleRefreshProfile}
+            tintColor={colors.accent}
+          />
+        }
       >
         <View style={styles.heroCard}>
           <View style={styles.avatarCircle}>
