@@ -32,3 +32,23 @@ export function isOlderAgeGroup(value: unknown): boolean {
 export function isYoungerAgeGroup(value: unknown): boolean {
   return normalizeAgeGroup(value) === '6-9';
 }
+
+export function getAgeGroupLabel(value: unknown): string {
+  const ageGroup = normalizeAgeGroup(value);
+
+  if (ageGroup === '10-14') {
+    return '10–14 years';
+  }
+
+  return '6–9 years';
+}
+
+export function getAgeGroupReviewDescription(value: unknown): string {
+  const ageGroup = normalizeAgeGroup(value);
+
+  if (ageGroup === '10-14') {
+    return 'Free-text review mode';
+  }
+
+  return 'Multiple-choice review mode';
+}

@@ -3,6 +3,7 @@ import {
   User,
   UserCredential,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   sendPasswordResetEmail,
   signInWithCredential,
@@ -15,14 +16,14 @@ import { auth } from './firebase';
 
 export const signUp = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<UserCredential> => {
   return createUserWithEmailAndPassword(auth, email, password);
 };
 
 export const signIn = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<UserCredential> => {
   return signInWithEmailAndPassword(auth, email, password);
 };
@@ -31,9 +32,17 @@ export const signOut = async (): Promise<void> => {
   await firebaseSignOut(auth);
 };
 
-export const onAuthStateChanged = (
-  callback: (user: User | null) => void
-) => {
+export const deleteCurrentUserAccount = async (): Promise<void> => {
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error('No authenticated user found.');
+  }
+
+  await deleteUser(currentUser);
+};
+
+export const onAuthStateChanged = (callback: (user: User | null) => void) => {
   return firebaseOnAuthStateChanged(auth, callback);
 };
 
@@ -43,14 +52,14 @@ export const resetPassword = async (email: string): Promise<void> => {
 
 export const signInWithGoogleIdToken = async (
   idToken: string,
-  accessToken?: string
+  accessToken?: string,
 ): Promise<UserCredential> => {
   const credential = GoogleAuthProvider.credential(idToken, accessToken);
   return signInWithCredential(auth, credential);
 };
 
 export const setCurrentUserDisplayName = async (
-  displayName: string
+  displayName: string,
 ): Promise<void> => {
   if (!auth.currentUser) {
     return;

@@ -5,10 +5,12 @@ import {
   Dimensions,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import {
@@ -48,6 +50,12 @@ import type {
 } from '../../services/reviewScreenDataService';
 import type { ReviewScreenState } from '../../types/reviewState';
 import type { ReviewSession } from '../../types/review';
+import {
+  colors,
+  fontSizes,
+  radius as radiusTokens,
+  spacing,
+} from '../../theme';
 
 type ReviewAgeGroup = '6-9' | '10-14';
 
@@ -67,6 +75,8 @@ type RevealResult = {
   chosenAnswer?: string | null;
   gaveUp: boolean;
 };
+
+const DEFAULT_REVIEW_AGE_GROUP: ReviewAgeGroup = '6-9';
 
 const INTRO_COPY = {
   startButton: 'Start the Journey!',
@@ -101,29 +111,28 @@ const REVEAL_COPY = {
 };
 
 const REVIEW_COLORS = {
-  lightFallback: '#F7F7FB',
-  textDark: '#111827',
-  textMuted: '#4B5563',
-  textSoft: '#374151',
-  white: '#FFFFFF',
-  success: '#22C55E',
-  successDark: '#15803D',
-  warning: '#FBBF24',
-  warningDark: '#B45309',
-  orangeSoft: '#FFF4D6',
-  greenSoft: '#DCFCE7',
-  defaultPalaceBackground: '#DDEBFF',
-  overlayLight: 'rgba(255, 255, 255, 0.76)',
-  overlayDark: 'rgba(255, 255, 255, 0.16)',
-  overlayMedium: 'rgba(255, 255, 255, 0.55)',
-  overlayStrong: 'rgba(255, 255, 255, 0.88)',
-  overlayBubble: 'rgba(255, 255, 255, 0.88)',
-  progressTrack: 'rgba(255,255,255,0.55)',
-
-  // IMPORTANTE:
-  // Este color se usa tanto en el tile grande/mediano
-  // como en la "superficie" interior para que no haya diferencias de blanco.
-  iconTileSurface: '#F1F4F1',
+  lightFallback: colors.bg,
+  textDark: colors.text,
+  textMuted: colors.muted,
+  textSoft: colors.textSoft,
+  white: colors.white,
+  success: colors.success,
+  successDark: colors.secondary,
+  warning: colors.warning,
+  warningDark: colors.text,
+  orangeSoft: colors.warningSoft,
+  greenSoft: colors.secondarySoft,
+  defaultPalaceBackground: colors.accentSoft,
+  overlayLight: colors.surfaceSoft,
+  overlayDark: colors.surfaceMuted,
+  overlayMedium: colors.surfaceSoft,
+  overlayStrong: colors.surface,
+  overlayBubble: colors.surface,
+  progressTrack: colors.surfaceMuted,
+  subtleStroke: colors.border,
+  strongStroke: colors.white,
+  inputPlaceholder: colors.muted,
+  iconTileSurface: colors.surfaceSoft,
 };
 
 const PLACEHOLDER_OPTIONS = [
@@ -138,12 +147,12 @@ const PLACEHOLDER_OPTIONS = [
 ];
 
 const CONFETTI_COLORS = [
-  '#22C55E',
-  '#FACC15',
-  '#38BDF8',
-  '#FB7185',
-  '#A78BFA',
-  '#F97316',
+  colors.success,
+  colors.primary,
+  colors.accent,
+  colors.emphasis,
+  colors.secondary,
+  colors.warning,
 ];
 
 const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
@@ -157,6 +166,31 @@ const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
 
 const PERFECT_SCORE_PERCENTAGE = 1;
 const SUMMARY_COUNTER_DURATION_MS = 900;
+const COMPACT_REVIEW_HEIGHT_THRESHOLD = 750;
+
+const REVIEW_DIMENSIONS = {
+  introGuide: 210,
+  introGuideCompact: 112,
+  walkingGuide: 104,
+  walkingGuideCompact: 76,
+} as const;
+
+const REVIEW_FONT_SIZES = {
+  errorEmoji: 56,
+  palaceEmoji: 104,
+  palaceEmojiCompact: 72,
+  introHeading: 34,
+  introHeadingCompact: 28,
+  stationEmojiLarge: 86,
+  stationEmojiMedium: 58,
+  checkmark: 72,
+  almostEmoji: 46,
+  completeEmoji: 82,
+} as const;
+
+const REVIEW_RADII = {
+  stationTileLarge: 42,
+} as const;
 
 const CORRECT_SOUND_SOURCE = require('../../assets/sounds/review-correct.wav');
 const INCORRECT_SOUND_SOURCE = require('../../assets/sounds/review-incorrect.wav');
@@ -264,7 +298,7 @@ const intensifyPastelHex = (hex: string): string => {
   const rgb = parseHexColor(hex);
 
   if (!rgb) {
-    return '#24C55E';
+    return REVIEW_COLORS.success;
   }
 
   const { h, s } = rgbToHsl(rgb);
@@ -737,7 +771,7 @@ const CountdownTimer = () => {
           cx="31"
           cy="31"
           r={radius}
-          stroke="rgba(17,24,39,0.12)"
+          stroke={REVIEW_COLORS.subtleStroke}
           strokeWidth={strokeWidth}
           fill="transparent"
         />
@@ -869,6 +903,8 @@ const IntroState = ({
   isStarting: boolean;
   onStart: () => void;
 }) => {
+  const { height } = useWindowDimensions();
+  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
   const floating = useSharedValue(0);
 
   useEffect(() => {
@@ -883,41 +919,96 @@ const IntroState = ({
 
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
-      <View style={styles.introTopSection}>
-        <Animated.View entering={BounceIn.duration(900)} style={floatingStyle}>
-          <Text style={styles.palaceEmoji}>{data.palace.emoji}</Text>
-        </Animated.View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.introScrollContent,
+          isCompactHeight && styles.introScrollContentCompact,
+        ]}
+      >
+        <View
+          style={[
+            styles.introTopSection,
+            isCompactHeight && styles.introTopSectionCompact,
+          ]}
+        >
+          <Animated.View entering={BounceIn.duration(900)} style={floatingStyle}>
+            <Text
+              style={[
+                styles.palaceEmoji,
+                isCompactHeight && styles.palaceEmojiCompact,
+              ]}
+            >
+              {data.palace.emoji}
+            </Text>
+          </Animated.View>
 
-        <Text style={[styles.introHeading, { color: textColor }]}>
-          Time to visit your {data.palace.name}!
-        </Text>
+          <Text
+            style={[
+              styles.introHeading,
+              isCompactHeight && styles.introHeadingCompact,
+              { color: textColor },
+            ]}
+          >
+            Time to visit your {data.palace.name}!
+          </Text>
+
+          <View
+            style={[
+              styles.stationCountPill,
+              isCompactHeight && styles.stationCountPillCompact,
+              { backgroundColor: overlayColor },
+            ]}
+          >
+            <Text
+              style={[
+                styles.stationCountText,
+                isCompactHeight && styles.stationCountTextCompact,
+                { color: textColor },
+              ]}
+            >
+              You have {data.palace.stationCount} stops on this journey
+            </Text>
+          </View>
+        </View>
 
         <View
-          style={[styles.stationCountPill, { backgroundColor: overlayColor }]}
+          style={[
+            styles.introGuideSection,
+            isCompactHeight && styles.introGuideSectionCompact,
+          ]}
         >
-          <Text style={[styles.stationCountText, { color: textColor }]}>
-            You have {data.palace.stationCount} stops on this journey
-          </Text>
+          <GuideLottie
+            size={
+              isCompactHeight
+                ? REVIEW_DIMENSIONS.introGuideCompact
+                : REVIEW_DIMENSIONS.introGuide
+            }
+            variant="forward"
+          />
+
+          {!isCompactHeight ? (
+            <View style={styles.guideSpeechBubble}>
+              <Text style={styles.guideSpeechBubbleText}>Follow me!</Text>
+            </View>
+          ) : null}
         </View>
-      </View>
 
-      <View style={styles.introGuideSection}>
-        <GuideLottie size={210} variant="forward" />
-
-        <View style={styles.guideSpeechBubble}>
-          <Text style={styles.guideSpeechBubbleText}>Follow me!</Text>
+        <View
+          style={[
+            styles.introButtonSection,
+            isCompactHeight && styles.introButtonSectionCompact,
+          ]}
+        >
+          <ReviewPrimaryButton
+            label={isStarting ? 'Starting...' : INTRO_COPY.startButton}
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            disabled={isStarting}
+            onPress={onStart}
+          />
         </View>
-      </View>
-
-      <View style={styles.introButtonSection}>
-        <ReviewPrimaryButton
-          label={isStarting ? 'Starting...' : INTRO_COPY.startButton}
-          backgroundColor={buttonFillColor}
-          textColor={buttonTextColor}
-          disabled={isStarting}
-          onPress={onStart}
-        />
-      </View>
+      </ScrollView>
     </Animated.View>
   );
 };
@@ -939,47 +1030,95 @@ const WalkingState = ({
   buttonTextColor: string;
   onRemember: () => void;
 }) => {
+  const { height } = useWindowDimensions();
+  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
+
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
-      <ProgressBar
-        currentIndex={currentIndex}
-        totalStations={totalStations}
-        textColor={textColor}
-      />
-
-      <View style={styles.walkingContent}>
-        <Animated.View
-          key={station.id}
-          entering={SlideInRight.springify().damping(14).mass(0.8)}
-        >
-          <StationIconTile emoji={station.emoji} size="large" />
-        </Animated.View>
-
-        <Text style={[styles.stationName, { color: textColor }]}>
-          {station.name}
-        </Text>
-
-        <Text style={[styles.walkingPrompt, { color: textColor }]}>
-          {WALKING_COPY.prompt}
-        </Text>
-      </View>
-
-      <View style={styles.walkingGuideSection}>
-        <GuideLottie size={104} variant="encourage" />
-
-        <View style={styles.guideSpeechBubble}>
-          <Text style={styles.guideSpeechBubbleText}>Take your time.</Text>
-        </View>
-      </View>
-
-      <View style={styles.walkingButtonSection}>
-        <ReviewPrimaryButton
-          label={WALKING_COPY.rememberButton}
-          backgroundColor={buttonFillColor}
-          textColor={buttonTextColor}
-          onPress={onRemember}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.walkingScrollContent,
+          isCompactHeight && styles.walkingScrollContentCompact,
+        ]}
+      >
+        <ProgressBar
+          currentIndex={currentIndex}
+          totalStations={totalStations}
+          textColor={textColor}
         />
-      </View>
+
+        <View
+          style={[
+            styles.walkingContent,
+            isCompactHeight && styles.walkingContentCompact,
+          ]}
+        >
+          <Animated.View
+            key={station.id}
+            entering={SlideInRight.springify().damping(14).mass(0.8)}
+          >
+            <StationIconTile
+              emoji={station.emoji}
+              size={isCompactHeight ? 'medium' : 'large'}
+            />
+          </Animated.View>
+
+          <Text
+            style={[
+              styles.stationName,
+              isCompactHeight && styles.stationNameCompact,
+              { color: textColor },
+            ]}
+          >
+            {station.name}
+          </Text>
+
+          <Text
+            style={[
+              styles.walkingPrompt,
+              isCompactHeight && styles.walkingPromptCompact,
+              { color: textColor },
+            ]}
+          >
+            {WALKING_COPY.prompt}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.walkingGuideSection,
+            isCompactHeight && styles.walkingGuideSectionCompact,
+          ]}
+        >
+          <GuideLottie
+            size={
+              isCompactHeight
+                ? REVIEW_DIMENSIONS.walkingGuideCompact
+                : REVIEW_DIMENSIONS.walkingGuide
+            }
+            variant="pointing"
+          />
+
+          <View style={styles.guideSpeechBubble}>
+            <Text style={styles.guideSpeechBubbleText}>Take your time.</Text>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.walkingButtonSection,
+            isCompactHeight && styles.walkingButtonSectionCompact,
+          ]}
+        >
+          <ReviewPrimaryButton
+            label={WALKING_COPY.rememberButton}
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            onPress={onRemember}
+          />
+        </View>
+      </ScrollView>
     </Animated.View>
   );
 };
@@ -1083,7 +1222,7 @@ const QuestionState = ({
             value={freeTextAnswer}
             onChangeText={setFreeTextAnswer}
             placeholder={QUESTION_COPY.inputPlaceholder}
-            placeholderTextColor="rgba(17,24,39,0.45)"
+            placeholderTextColor={REVIEW_COLORS.inputPlaceholder}
             autoCapitalize="none"
             autoCorrect={false}
             style={[
@@ -1155,7 +1294,7 @@ const RevealState = ({
             {REVEAL_COPY.correctSubtitle}
           </Text>
 
-          <GuideLottie size={170} variant="encourage" />
+          <GuideLottie size={170} variant="happy" />
         </View>
 
         <View style={styles.revealButtonSection}>
@@ -1195,7 +1334,7 @@ const RevealState = ({
         </View>
 
         <View style={styles.encouragementRow}>
-          <GuideLottie size={120} variant="encourage" />
+          <GuideLottie size={120} variant="thinking" />
 
           <View style={styles.encouragementBubble}>
             <Text style={styles.encouragementBubbleText}>
@@ -1361,6 +1500,8 @@ const CompleteState = ({
         </Animated.Text>
 
         <Text style={styles.completeTitle}>Memory walk complete!</Text>
+
+        <GuideLottie size={120} variant="happy" />
 
         <View style={styles.completeScoreCard}>
           <Text style={styles.completeScoreLabel}>{scoreLabel}</Text>
@@ -1838,21 +1979,21 @@ const styles = StyleSheet.create({
 
   stateContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 18,
-    paddingBottom: 34,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
   },
 
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: spacing.md,
     backgroundColor: REVIEW_COLORS.lightFallback,
   },
 
   loadingText: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: '700',
     color: REVIEW_COLORS.textSoft,
   },
@@ -1861,82 +2002,124 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 16,
+    padding: spacing.lg,
+    gap: spacing.md,
     backgroundColor: REVIEW_COLORS.lightFallback,
   },
 
   errorEmoji: {
-    fontSize: 56,
+    fontSize: REVIEW_FONT_SIZES.errorEmoji,
   },
 
   errorTitle: {
-    fontSize: 24,
+    fontSize: fontSizes.xl,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
     textAlign: 'center',
   },
 
   errorMessage: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     lineHeight: 24,
     color: REVIEW_COLORS.textMuted,
     textAlign: 'center',
   },
 
+  introScrollContent: {
+    flexGrow: 1,
+  },
+
+  introScrollContentCompact: {
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xs,
+  },
+
   introTopSection: {
     alignItems: 'center',
-    gap: 18,
-    marginTop: 6,
+    gap: spacing.lg,
+    marginTop: spacing.sm,
+  },
+
+  introTopSectionCompact: {
+    gap: spacing.sm,
+    marginTop: spacing.none,
   },
 
   palaceEmoji: {
-    fontSize: 104,
+    fontSize: REVIEW_FONT_SIZES.palaceEmoji,
     textAlign: 'center',
   },
 
+  palaceEmojiCompact: {
+    fontSize: REVIEW_FONT_SIZES.palaceEmojiCompact,
+    lineHeight: 82,
+  },
+
   introHeading: {
-    fontSize: 34,
+    fontSize: REVIEW_FONT_SIZES.introHeading,
     lineHeight: 40,
     fontWeight: '900',
     textAlign: 'center',
   },
 
+  introHeadingCompact: {
+    fontSize: REVIEW_FONT_SIZES.introHeadingCompact,
+    lineHeight: 34,
+  },
+
   stationCountPill: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radiusTokens.pill,
+  },
+
+  stationCountPillCompact: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
 
   stationCountText: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: '800',
     textAlign: 'center',
+  },
+
+  stationCountTextCompact: {
+    fontSize: fontSizes.sm,
+    lineHeight: 20,
   },
 
   introGuideSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 28,
+    marginTop: spacing.xl,
+  },
+
+  introGuideSectionCompact: {
+    marginTop: spacing.sm,
   },
 
   walkingGuideSection: {
-    marginTop: 34,
+    marginTop: spacing.xl,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+  },
+
+  walkingGuideSectionCompact: {
+    marginTop: spacing.sm,
   },
 
   guideSpeechBubble: {
-    marginTop: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 24,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radiusTokens.xl,
     backgroundColor: REVIEW_COLORS.overlayBubble,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.65)',
-    shadowColor: '#000',
+    borderColor: REVIEW_COLORS.subtleStroke,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -1944,7 +2127,7 @@ const styles = StyleSheet.create({
   },
 
   guideSpeechBubbleText: {
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
     textAlign: 'center',
@@ -1952,22 +2135,32 @@ const styles = StyleSheet.create({
 
   introButtonSection: {
     alignItems: 'center',
-    marginTop: 34,
+    marginTop: spacing.xl,
+  },
+
+  introButtonSectionCompact: {
+    marginTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
 
   walkingButtonSection: {
     alignItems: 'center',
-    marginTop: 42,
+    marginTop: spacing.xl,
+  },
+
+  walkingButtonSectionCompact: {
+    marginTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
 
   primaryButtonOuter: {
     width: '86%',
     maxWidth: 340,
-    borderRadius: 32,
+    borderRadius: radiusTokens.xxl,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.white,
     backgroundColor: 'transparent',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 16,
@@ -1978,17 +2171,17 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: '100%',
     minHeight: 64,
-    borderRadius: 29,
+    borderRadius: radiusTokens.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
   },
 
   primaryButtonText: {
-    fontSize: 20,
+    fontSize: fontSizes.lg,
     fontWeight: '900',
     textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.18)',
+    textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -2004,24 +2197,24 @@ const styles = StyleSheet.create({
 
   secondaryButton: {
     minHeight: 56,
-    borderRadius: 26,
+    borderRadius: radiusTokens.xl,
     borderWidth: 2,
     borderColor: REVIEW_COLORS.textDark,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
     backgroundColor: REVIEW_COLORS.overlayLight,
   },
 
   secondaryButtonText: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
   },
 
   progressWrapper: {
-    gap: 8,
-    marginTop: 4,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
 
   progressHeader: {
@@ -2031,32 +2224,45 @@ const styles = StyleSheet.create({
   },
 
   progressLabel: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: '900',
   },
 
   progressValue: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: '900',
   },
 
   progressTrack: {
     height: 16,
-    borderRadius: 999,
+    borderRadius: radiusTokens.pill,
     backgroundColor: REVIEW_COLORS.progressTrack,
     overflow: 'hidden',
   },
 
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radiusTokens.pill,
+  },
+
+  walkingScrollContent: {
+    flexGrow: 1,
+  },
+
+  walkingScrollContentCompact: {
+    justifyContent: 'space-between',
   },
 
   walkingContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 54,
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+
+  walkingContentCompact: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
 
   // TILE EXTERIOR
@@ -2065,8 +2271,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: REVIEW_COLORS.iconTileSurface,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.92)',
-    shadowColor: '#000',
+    borderColor: REVIEW_COLORS.strongStroke,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.11,
     shadowRadius: 18,
@@ -2076,14 +2282,14 @@ const styles = StyleSheet.create({
   stationIconTileLarge: {
     width: 170,
     height: 170,
-    borderRadius: 42,
+    borderRadius: REVIEW_RADII.stationTileLarge,
   },
 
   stationIconTileMedium: {
     width: 112,
     height: 112,
-    borderRadius: 32,
-    marginBottom: 14,
+    borderRadius: radiusTokens.xxl,
+    marginBottom: spacing.md,
   },
 
   // SUPERFICIE INTERIOR
@@ -2097,13 +2303,13 @@ const styles = StyleSheet.create({
   stationIconEmojiSurfaceLarge: {
     width: 122,
     height: 122,
-    borderRadius: 24,
+    borderRadius: radiusTokens.xl,
   },
 
   stationIconEmojiSurfaceMedium: {
     width: 78,
     height: 78,
-    borderRadius: 20,
+    borderRadius: radiusTokens.lg,
   },
 
   stationIconEmoji: {
@@ -2114,37 +2320,47 @@ const styles = StyleSheet.create({
   },
 
   stationIconEmojiLarge: {
-    fontSize: 86,
+    fontSize: REVIEW_FONT_SIZES.stationEmojiLarge,
     lineHeight: 104,
   },
 
   stationIconEmojiMedium: {
-    fontSize: 58,
+    fontSize: REVIEW_FONT_SIZES.stationEmojiMedium,
     lineHeight: 72,
   },
 
   stationName: {
-    fontSize: 36,
+    fontSize: fontSizes.display,
     lineHeight: 40,
     fontWeight: '900',
     textAlign: 'center',
   },
 
+  stationNameCompact: {
+    fontSize: fontSizes.xxl,
+    lineHeight: 34,
+  },
+
   walkingPrompt: {
-    fontSize: 22,
+    fontSize: fontSizes.xl,
     lineHeight: 30,
     fontWeight: '800',
     textAlign: 'center',
   },
 
+  walkingPromptCompact: {
+    fontSize: fontSizes.lg,
+    lineHeight: 26,
+  },
+
   questionHeader: {
     alignItems: 'center',
-    marginTop: 24,
-    gap: 8,
+    marginTop: spacing.xs,
+    gap: spacing.sm,
   },
 
   questionTitle: {
-    fontSize: 32,
+    fontSize: fontSizes.xxl,
     lineHeight: 38,
     fontWeight: '900',
     textAlign: 'center',
@@ -2152,7 +2368,7 @@ const styles = StyleSheet.create({
 
   questionSubtitle: {
     maxWidth: 320,
-    fontSize: 16,
+    fontSize: fontSizes.md,
     lineHeight: 22,
     fontWeight: '800',
     textAlign: 'center',
@@ -2160,25 +2376,25 @@ const styles = StyleSheet.create({
   },
 
   questionCard: {
-    marginTop: 28,
-    borderRadius: 34,
-    padding: 22,
+    marginTop: spacing.xl,
+    borderRadius: radiusTokens.xs,
+    padding: spacing.lg,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.54)',
+    borderColor: REVIEW_COLORS.subtleStroke,
   },
 
   questionStationName: {
-    fontSize: 24,
+    fontSize: fontSizes.xl,
     lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   timerSection: {
-    marginTop: 18,
+    marginTop: spacing.lg,
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
   },
 
   timerWrapper: {
@@ -2191,33 +2407,33 @@ const styles = StyleSheet.create({
   timerText: {
     position: 'absolute',
     color: REVIEW_COLORS.textDark,
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     fontWeight: '900',
   },
 
   timerHint: {
     color: REVIEW_COLORS.textMuted,
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     fontWeight: '800',
   },
 
   optionsGrid: {
     width: '100%',
-    marginTop: 24,
-    gap: 13,
+    marginTop: spacing.xs,
+    gap: spacing.md,
     alignItems: 'center',
   },
 
   optionButton: {
     width: '84%',
     height: 50,
-    borderRadius: 25,
+    borderRadius: radiusTokens.xl,
     borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.08,
     shadowRadius: 9,
@@ -2231,46 +2447,46 @@ const styles = StyleSheet.create({
   optionButtonText: {
     width: '100%',
     color: REVIEW_COLORS.white,
-    fontSize: 17,
+    fontSize: fontSizes.md,
     lineHeight: 22,
     fontWeight: '900',
     textAlign: 'center',
     textAlignVertical: 'center',
     includeFontPadding: false,
-    textShadowColor: 'rgba(0,0,0,0.18)',
+    textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
 
   freeTextSection: {
-    marginTop: 26,
+    marginTop: spacing.lg,
     alignItems: 'center',
-    gap: 18,
+    gap: spacing.lg,
   },
 
   answerInput: {
     width: '100%',
     minHeight: 58,
-    borderRadius: 22,
-    paddingHorizontal: 18,
+    borderRadius: radiusTokens.xl,
+    paddingHorizontal: spacing.lg,
     color: REVIEW_COLORS.textDark,
     borderWidth: 3,
-    fontSize: 17,
+    fontSize: fontSizes.md,
     fontWeight: '800',
   },
 
   giveUpButton: {
     alignSelf: 'center',
-    marginTop: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.44)',
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radiusTokens.pill,
+    backgroundColor: REVIEW_COLORS.overlayMedium,
   },
 
   giveUpButtonText: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '900',
     opacity: 0.78,
   },
@@ -2283,26 +2499,26 @@ const styles = StyleSheet.create({
   confettiPiece: {
     position: 'absolute',
     top: -28,
-    borderRadius: 3,
+    borderRadius: radiusTokens.xs,
   },
 
   correctRevealContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: spacing.md,
   },
 
   checkmarkCircle: {
     width: 118,
     height: 118,
-    borderRadius: 59,
+    borderRadius: radiusTokens.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: REVIEW_COLORS.success,
     borderWidth: 5,
     borderColor: REVIEW_COLORS.white,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -2311,21 +2527,21 @@ const styles = StyleSheet.create({
 
   checkmarkText: {
     color: REVIEW_COLORS.white,
-    fontSize: 72,
+    fontSize: REVIEW_FONT_SIZES.checkmark,
     lineHeight: 78,
     fontWeight: '900',
   },
 
   floatingXp: {
     color: REVIEW_COLORS.successDark,
-    fontSize: 32,
+    fontSize: fontSizes.xxl,
     lineHeight: 38,
     fontWeight: '900',
   },
 
   correctRevealTitle: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 34,
+    fontSize: REVIEW_FONT_SIZES.introHeading,
     lineHeight: 40,
     fontWeight: '900',
     textAlign: 'center',
@@ -2333,7 +2549,7 @@ const styles = StyleSheet.create({
 
   correctRevealSubtitle: {
     color: REVIEW_COLORS.textMuted,
-    fontSize: 17,
+    fontSize: fontSizes.md,
     lineHeight: 23,
     fontWeight: '800',
     textAlign: 'center',
@@ -2341,20 +2557,20 @@ const styles = StyleSheet.create({
 
   revealButtonSection: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 
   incorrectRevealContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 28,
+    gap: spacing.xl,
   },
 
   almostCard: {
     width: '100%',
-    borderRadius: 32,
-    padding: 24,
+    borderRadius: radiusTokens.xxl,
+    padding: spacing.lg,
     alignItems: 'center',
     backgroundColor: REVIEW_COLORS.orangeSoft,
     borderWidth: 3,
@@ -2362,22 +2578,22 @@ const styles = StyleSheet.create({
   },
 
   almostEmoji: {
-    fontSize: 46,
-    marginBottom: 8,
+    fontSize: REVIEW_FONT_SIZES.almostEmoji,
+    marginBottom: spacing.sm,
   },
 
   almostTitle: {
     color: REVIEW_COLORS.warningDark,
-    fontSize: 32,
+    fontSize: fontSizes.xxl,
     lineHeight: 38,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   almostMessage: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     color: REVIEW_COLORS.textDark,
-    fontSize: 16,
+    fontSize: fontSizes.md,
     lineHeight: 22,
     fontWeight: '800',
     textAlign: 'center',
@@ -2385,18 +2601,18 @@ const styles = StyleSheet.create({
   },
 
   answerWas: {
-    marginTop: 18,
+    marginTop: spacing.lg,
     color: REVIEW_COLORS.warningDark,
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     lineHeight: 20,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   correctAnswerText: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: REVIEW_COLORS.textDark,
-    fontSize: 26,
+    fontSize: fontSizes.xxl,
     lineHeight: 32,
     fontWeight: '900',
     textAlign: 'center',
@@ -2405,31 +2621,31 @@ const styles = StyleSheet.create({
   encouragementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
 
   encouragementBubble: {
     maxWidth: 190,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 22,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: radiusTokens.xl,
     backgroundColor: REVIEW_COLORS.overlayBubble,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.65)',
+    borderColor: REVIEW_COLORS.subtleStroke,
   },
 
   encouragementBubbleText: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     lineHeight: 20,
     fontWeight: '900',
   },
 
   completeScreen: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 18,
-    paddingBottom: 34,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
   },
 
   fireworksLayer: {
@@ -2446,7 +2662,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: spacing.md,
   },
 
   perfectBadgeWrapper: {
@@ -2454,29 +2670,29 @@ const styles = StyleSheet.create({
     minHeight: 82,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
 
   perfectSparkle: {
     position: 'absolute',
     color: REVIEW_COLORS.white,
-    textShadowColor: 'rgba(0,0,0,0.16)',
+    textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
 
   perfectBadge: {
     minHeight: 58,
-    borderRadius: 24,
-    paddingHorizontal: 18,
+    borderRadius: radiusTokens.xl,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: REVIEW_COLORS.greenSoft,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.success,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -2484,23 +2700,23 @@ const styles = StyleSheet.create({
   },
 
   perfectBadgeIcon: {
-    fontSize: 22,
+    fontSize: fontSizes.xl,
   },
 
   perfectBadgeText: {
     color: REVIEW_COLORS.successDark,
-    fontSize: 19,
+    fontSize: fontSizes.lg,
     lineHeight: 24,
     fontWeight: '900',
   },
 
   completeEmoji: {
-    fontSize: 82,
+    fontSize: REVIEW_FONT_SIZES.completeEmoji,
   },
 
   completeTitle: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 32,
+    fontSize: fontSizes.xxl,
     lineHeight: 38,
     fontWeight: '900',
     textAlign: 'center',
@@ -2508,14 +2724,14 @@ const styles = StyleSheet.create({
 
   completeScoreCard: {
     width: '100%',
-    borderRadius: 32,
-    paddingHorizontal: 22,
-    paddingVertical: 18,
+    borderRadius: radiusTokens.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
     backgroundColor: REVIEW_COLORS.overlayStrong,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.78)',
-    shadowColor: '#000',
+    borderColor: REVIEW_COLORS.strongStroke,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 14,
@@ -2524,30 +2740,30 @@ const styles = StyleSheet.create({
 
   completeScoreLabel: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 28,
+    fontSize: fontSizes.xxl,
     lineHeight: 34,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   completeStars: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     color: REVIEW_COLORS.warning,
-    fontSize: 30,
+    fontSize: fontSizes.xxl,
     lineHeight: 36,
     fontWeight: '900',
     textAlign: 'center',
     letterSpacing: 1,
-    textShadowColor: 'rgba(0,0,0,0.10)',
+    textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
 
   completeScoreHint: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     maxWidth: 290,
     color: REVIEW_COLORS.textMuted,
-    fontSize: 15,
+    fontSize: fontSizes.sm,
     lineHeight: 21,
     fontWeight: '800',
     textAlign: 'center',
@@ -2555,10 +2771,10 @@ const styles = StyleSheet.create({
 
   completeXpCard: {
     minWidth: 220,
-    marginTop: 6,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 28,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radiusTokens.xl,
     backgroundColor: REVIEW_COLORS.greenSoft,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.success,
@@ -2567,7 +2783,7 @@ const styles = StyleSheet.create({
 
   completeXpLabel: {
     color: REVIEW_COLORS.successDark,
-    fontSize: 13,
+    fontSize: fontSizes.xs,
     lineHeight: 18,
     fontWeight: '900',
     opacity: 0.82,
@@ -2576,31 +2792,31 @@ const styles = StyleSheet.create({
   },
 
   completeXpText: {
-    marginTop: 2,
+    marginTop: spacing.xxs,
     color: REVIEW_COLORS.successDark,
-    fontSize: 30,
+    fontSize: fontSizes.xxl,
     lineHeight: 36,
     fontWeight: '900',
   },
 
   completeButtonStack: {
     alignItems: 'center',
-    gap: 14,
-    marginBottom: 2,
+    gap: spacing.md,
+    marginBottom: spacing.xxs,
   },
 
   summarySecondaryButton: {
     width: '86%',
     maxWidth: 340,
     minHeight: 58,
-    borderRadius: 29,
+    borderRadius: radiusTokens.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 22,
+    paddingHorizontal: spacing.lg,
     backgroundColor: REVIEW_COLORS.overlayBubble,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.white,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -2614,7 +2830,7 @@ const styles = StyleSheet.create({
 
   summarySecondaryButtonText: {
     color: REVIEW_COLORS.textDark,
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     lineHeight: 24,
     fontWeight: '900',
     textAlign: 'center',

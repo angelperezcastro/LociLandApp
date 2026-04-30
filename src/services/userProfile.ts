@@ -47,25 +47,23 @@ function getInitialUserLevel() {
 }
 
 function normalizeUserProfile(rawProfile: UserProfile): UserProfile {
+  const resolvedLevel =
+    typeof rawProfile.level === 'number' && Number.isFinite(rawProfile.level)
+      ? rawProfile.level
+      : getInitialUserLevel();
+
+  const resolvedBestStreak =
+    typeof rawProfile.bestStreak === 'number' &&
+    Number.isFinite(rawProfile.bestStreak)
+      ? rawProfile.bestStreak
+      : rawProfile.streak;
+
   return {
     ...rawProfile,
     ageGroup: normalizeAgeGroup(rawProfile.ageGroup),
-    level:
-      typeof rawProfile.level === 'number' && Number.isFinite(rawProfile.level)
-        ? rawProfile.level
-        : getInitialUserLevel(),
-    levelTitle:
-      rawProfile.levelTitle ??
-      getLevelTitle(
-        typeof rawProfile.level === 'number' && Number.isFinite(rawProfile.level)
-          ? rawProfile.level
-          : getInitialUserLevel(),
-      ),
-    bestStreak:
-      typeof rawProfile.bestStreak === 'number' &&
-      Number.isFinite(rawProfile.bestStreak)
-        ? rawProfile.bestStreak
-        : rawProfile.streak,
+    level: resolvedLevel,
+    levelTitle: rawProfile.levelTitle ?? getLevelTitle(resolvedLevel),
+    bestStreak: resolvedBestStreak,
   };
 }
 
@@ -116,8 +114,7 @@ export async function ensureUserProfile(
         ? existing.level
         : getInitialUserLevel();
 
-    const resolvedLevelTitle =
-      existing.levelTitle ?? getLevelTitle(resolvedLevel);
+    const resolvedLevelTitle = existing.levelTitle ?? getLevelTitle(resolvedLevel);
 
     const resolvedBestStreak =
       typeof existing.bestStreak === 'number' &&

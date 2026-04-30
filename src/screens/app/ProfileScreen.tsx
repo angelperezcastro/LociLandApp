@@ -13,20 +13,27 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-import { resetPassword, signOut } from '../../services/auth';
+import {
+  deleteCurrentUserAccount,
+  resetPassword,
+  signOut,
+} from '../../services/auth';
 import { updateUserProfile } from '../../services/userProfile';
 import { useUserStore } from '../../store/useUserStore';
-import { EmptyState } from '../../components/feedback';
 import {
   colors,
-  fontFamilies,
   fontSizes,
   radius,
   shadows,
   spacing,
   typography,
 } from '../../theme';
-import type { AvatarEmoji } from '../../types/user';
+import type { AgeGroup, AvatarEmoji } from '../../types/user';
+import {
+  getAgeGroupLabel,
+  getAgeGroupReviewDescription,
+  normalizeAgeGroup,
+} from '../../utils/ageGroup';
 import {
   getLevelTitle,
   getProgressPercent,
@@ -45,14 +52,58 @@ const AVATAR_OPTIONS: AvatarEmoji[] = [
   '🐬',
 ];
 
+const AGE_GROUP_OPTIONS: Array<{
+  value: AgeGroup;
+  title: string;
+  subtitle: string;
+  emoji: string;
+}> = [
+  {
+    value: '6-9',
+    title: '6–9 years',
+    subtitle: 'Multiple-choice review mode',
+    emoji: '🧩',
+  },
+  {
+    value: '10-14',
+    title: '10–14 years',
+    subtitle: 'Free-text review mode',
+    emoji: '✍️',
+  },
+];
+
+const PROFILE_SIZES = {
+  heroAvatar: 112,
+  avatarEmoji: 52,
+  avatarOptionEmoji: 28,
+  achievementIconContainer: 64,
+  achievementArrowContainer: 52,
+  minSettingRowHeight: 60,
+  minPrimaryActionHeight: 54,
+} as const;
+
 function chunkArray<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
 
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
   }
 
   return chunks;
+}
+
+function isRecentLoginRequired(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const code = 'code' in error ? String(error.code) : '';
+  const message = 'message' in error ? String(error.message) : '';
+
+  return (
+    code === 'auth/requires-recent-login' ||
+    message.toLowerCase().includes('requires-recent-login')
+  );
 }
 
 export function ProfileScreen() {
@@ -65,16 +116,27 @@ export function ProfileScreen() {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [ageGroupLoading, setAgeGroupLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [ageModalVisible, setAgeModalVisible] = useState(false);
 
   const currentLevel = profile?.level ?? 1;
   const currentXp = profile?.xp ?? 0;
   const currentStreak = profile?.streak ?? 0;
   const levelTitle = profile?.levelTitle ?? getLevelTitle(currentLevel);
+  const currentAgeGroup = normalizeAgeGroup(profile?.ageGroup);
 
   const nextLevelXp = getXpForNextLevel(currentLevel);
   const xpRemaining = getXpRemainingForNextLevel(currentXp);
   const xpProgressPercent = getProgressPercent(currentXp);
+
+  const isBusy =
+    logoutLoading ||
+    passwordLoading ||
+    avatarLoading ||
+    ageGroupLoading ||
+    deleteLoading;
 
   const stats = useMemo(
     () => ({
@@ -86,7 +148,6 @@ export function ProfileScreen() {
   );
 
   const avatarRows = useMemo(() => chunkArray(AVATAR_OPTIONS, 4), []);
-  const isBusy = avatarLoading || logoutLoading || passwordLoading;
 
   const handleOpenAchievements = () => {
     navigation.navigate('Achievements');
@@ -111,6 +172,42 @@ export function ProfileScreen() {
         },
       },
     ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This will permanently remove your sign-in account from LociLand. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleteLoading(true);
+              await deleteCurrentUserAccount();
+              clearUser();
+            } catch (error) {
+              if (isRecentLoginRequired(error)) {
+                Alert.alert(
+                  'Log in again first',
+                  'For security, Firebase needs a recent login before deleting an account. Log out, log back in, and try again.',
+                );
+                return;
+              }
+
+              Alert.alert(
+                'Error',
+                'Could not delete the account. Please try again.',
+              );
+            } finally {
+              setDeleteLoading(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleChangePassword = async () => {
@@ -141,12 +238,10 @@ export function ProfileScreen() {
     try {
       setAvatarLoading(true);
       await updateUserProfile(profile.uid, { avatarEmoji });
-
       setUserProfile({
         ...profile,
         avatarEmoji,
       });
-
       setAvatarModalVisible(false);
     } catch {
       Alert.alert('Error', 'Could not update your avatar. Please try again.');
@@ -155,16 +250,33 @@ export function ProfileScreen() {
     }
   };
 
+  const handleChangeAgeGroup = async (ageGroup: AgeGroup) => {
+    if (!profile?.uid) {
+      return;
+    }
+
+    const normalizedAgeGroup = normalizeAgeGroup(ageGroup);
+
+    try {
+      setAgeGroupLoading(true);
+      await updateUserProfile(profile.uid, { ageGroup: normalizedAgeGroup });
+      setUserProfile({
+        ...profile,
+        ageGroup: normalizedAgeGroup,
+      });
+      setAgeModalVisible(false);
+    } catch {
+      Alert.alert('Error', 'Could not update the age group. Please try again.');
+    } finally {
+      setAgeGroupLoading(false);
+    }
+  };
+
   if (!profile) {
     return (
-      <View style={styles.container}>
-        <View style={styles.stateShell}>
-          <EmptyState
-            icon="👤"
-            title="Profile not ready"
-            message="Log in again if your profile does not appear in a moment."
-          />
-        </View>
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator color={colors.accent} size="large" />
+        <Text style={styles.loadingText}>Loading your profile...</Text>
       </View>
     );
   }
@@ -191,7 +303,9 @@ export function ProfileScreen() {
           </View>
 
           <View style={styles.streakPill}>
-            <Text style={styles.streakText}>🔥 {currentStreak} days in a row</Text>
+            <Text style={styles.streakText}>
+              🔥 {currentStreak} days in a row
+            </Text>
           </View>
         </View>
 
@@ -229,8 +343,10 @@ export function ProfileScreen() {
               pressed ? styles.achievementsFloatingCardPressed : null,
             ]}
           >
-            <View style={styles.achievementsIconContainer}>
-              <Text style={styles.achievementsIcon}>🏆</Text>
+            <View style={styles.achievementsFloatingTop}>
+              <View style={styles.achievementsIconContainer}>
+                <Text style={styles.achievementsIcon}>🏆</Text>
+              </View>
             </View>
 
             <View style={styles.achievementsFloatingContent}>
@@ -242,8 +358,10 @@ export function ProfileScreen() {
               </Text>
             </View>
 
-            <View style={styles.achievementsArrowContainer}>
-              <Text style={styles.achievementsArrow}>→</Text>
+            <View style={styles.achievementsFloatingFooter}>
+              <View style={styles.achievementsArrowContainer}>
+                <Text style={styles.achievementsArrow}>→</Text>
+              </View>
             </View>
           </Pressable>
         </View>
@@ -252,9 +370,20 @@ export function ProfileScreen() {
           <Text style={styles.sectionTitle}>Stats</Text>
 
           <View style={styles.statsRow}>
-            <StatCard value={stats.totalPalaces} label="Palaces" />
-            <StatCard value={stats.totalStations} label="Stations" />
-            <StatCard value={stats.totalReviews} label="Reviews" />
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.totalPalaces}</Text>
+              <Text style={styles.statLabel}>Palaces</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.totalStations}</Text>
+              <Text style={styles.statLabel}>Stations</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.totalReviews}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
+            </View>
           </View>
         </View>
 
@@ -268,6 +397,26 @@ export function ProfileScreen() {
           >
             <Text style={styles.settingLabel}>Change avatar</Text>
             <Text style={styles.settingValue}>{profile.avatarEmoji ?? '🦊'}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setAgeModalVisible(true)}
+            disabled={isBusy}
+            style={styles.settingRow}
+          >
+            <View style={styles.settingTextGroup}>
+              <Text style={styles.settingLabel}>Change age group</Text>
+              <Text style={styles.settingHelper}>
+                {getAgeGroupReviewDescription(currentAgeGroup)}
+              </Text>
+            </View>
+            {ageGroupLoading ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <Text style={styles.settingAction}>
+                {getAgeGroupLabel(currentAgeGroup)}
+              </Text>
+            )}
           </Pressable>
 
           <Pressable
@@ -293,6 +442,24 @@ export function ProfileScreen() {
               <ActivityIndicator color={colors.emphasis} />
             ) : (
               <Text style={styles.logoutValue}>→</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={handleDeleteAccount}
+            disabled={isBusy}
+            style={[styles.settingRow, styles.deleteAccountRow]}
+          >
+            <View style={styles.settingTextGroup}>
+              <Text style={styles.deleteAccountLabel}>Delete account</Text>
+              <Text style={styles.deleteAccountHelper}>
+                Permanently remove this sign-in account
+              </Text>
+            </View>
+            {deleteLoading ? (
+              <ActivityIndicator color={colors.emphasis} />
+            ) : (
+              <Text style={styles.deleteAccountValue}>✕</Text>
             )}
           </Pressable>
         </View>
@@ -324,7 +491,9 @@ export function ProfileScreen() {
                           isSelected ? styles.avatarOptionSelected : null,
                         ]}
                       >
-                        <Text style={styles.avatarOptionEmoji}>{avatarEmoji}</Text>
+                        <Text style={styles.avatarOptionEmoji}>
+                          {avatarEmoji}
+                        </Text>
                       </Pressable>
                     );
                   })}
@@ -342,16 +511,62 @@ export function ProfileScreen() {
           </View>
         </View>
       </Modal>
-    </>
-  );
-}
 
-function StatCard({ value, label }: { value: number; label: string }) {
-  return (
-    <View style={styles.statCard}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+      <Modal
+        visible={ageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAgeModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Choose age group</Text>
+            <Text style={styles.modalSubtitle}>
+              This changes how review questions work.
+            </Text>
+
+            <View style={styles.ageOptionsWrapper}>
+              {AGE_GROUP_OPTIONS.map((option) => {
+                const isSelected = option.value === currentAgeGroup;
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => handleChangeAgeGroup(option.value)}
+                    disabled={ageGroupLoading}
+                    style={[
+                      styles.ageOptionCard,
+                      isSelected ? styles.ageOptionCardSelected : null,
+                    ]}
+                  >
+                    <View style={styles.ageOptionIconCircle}>
+                      <Text style={styles.ageOptionEmoji}>{option.emoji}</Text>
+                    </View>
+                    <View style={styles.ageOptionTextGroup}>
+                      <Text style={styles.ageOptionTitle}>{option.title}</Text>
+                      <Text style={styles.ageOptionSubtitle}>
+                        {option.subtitle}
+                      </Text>
+                    </View>
+                    <Text style={styles.ageOptionCheckmark}>
+                      {isSelected ? '✓' : ''}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              onPress={() => setAgeModalVisible(false)}
+              disabled={ageGroupLoading}
+              style={styles.closeModalButton}
+            >
+              <Text style={styles.closeModalButtonText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -360,28 +575,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  stateShell: {
-    flex: 1,
+  loadingContainer: {
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
     padding: spacing.lg,
+  },
+  loadingText: {
+    ...typography.bodyStrong,
+    color: colors.textSoft,
+    textAlign: 'center',
   },
   contentContainer: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxxl * 2,
+    paddingBottom: spacing.xxxl,
   },
   heroCard: {
-    alignItems: 'center',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     padding: spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${colors.text}12`,
     marginBottom: spacing.lg,
     ...shadows.card,
   },
   avatarCircle: {
-    width: 112,
-    height: 112,
+    width: PROFILE_SIZES.heroAvatar,
+    height: PROFILE_SIZES.heroAvatar,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -389,9 +610,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatar: {
-    ...typography.display,
-    fontSize: fontSizes.display + fontSizes.md,
-    lineHeight: 58,
+    fontSize: PROFILE_SIZES.avatarEmoji,
   },
   name: {
     ...typography.h1,
@@ -401,12 +620,12 @@ const styles = StyleSheet.create({
   },
   email: {
     ...typography.caption,
-    color: colors.textSoft,
+    color: `${colors.text}B3`,
     marginBottom: spacing.md,
   },
   levelBadge: {
-    borderRadius: radius.lg,
     backgroundColor: colors.accent,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
@@ -414,26 +633,26 @@ const styles = StyleSheet.create({
   levelBadgeText: {
     ...typography.caption,
     color: colors.white,
+    fontWeight: '900',
     textAlign: 'center',
-    fontFamily: fontFamilies.bodyBold,
   },
   streakPill: {
-    borderRadius: radius.lg,
     backgroundColor: colors.secondary,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   streakText: {
     ...typography.caption,
     color: colors.white,
-    fontFamily: fontFamilies.bodyBold,
+    fontWeight: '900',
   },
   sectionCard: {
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: `${colors.text}12`,
     marginBottom: spacing.lg,
     ...shadows.soft,
   },
@@ -444,13 +663,13 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     ...typography.caption,
-    color: colors.textSoft,
+    color: `${colors.text}B3`,
     marginBottom: spacing.md,
   },
   progressTrack: {
     height: 18,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: `${colors.text}14`,
     overflow: 'hidden',
   },
   progressFill: {
@@ -460,30 +679,31 @@ const styles = StyleSheet.create({
   },
   achievementsFloatingCard: {
     marginTop: spacing.sm,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     padding: spacing.lg,
-    ...shadows.card,
+    borderWidth: 1,
+    borderColor: `${colors.text}10`,
+    ...shadows.elevated,
   },
   achievementsFloatingCardPressed: {
     transform: [{ scale: 0.985 }],
     opacity: 0.92,
   },
-  achievementsIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  achievementsFloatingTop: {
     marginBottom: spacing.md,
   },
+  achievementsIconContainer: {
+    width: PROFILE_SIZES.achievementIconContainer,
+    height: PROFILE_SIZES.achievementIconContainer,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: `${colors.text}10`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   achievementsIcon: {
-    ...typography.display,
     fontSize: fontSizes.display,
   },
   achievementsFloatingContent: {
@@ -496,15 +716,19 @@ const styles = StyleSheet.create({
   },
   achievementsFloatingSubtitle: {
     ...typography.caption,
-    color: colors.textSoft,
+    fontWeight: '700',
+    color: `${colors.text}B0`,
+  },
+  achievementsFloatingFooter: {
+    alignItems: 'flex-start',
   },
   achievementsArrowContainer: {
-    width: 52,
-    height: 52,
+    width: PROFILE_SIZES.achievementArrowContainer,
+    height: PROFILE_SIZES.achievementArrowContainer,
     borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
+    borderColor: `${colors.text}10`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -520,8 +744,8 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minHeight: 140,
-    borderRadius: radius.xl,
     backgroundColor: colors.bg,
+    borderRadius: radius.lg,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
@@ -535,43 +759,71 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.small,
     width: '100%',
-    color: colors.textSoft,
+    fontWeight: '800',
+    color: colors.text,
+    opacity: 0.85,
     textAlign: 'center',
-    fontFamily: fontFamilies.bodyBold,
   },
   settingRow: {
-    minHeight: 60,
+    minHeight: PROFILE_SIZES.minSettingRowHeight,
     borderRadius: radius.lg,
     backgroundColor: colors.bg,
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
   },
   logoutRow: {
-    marginBottom: spacing.none,
+    marginBottom: spacing.md,
+  },
+  settingTextGroup: {
+    flex: 1,
+    gap: spacing.xs,
   },
   settingLabel: {
-    ...typography.caption,
+    ...typography.bodyStrong,
     color: colors.text,
-    fontFamily: fontFamilies.bodyBold,
+  },
+  settingHelper: {
+    ...typography.small,
+    color: colors.textSoft,
   },
   settingValue: {
-    ...typography.h2,
+    fontSize: fontSizes.xl,
   },
   settingAction: {
     ...typography.caption,
+    fontWeight: '900',
     color: colors.accent,
-    fontFamily: fontFamilies.bodyBold,
+    textAlign: 'right',
   },
   logoutLabel: {
-    ...typography.caption,
+    ...typography.bodyStrong,
     color: colors.emphasis,
-    fontFamily: fontFamilies.bodyBold,
   },
   logoutValue: {
-    ...typography.h3,
+    ...typography.h2,
+    color: colors.emphasis,
+  },
+  deleteAccountRow: {
+    backgroundColor: colors.emphasisSoft,
+    borderWidth: 1,
+    borderColor: `${colors.emphasis}55`,
+    marginBottom: spacing.none,
+  },
+  deleteAccountLabel: {
+    ...typography.bodyStrong,
+    color: colors.emphasis,
+  },
+  deleteAccountHelper: {
+    ...typography.small,
+    color: colors.textSoft,
+  },
+  deleteAccountValue: {
+    ...typography.h2,
     color: colors.emphasis,
   },
   modalBackdrop: {
@@ -583,17 +835,24 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: `${colors.text}12`,
+    ...shadows.card,
   },
   modalTitle: {
     ...typography.h2,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
     textAlign: 'center',
+  },
+  modalSubtitle: {
+    ...typography.caption,
+    color: colors.textSoft,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
   },
   avatarGrid: {
     marginBottom: spacing.lg,
@@ -607,9 +866,9 @@ const styles = StyleSheet.create({
     width: '22%',
     aspectRatio: 1,
     borderRadius: radius.lg,
-    borderWidth: 2,
-    borderColor: colors.border,
     backgroundColor: colors.bg,
+    borderWidth: 2,
+    borderColor: `${colors.text}14`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -618,11 +877,60 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   avatarOptionEmoji: {
-    ...typography.h1,
-    fontSize: fontSizes.xxl,
+    fontSize: PROFILE_SIZES.avatarOptionEmoji,
+  },
+  ageOptionsWrapper: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  ageOptionCard: {
+    minHeight: 88,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  ageOptionCardSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
+  },
+  ageOptionIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  ageOptionEmoji: {
+    fontSize: fontSizes.xl,
+  },
+  ageOptionTextGroup: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  ageOptionTitle: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  ageOptionSubtitle: {
+    ...typography.caption,
+    color: colors.textSoft,
+  },
+  ageOptionCheckmark: {
+    ...typography.h2,
+    color: colors.accent,
+    minWidth: 24,
+    textAlign: 'center',
   },
   closeModalButton: {
-    minHeight: 54,
+    minHeight: PROFILE_SIZES.minPrimaryActionHeight,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
