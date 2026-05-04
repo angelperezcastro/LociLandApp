@@ -1,10 +1,10 @@
+// src/services/reviewScreenDataService.ts
+
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  query,
-  where,
 } from 'firebase/firestore';
 
 import { colors } from '../theme';
@@ -56,7 +56,7 @@ const readNumber = (value: unknown, fallback: number): number => {
 
 const mapPalace = (
   palaceId: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): ReviewScreenPalace => {
   return {
     id: palaceId,
@@ -139,22 +139,6 @@ const getStationsFromUserPalaceSubcollection = async (
   );
 };
 
-const getStationsFromGlobalCollection = async (
-  palaceId: string,
-): Promise<ReviewScreenStation[]> => {
-  const stationsRef = collection(db, 'stations');
-  const stationsQuery = query(stationsRef, where('palaceId', '==', palaceId));
-  const snapshot = await getDocs(stationsQuery);
-
-  return snapshot.docs.map((stationDoc, index) =>
-    mapStation(
-      stationDoc.id,
-      stationDoc.data() as Record<string, unknown>,
-      index,
-    ),
-  );
-};
-
 export const getReviewScreenData = async (
   palaceId: string,
 ): Promise<ReviewScreenData> => {
@@ -180,16 +164,18 @@ export const getReviewScreenData = async (
     palaceSnapshot.data() as Record<string, unknown>,
   );
 
-  let stations = await getStationsFromUserPalaceSubcollection(
+  const stations = await getStationsFromUserPalaceSubcollection(
     currentUserId,
     palaceId,
   );
 
-  if (stations.length === 0) {
-    stations = await getStationsFromGlobalCollection(palaceId);
-  }
-
   const sortedStations = sortStations(stations);
+
+  if (sortedStations.length < 2) {
+    throw new Error(
+      'This palace needs at least 2 stations before starting a review.',
+    );
+  }
 
   return {
     palace: {
