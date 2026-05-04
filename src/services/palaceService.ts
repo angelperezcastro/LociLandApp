@@ -54,6 +54,45 @@ const assertValidPalaceName = (name: string) => {
   }
 };
 
+const assertValidTemplateId = (templateId: PalaceTemplateId) => {
+  if (!isPalaceTemplateId(templateId)) {
+    throw new Error(`Invalid palace template id: ${templateId}`);
+  }
+};
+
+/**
+ * Temporary compatibility layer until P0-04 is solved.
+ *
+ * P0-01 correctly blocks direct client-side writes to user XP/level/streak.
+ * Therefore, XP side effects must not make palace creation fail.
+ *
+ * The actual secure XP flow must be handled in P0-04 through a hardened,
+ * idempotent flow, ideally Cloud Functions or stricter xpEvents-based rules.
+ */
+const grantCreatePalaceXPSafely = async (
+  userId: string,
+  palaceId: string,
+  templateId: PalaceTemplateId,
+): Promise<void> => {
+  try {
+    await addXP(userId, XP_REWARDS.CREATE_PALACE, {
+      reason: 'create_palace',
+      eventId: buildXPEventId('create_palace', palaceId),
+      metadata: {
+        palaceId,
+        templateId,
+      },
+    });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn(
+        'XP grant after palace creation was skipped. This is expected until P0-04 is solved:',
+        error,
+      );
+    }
+  }
+};
+
 const checkAchievementsSafely = async (
   userId: string,
   palaceId: string,
@@ -66,7 +105,12 @@ const checkAchievementsSafely = async (
       templateId,
     });
   } catch (error) {
-    console.warn('Achievement check after palace creation failed:', error);
+    if (__DEV__) {
+      console.warn(
+        'Achievement check after palace creation was skipped:',
+        error,
+      );
+    }
   }
 };
 
@@ -100,6 +144,7 @@ export const createPalace = async (
 ): Promise<Palace> => {
   assertValidUserId(userId);
   assertValidPalaceName(name);
+  assertValidTemplateId(templateId);
 
   const trimmedName = name.trim();
 
@@ -111,15 +156,7 @@ export const createPalace = async (
     createdAt: serverTimestamp(),
   });
 
-  await addXP(userId, XP_REWARDS.CREATE_PALACE, {
-    reason: 'create_palace',
-    eventId: buildXPEventId('create_palace', docRef.id),
-    metadata: {
-      palaceId: docRef.id,
-      templateId,
-    },
-  });
-
+  await grantCreatePalaceXPSafely(userId, docRef.id, templateId);
   await checkAchievementsSafely(userId, docRef.id, templateId);
 
   const createdSnapshot = await getDoc(docRef);

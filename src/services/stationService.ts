@@ -61,6 +61,26 @@ const assertStationId = (stationId: string) => {
   }
 };
 
+const assertValidOrder = (order: number) => {
+  if (!Number.isInteger(order) || order < 0 || order > 20) {
+    throw new Error('stationService: station order must be between 0 and 20.');
+  }
+};
+
+const assertValidImageUri = (imageUri?: string) => {
+  if (!imageUri) {
+    return;
+  }
+
+  if (imageUri.length > 2048) {
+    throw new Error('stationService: imageUri is too long.');
+  }
+
+  if (!imageUri.startsWith('https://firebasestorage.googleapis.com/')) {
+    throw new Error('stationService: imageUri must be a Firebase Storage URL.');
+  }
+};
+
 const mapStationDocument = (
   id: string,
   data: Record<string, unknown>,
@@ -91,7 +111,16 @@ const isProbablyOfflineError = (error: unknown): boolean => {
   );
 };
 
-const awardCreateStationXP = async (
+/**
+ * Temporary compatibility layer until P0-04 is solved.
+ *
+ * P0-01 correctly blocks direct client-side writes to user XP/level/streak.
+ * Therefore, XP side effects must not make station creation fail.
+ *
+ * The secure XP flow must be solved later with hardened xpEvents rules,
+ * idempotent writes, or preferably Cloud Functions.
+ */
+const awardCreateStationXPSafely = async (
   userId: string,
   palaceId: string,
   stationId: string,
@@ -106,11 +135,12 @@ const awardCreateStationXP = async (
       },
     });
   } catch (error) {
-    if (isProbablyOfflineError(error)) {
-      return;
+    if (__DEV__) {
+      console.warn(
+        'XP grant after station creation was skipped. This is expected until P0-04 is solved:',
+        error,
+      );
     }
-
-    throw error;
   }
 };
 
@@ -133,7 +163,12 @@ const checkAchievementsSafely = async ({
       hasImage,
     });
   } catch (error) {
-    console.warn('Achievement check after station creation failed:', error);
+    if (__DEV__) {
+      console.warn(
+        'Achievement check after station creation was skipped:',
+        error,
+      );
+    }
   }
 };
 
@@ -143,16 +178,31 @@ export const createStation = async (
   data: CreateStationData,
 ): Promise<Station> => {
   assertRequiredIds(palaceId, userId);
+  assertValidOrder(data.order);
+  assertValidImageUri(data.imageUri);
 
   const label = data.label.trim();
   const emoji = data.emoji.trim();
+  const memoryText = data.memoryText?.trim() ?? '';
 
   if (!label) {
     throw new Error('stationService: station label is required.');
   }
 
+  if (label.length > 40) {
+    throw new Error('stationService: station label cannot be longer than 40 characters.');
+  }
+
   if (!emoji) {
     throw new Error('stationService: station emoji is required.');
+  }
+
+  if (emoji.length > 16) {
+    throw new Error('stationService: station emoji is too long.');
+  }
+
+  if (memoryText.length > 500) {
+    throw new Error('stationService: memory text cannot be longer than 500 characters.');
   }
 
   const stationRef = doc(getStationsCollectionRef(userId, palaceId));
@@ -165,7 +215,7 @@ export const createStation = async (
     order: data.order,
     emoji,
     label,
-    memoryText: data.memoryText?.trim() ?? '',
+    memoryText,
     ...(data.imageUri ? { imageUri: data.imageUri } : {}),
     createdAt,
   };
@@ -192,7 +242,7 @@ export const createStation = async (
     await batch.commit();
   }
 
-  await awardCreateStationXP(userId, palaceId, stationRef.id);
+  await awardCreateStationXPSafely(userId, palaceId, stationRef.id);
 
   await checkAchievementsSafely({
     userId,
@@ -244,6 +294,7 @@ export const updateStation = async (
   const payload: Record<string, string | number | FieldValue> = {};
 
   if (data.order !== undefined) {
+    assertValidOrder(data.order);
     payload.order = data.order;
   }
 
@@ -252,6 +303,10 @@ export const updateStation = async (
 
     if (!emoji) {
       throw new Error('stationService: station emoji cannot be empty.');
+    }
+
+    if (emoji.length > 16) {
+      throw new Error('stationService: station emoji is too long.');
     }
 
     payload.emoji = emoji;
@@ -264,15 +319,30 @@ export const updateStation = async (
       throw new Error('stationService: station label cannot be empty.');
     }
 
+    if (label.length > 40) {
+      throw new Error('stationService: station label cannot be longer than 40 characters.');
+    }
+
     payload.label = label;
   }
 
   if (data.memoryText !== undefined) {
-    payload.memoryText = data.memoryText.trim();
+    const memoryText = data.memoryText.trim();
+
+    if (memoryText.length > 500) {
+      throw new Error('stationService: memory text cannot be longer than 500 characters.');
+    }
+
+    payload.memoryText = memoryText;
   }
 
   if (data.imageUri !== undefined) {
-    payload.imageUri = data.imageUri === null ? deleteField() : data.imageUri;
+    if (data.imageUri === null) {
+      payload.imageUri = deleteField();
+    } else {
+      assertValidImageUri(data.imageUri);
+      payload.imageUri = data.imageUri;
+    }
   }
 
   if (Object.keys(payload).length === 0) {
@@ -331,6 +401,7 @@ export const reorderStations = async (
 
   orderedIds.forEach((stationId, index) => {
     assertStationId(stationId);
+    assertValidOrder(index);
 
     const stationRef = getStationDocRef(userId, palaceId, stationId);
     batch.update(stationRef, { order: index });

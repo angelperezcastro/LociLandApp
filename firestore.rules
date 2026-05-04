@@ -35,7 +35,7 @@ service cloud.firestore {
     }
 
     function isValidAvatarEmoji(value) {
-      return value is string && value.size() <= 16;
+      return value is string && value.size() > 0 && value.size() <= 16;
     }
 
     function isValidLevelTitle(value) {
@@ -156,6 +156,102 @@ service cloud.firestore {
         && preservesCalculatedUserProfileFields();
     }
 
+    function isValidPalaceTemplateId(value) {
+      return value in [
+        'my-home',
+        'magic-castle',
+        'enchanted-forest',
+        'space-station',
+        'underwater-world',
+        'dinosaur-island'
+      ];
+    }
+
+    function hasOnlyPalaceFields() {
+      return request.resource.data.keys().hasOnly([
+        'userId',
+        'name',
+        'templateId',
+        'stationCount',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function hasRequiredPalaceFields() {
+      return request.resource.data.keys().hasAll([
+        'userId',
+        'name',
+        'templateId',
+        'stationCount',
+        'createdAt'
+      ]);
+    }
+
+    function isValidPalaceName(value) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= 40;
+    }
+
+    function isValidPalaceStationCount(value) {
+      return value is int
+        && value >= 0
+        && value <= 20;
+    }
+
+    function isValidPalaceShape(uid) {
+      return hasOnlyPalaceFields()
+        && hasRequiredPalaceFields()
+        && request.resource.data.userId == uid
+        && isValidPalaceName(request.resource.data.name)
+        && isValidPalaceTemplateId(request.resource.data.templateId)
+        && isValidPalaceStationCount(request.resource.data.stationCount)
+        && request.resource.data.createdAt is timestamp
+        && isOptionalTimestamp('updatedAt');
+    }
+
+    function isValidPalaceCreate(uid) {
+      return isValidPalaceShape(uid)
+        && request.resource.data.stationCount == 0;
+    }
+
+    function onlyEditablePalaceFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name',
+        'stationCount',
+        'updatedAt'
+      ]);
+    }
+
+    function preservesImmutablePalaceFields() {
+      return request.resource.data.userId == resource.data.userId
+        && request.resource.data.templateId == resource.data.templateId
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidPalaceStationCountTransition() {
+      return request.resource.data.stationCount == resource.data.stationCount
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'stationCount',
+            'updatedAt'
+          ])
+          && (
+            request.resource.data.stationCount == resource.data.stationCount + 1
+            || request.resource.data.stationCount == resource.data.stationCount - 1
+          )
+        );
+    }
+
+    function isValidPalaceUpdate(uid) {
+      return isValidPalaceShape(uid)
+        && resource.data.userId == uid
+        && onlyEditablePalaceFieldsChanged()
+        && preservesImmutablePalaceFields()
+        && isValidPalaceStationCountTransition();
+    }
+
     function hasValidOptionalImageUri() {
       return !request.resource.data.keys().hasAny(['imageUri'])
         || (
@@ -192,6 +288,7 @@ service cloud.firestore {
         && request.resource.data.memoryText is string
         && request.resource.data.memoryText.size() <= 500
         && request.resource.data.createdAt is timestamp
+        && isOptionalTimestamp('updatedAt')
         && hasValidOptionalImageUri();
     }
 
@@ -206,7 +303,9 @@ service cloud.firestore {
           'incorrectAnswers',
           'xpEarned',
           'xpAppliedToUser',
-          'status'
+          'isPerfect',
+          'status',
+          'updatedAt'
         ])
         && request.resource.data.userId == uid
         && request.resource.data.palaceId == palaceId
@@ -219,7 +318,12 @@ service cloud.firestore {
         && request.resource.data.incorrectAnswers == 0
         && request.resource.data.xpEarned == 0
         && request.resource.data.xpAppliedToUser == false
-        && request.resource.data.status == 'active';
+        && (
+          !request.resource.data.keys().hasAny(['isPerfect'])
+          || request.resource.data.isPerfect == false
+        )
+        && request.resource.data.status == 'active'
+        && isOptionalTimestamp('updatedAt');
     }
 
     function hasValidReviewXpAppliedFlag() {
@@ -238,7 +342,9 @@ service cloud.firestore {
           'incorrectAnswers',
           'xpEarned',
           'xpAppliedToUser',
-          'status'
+          'isPerfect',
+          'status',
+          'updatedAt'
         ])
         && resource.data.userId == uid
         && resource.data.palaceId == palaceId
@@ -257,6 +363,11 @@ service cloud.firestore {
         && request.resource.data.xpEarned >= 0
         && request.resource.data.xpEarned <= 1000
         && hasValidReviewXpAppliedFlag()
+        && (
+          !request.resource.data.keys().hasAny(['isPerfect'])
+          || request.resource.data.isPerfect is bool
+        )
+        && isOptionalTimestamp('updatedAt')
         && request.resource.data.status in ['active', 'completed']
         && (
           request.resource.data.status == 'active'
@@ -297,29 +408,51 @@ service cloud.firestore {
       allow delete: if false;
 
       match /palaces/{palaceId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && isValidPalaceCreate(uid);
+
+        allow update: if isOwner(uid)
+          && isValidPalaceUpdate(uid);
+
+        allow delete: if isOwner(uid)
+          && resource.data.userId == uid;
 
         match /stations/{stationId} {
           allow read: if isOwner(uid);
-          allow create: if isOwner(uid) && isValidStation(uid, palaceId);
+
+          allow create: if isOwner(uid)
+            && isValidStation(uid, palaceId);
+
           allow update: if isOwner(uid)
             && resource.data.userId == uid
             && resource.data.palaceId == palaceId
             && isValidStation(uid, palaceId);
-          allow delete: if isOwner(uid);
+
+          allow delete: if isOwner(uid)
+            && resource.data.userId == uid
+            && resource.data.palaceId == palaceId;
         }
 
         match /reviewSessions/{sessionId} {
           allow read: if isOwner(uid);
-          allow create: if isOwner(uid) && isValidReviewSessionCreate(uid, palaceId);
-          allow update: if isOwner(uid) && isValidReviewSessionUpdate(uid, palaceId);
+
+          allow create: if isOwner(uid)
+            && isValidReviewSessionCreate(uid, palaceId);
+
+          allow update: if isOwner(uid)
+            && isValidReviewSessionUpdate(uid, palaceId);
+
           allow delete: if false;
 
           match /answers/{answerId} {
             allow read: if isOwner(uid);
+
             allow create, update: if isOwner(uid)
               && exists(/databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId))
               && isValidReviewAnswer(uid, palaceId, sessionId);
+
             allow delete: if false;
           }
         }
