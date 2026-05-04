@@ -1,10 +1,19 @@
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+// src/services/storageService.ts
+
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  type StorageReference,
+} from 'firebase/storage';
 
 import { storage } from './firebase';
 
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 const PREPARE_IMAGE_TIMEOUT_MS = 15_000;
 const UPLOAD_IMAGE_TIMEOUT_MS = 30_000;
+const DELETE_IMAGE_TIMEOUT_MS = 15_000;
 
 interface UploadStationImageInput {
   userId: string;
@@ -101,6 +110,77 @@ const closeBlobSafely = (blob: Blob) => {
   }
 };
 
+const getStoragePathFromDownloadUrl = (imageUri: string): string | null => {
+  const trimmedUri = imageUri.trim();
+
+  if (!trimmedUri) {
+    return null;
+  }
+
+  if (trimmedUri.startsWith('gs://')) {
+    const withoutScheme = trimmedUri.replace('gs://', '');
+    const firstSlashIndex = withoutScheme.indexOf('/');
+
+    if (firstSlashIndex === -1) {
+      return null;
+    }
+
+    return withoutScheme.slice(firstSlashIndex + 1);
+  }
+
+  if (!trimmedUri.includes('firebasestorage.googleapis.com')) {
+    return null;
+  }
+
+  const objectMarker = '/o/';
+  const objectMarkerIndex = trimmedUri.indexOf(objectMarker);
+
+  if (objectMarkerIndex === -1) {
+    return null;
+  }
+
+  const encodedPathWithQuery = trimmedUri.slice(
+    objectMarkerIndex + objectMarker.length,
+  );
+
+  const encodedPath = encodedPathWithQuery.split('?')[0];
+
+  if (!encodedPath) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(encodedPath);
+  } catch {
+    return null;
+  }
+};
+
+const getStorageRefFromImageUri = (
+  imageUri: string,
+): StorageReference | null => {
+  const storagePath = getStoragePathFromDownloadUrl(imageUri);
+
+  if (!storagePath) {
+    return null;
+  }
+
+  return ref(storage, storagePath);
+};
+
+const isStorageObjectNotFoundError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const maybeStorageError = error as { code?: string; message?: string };
+
+  return (
+    maybeStorageError.code === 'storage/object-not-found' ||
+    maybeStorageError.message?.includes('storage/object-not-found') === true
+  );
+};
+
 export const uploadStationImage = async ({
   userId,
   palaceId,
@@ -159,5 +239,42 @@ export const uploadStationImage = async ({
     return await getDownloadURL(uploadResult.ref);
   } finally {
     closeBlobSafely(imageBlob);
+  }
+};
+
+export const deleteStationImage = async (
+  imageUri?: string | null,
+): Promise<void> => {
+  const trimmedImageUri = imageUri?.trim();
+
+  if (!trimmedImageUri) {
+    return;
+  }
+
+  const imageRef = getStorageRefFromImageUri(trimmedImageUri);
+
+  if (!imageRef) {
+    if (__DEV__) {
+      console.warn(
+        'storageService: skipped image deletion because the image URI is not a Firebase Storage URL.',
+        trimmedImageUri,
+      );
+    }
+
+    return;
+  }
+
+  try {
+    await withTimeout(
+      deleteObject(imageRef),
+      DELETE_IMAGE_TIMEOUT_MS,
+      'Deleting the station image took too long.',
+    );
+  } catch (error) {
+    if (isStorageObjectNotFoundError(error)) {
+      return;
+    }
+
+    throw error;
   }
 };
