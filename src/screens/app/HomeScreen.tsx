@@ -34,6 +34,7 @@ import { DeletePalaceSheet } from '../../components/palace/DeletePalaceSheet';
 import { Button } from '../../components/ui/Button';
 import { ErrorState, LoadingState } from '../../components/feedback';
 import { getUserFriendlyError } from '../../utils/errorMessages';
+import { useAsyncAction } from '../../hooks/useAsyncAction';
 
 type LooseUserProfile = {
   id?: string;
@@ -62,7 +63,6 @@ export default function HomeScreen() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [palaceToDelete, setPalaceToDelete] = useState<Palace | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const userStore = useUserStore((state) => state as unknown as LooseUserStore);
 
@@ -153,31 +153,37 @@ export default function HomeScreen() {
     [palaces],
   );
 
+  const deletePalaceAction = useCallback(
+    async (palace: Palace) => {
+      if (!userId) {
+        Alert.alert('Account still loading', 'Please wait and try again.');
+        return;
+      }
+
+      try {
+        await deletePalace(palace.id, userId);
+        setPalaceToDelete(null);
+      } catch (caughtError) {
+        Alert.alert(
+          'Delete failed',
+          getUserFriendlyError(caughtError, 'Could not delete this palace.'),
+        );
+      }
+    },
+    [deletePalace, userId],
+  );
+
+  const { isRunning: isDeleting, run: runDeletePalace } =
+    useAsyncAction(deletePalaceAction);
+
   const handleCancelDelete = () => {
     if (!isDeleting) {
       setPalaceToDelete(null);
     }
   };
 
-  const handleConfirmDelete = async (palace: Palace) => {
-    if (!userId) {
-      Alert.alert('Account still loading', 'Please wait and try again.');
-      return;
-    }
-
-    setIsDeleting(true);
-
-    try {
-      await deletePalace(palace.id, userId);
-      setPalaceToDelete(null);
-    } catch (caughtError) {
-      Alert.alert(
-        'Delete failed',
-        getUserFriendlyError(caughtError, 'Could not delete this palace.'),
-      );
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleConfirmDelete = (palace: Palace) => {
+    void runDeletePalace(palace);
   };
 
   const renderPalace = ({ item }: { item: Palace }) => {

@@ -1,6 +1,6 @@
 // src/screens/app/PalaceDetailScreen.tsx
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -153,6 +153,11 @@ function PalaceDetailScreen() {
   const deleteStation = usePalaceStore((state) => state.deleteStation);
   const reorderStations = usePalaceStore((state) => state.reorderStations);
 
+  const deletingStationIdsRef = useRef<Set<string>>(new Set());
+  const isStartingReviewRef = useRef(false);
+  const [isReordering, setIsReordering] = useState(false);
+  const [isStartingReview, setIsStartingReview] = useState(false);
+
   const palace = useMemo(() => {
     if (!palaceId) {
       return undefined;
@@ -254,6 +259,10 @@ function PalaceDetailScreen() {
         return;
       }
 
+      if (deletingStationIdsRef.current.has(station.id)) {
+        return;
+      }
+
       Alert.alert(
         'Delete station?',
         `This will remove "${station.label}" from your palace.`,
@@ -262,18 +271,27 @@ function PalaceDetailScreen() {
           {
             text: 'Delete',
             style: 'destructive',
-            onPress: () => {
-              deleteStation(station.id, palaceId, userId)
-                .then(() => loadStations(palaceId, userId))
-                .catch((deleteError) => {
-                  Alert.alert(
-                    'Station not deleted',
-                    getUserFriendlyError(
-                      deleteError,
-                      'Something went wrong while deleting this station.',
-                    ),
-                  );
-                });
+            onPress: async () => {
+              if (deletingStationIdsRef.current.has(station.id)) {
+                return;
+              }
+
+              deletingStationIdsRef.current.add(station.id);
+
+              try {
+                await deleteStation(station.id, palaceId, userId);
+                await loadStations(palaceId, userId);
+              } catch (deleteError) {
+                Alert.alert(
+                  'Station not deleted',
+                  getUserFriendlyError(
+                    deleteError,
+                    'Something went wrong while deleting this station.',
+                  ),
+                );
+              } finally {
+                deletingStationIdsRef.current.delete(station.id);
+              }
             },
           },
         ],
@@ -283,14 +301,17 @@ function PalaceDetailScreen() {
   );
 
   const handleDragEnd = useCallback(
-    ({ data }: { data: Station[] }) => {
-      if (!palaceId || !userId) {
+    async ({ data }: { data: Station[] }) => {
+      if (!palaceId || !userId || isReordering) {
         return;
       }
 
       const orderedIds = data.map((station) => station.id);
 
-      reorderStations(palaceId, userId, orderedIds).catch((reorderError) => {
+      try {
+        setIsReordering(true);
+        await reorderStations(palaceId, userId, orderedIds);
+      } catch (reorderError) {
         Alert.alert(
           'Stations not reordered',
           getUserFriendlyError(
@@ -298,12 +319,18 @@ function PalaceDetailScreen() {
             'Something went wrong while reordering your stations.',
           ),
         );
-      });
+      } finally {
+        setIsReordering(false);
+      }
     },
-    [palaceId, reorderStations, userId],
+    [isReordering, palaceId, reorderStations, userId],
   );
 
   const handleStartReview = () => {
+    if (isStartingReviewRef.current) {
+      return;
+    }
+
     if (!palaceId) {
       Alert.alert(
         'Review unavailable',
@@ -345,6 +372,9 @@ function PalaceDetailScreen() {
       })
       .map(mapStationForReview);
 
+    isStartingReviewRef.current = true;
+    setIsStartingReview(true);
+
     navigation.navigate('Review', {
       palaceId,
       ageGroup: reviewAgeGroup,
@@ -357,6 +387,11 @@ function PalaceDetailScreen() {
       },
       initialStations,
     });
+
+    setTimeout(() => {
+      isStartingReviewRef.current = false;
+      setIsStartingReview(false);
+    }, 900);
   };
 
   const renderStationItem = useCallback(
@@ -544,9 +579,15 @@ function PalaceDetailScreen() {
         </TouchableOpacity>
 
         <Button
-          title={canStartReview ? 'Start Review' : 'Need 2 stations'}
+          title={
+            isStartingReview
+              ? 'Starting...'
+              : canStartReview
+                ? 'Start Review'
+                : 'Need 2 stations'
+          }
           variant={canStartReview ? 'secondary' : 'outline'}
-          disabled={!canStartReview}
+          disabled={!canStartReview || isStartingReview}
           onPress={handleStartReview}
           style={styles.reviewButton}
           textStyle={styles.reviewButtonText}

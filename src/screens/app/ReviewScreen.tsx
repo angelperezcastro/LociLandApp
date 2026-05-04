@@ -1134,6 +1134,7 @@ const QuestionState = ({
   buttonTextColor,
   answerBorderColor,
   answerButtonBackgroundColor,
+  isSubmittingAnswer,
   onAnswerSelectionFeedback,
   onSubmitAnswer,
   onGiveUp,
@@ -1147,6 +1148,7 @@ const QuestionState = ({
   buttonTextColor: string;
   answerBorderColor: string;
   answerButtonBackgroundColor: string;
+  isSubmittingAnswer: boolean;
   onAnswerSelectionFeedback: () => void;
   onSubmitAnswer: (answer: string) => void;
   onGiveUp: () => void;
@@ -1157,7 +1159,7 @@ const QuestionState = ({
     return createMultipleChoiceOptions(station, stations);
   }, [station, stations]);
 
-  const canSubmitFreeText = freeTextAnswer.trim().length > 0;
+  const canSubmitFreeText = freeTextAnswer.trim().length > 0 && !isSubmittingAnswer;
 
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
@@ -1194,6 +1196,7 @@ const QuestionState = ({
             <TouchableOpacity
               key={option}
               activeOpacity={0.84}
+              disabled={isSubmittingAnswer}
               onPress={() => {
                 onAnswerSelectionFeedback();
                 onSubmitAnswer(option);
@@ -1204,6 +1207,7 @@ const QuestionState = ({
                   borderColor: answerBorderColor,
                   backgroundColor: answerButtonBackgroundColor,
                 },
+                isSubmittingAnswer && styles.primaryButtonDisabled,
               ]}
             >
               <Text
@@ -1226,6 +1230,7 @@ const QuestionState = ({
             placeholderTextColor={REVIEW_COLORS.inputPlaceholder}
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!isSubmittingAnswer}
             style={[
               styles.answerInput,
               {
@@ -1236,10 +1241,10 @@ const QuestionState = ({
           />
 
           <ReviewPrimaryButton
-            label={QUESTION_COPY.submit}
+            label={isSubmittingAnswer ? 'Checking...' : QUESTION_COPY.submit}
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
-            disabled={!canSubmitFreeText}
+            disabled={!canSubmitFreeText || isSubmittingAnswer}
             onPress={() => {
               onAnswerSelectionFeedback();
               onSubmitAnswer(freeTextAnswer);
@@ -1248,7 +1253,14 @@ const QuestionState = ({
         </View>
       )}
 
-      <Pressable style={styles.giveUpButton} onPress={onGiveUp}>
+      <Pressable
+        disabled={isSubmittingAnswer}
+        style={[
+          styles.giveUpButton,
+          isSubmittingAnswer && styles.primaryButtonDisabled,
+        ]}
+        onPress={onGiveUp}
+      >
         <Text style={styles.giveUpButtonText}>{QUESTION_COPY.giveUp}</Text>
       </Pressable>
     </Animated.View>
@@ -1578,6 +1590,11 @@ export const ReviewScreen = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const isStartingRef = useRef(false);
+  const isSubmittingAnswerRef = useRef(false);
+  const isCompletingRef = useRef(false);
+  const isAdvancingStationRef = useRef(false);
+
   const shouldConfirmQuitReview = Boolean(sessionId && screenState !== 'COMPLETE');
 
   usePreventRemove(shouldConfirmQuitReview, ({ data: preventRemoveData }) => {
@@ -1696,7 +1713,7 @@ export const ReviewScreen = () => {
   })();
 
   const handleStartJourney = async () => {
-    if (!data) return;
+    if (!data || isStartingRef.current) return;
 
     if (data.stations.length < 2) {
       Alert.alert('Not enough stations', INTRO_COPY.notEnoughStations);
@@ -1714,6 +1731,7 @@ export const ReviewScreen = () => {
     }
 
     try {
+      isStartingRef.current = true;
       setIsStarting(true);
 
       const session = await startReview({
@@ -1736,11 +1754,16 @@ export const ReviewScreen = () => {
 
       Alert.alert('Could not start review', message);
     } finally {
+      isStartingRef.current = false;
       setIsStarting(false);
     }
   };
 
   const handleRemember = () => {
+    if (isSubmittingAnswerRef.current || isCompletingRef.current) {
+      return;
+    }
+
     if (!sessionId) {
       Alert.alert(
         'Review session missing',
@@ -1753,7 +1776,13 @@ export const ReviewScreen = () => {
   };
 
   const handleSubmitAnswer = async (answer: string, gaveUp = false) => {
-    if (!data || !currentStation || !sessionId || isSubmittingAnswer) {
+    if (
+      !data ||
+      !currentStation ||
+      !sessionId ||
+      isSubmittingAnswer ||
+      isSubmittingAnswerRef.current
+    ) {
       return;
     }
 
@@ -1766,6 +1795,8 @@ export const ReviewScreen = () => {
       );
       return;
     }
+
+    isSubmittingAnswerRef.current = true;
 
     const correctAnswer = getStationAnswer(currentStation);
 
@@ -1818,28 +1849,45 @@ export const ReviewScreen = () => {
 
       Alert.alert('Could not record answer', message);
     } finally {
+      isSubmittingAnswerRef.current = false;
       setIsSubmittingAnswer(false);
     }
   };
 
   const handleGiveUp = () => {
+    if (isSubmittingAnswerRef.current) {
+      return;
+    }
+
     playTapFeedback();
-    handleSubmitAnswer('', true);
+    void handleSubmitAnswer('', true);
   };
 
   const handleNextStation = async () => {
-    if (!data || !sessionId) return;
+    if (!data || !sessionId || isAdvancingStationRef.current) return;
+
+    isAdvancingStationRef.current = true;
 
     if (!isLastStation) {
       setRevealResult(null);
       setCurrentStationIndex((current) => current + 1);
       setScreenState('WALKING');
+
+      setTimeout(() => {
+        isAdvancingStationRef.current = false;
+      }, 250);
+      return;
+    }
+
+    if (isCompletingRef.current) {
+      isAdvancingStationRef.current = false;
       return;
     }
 
     const currentUserId = auth.currentUser?.uid;
 
     if (!currentUserId) {
+      isAdvancingStationRef.current = false;
       Alert.alert(
         'Session unavailable',
         'You need to be logged in to complete this review.',
@@ -1848,6 +1896,7 @@ export const ReviewScreen = () => {
     }
 
     try {
+      isCompletingRef.current = true;
       setIsCompleting(true);
 
       const completed = await completeReview({
@@ -1867,11 +1916,17 @@ export const ReviewScreen = () => {
 
       Alert.alert('Could not complete review', message);
     } finally {
+      isCompletingRef.current = false;
+      isAdvancingStationRef.current = false;
       setIsCompleting(false);
     }
   };
 
   const handleReviewAgain = async () => {
+    if (isStartingRef.current) {
+      return;
+    }
+
     setSessionId(null);
     setCurrentStationIndex(0);
     setRevealResult(null);
@@ -1940,6 +1995,7 @@ export const ReviewScreen = () => {
           buttonTextColor={buttonTextColor}
           answerBorderColor={answerBorderColor}
           answerButtonBackgroundColor={palaceBackgroundColor}
+          isSubmittingAnswer={isSubmittingAnswer}
           onAnswerSelectionFeedback={playTapFeedback}
           onSubmitAnswer={(answer) => handleSubmitAnswer(answer)}
           onGiveUp={handleGiveUp}

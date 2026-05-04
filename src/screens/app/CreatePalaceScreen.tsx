@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +24,7 @@ import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
 import { PalaceCard } from '../../components/palace/PalaceCard';
 import { Button } from '../../components/ui/Button';
+import { useAsyncAction } from '../../hooks/useAsyncAction';
 
 type LooseUserProfile = {
   id?: string;
@@ -87,7 +88,6 @@ function CreatePalaceScreen() {
   const [palaceName, setPalaceName] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] =
     useState<PalaceTemplateId | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
   const successScale = useRef(new Animated.Value(0.4)).current;
@@ -168,16 +168,19 @@ function CreatePalaceScreen() {
     ]).start();
   };
 
-  const navigateToPalaceDetail = (palaceId: string) => {
-    if (typeof navigation.replace === 'function') {
-      navigation.replace('PalaceDetail', { palaceId });
-      return;
-    }
+  const navigateToPalaceDetail = useCallback(
+    (palaceId: string) => {
+      if (typeof navigation.replace === 'function') {
+        navigation.replace('PalaceDetail', { palaceId });
+        return;
+      }
 
-    navigation.navigate('PalaceDetail', { palaceId });
-  };
+      navigation.navigate('PalaceDetail', { palaceId });
+    },
+    [navigation],
+  );
 
-  const handleCreatePalace = async () => {
+  const createPalaceAction = useCallback(async () => {
     if (!userId) {
       Alert.alert(
         'Account still loading',
@@ -191,8 +194,6 @@ function CreatePalaceScreen() {
     }
 
     try {
-      setIsSubmitting(true);
-
       const createdPalace = await createPalace(
         userId,
         trimmedName,
@@ -201,9 +202,11 @@ function CreatePalaceScreen() {
 
       playSuccessAnimation();
 
-      setTimeout(() => {
-        navigateToPalaceDetail(createdPalace.id);
-      }, 650);
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 650);
+      });
+
+      navigateToPalaceDetail(createdPalace.id);
     } catch (error) {
       const message =
         error instanceof Error
@@ -211,9 +214,22 @@ function CreatePalaceScreen() {
           : 'Could not create your palace.';
 
       Alert.alert('Creation failed', message);
-      setIsSubmitting(false);
       setSuccessVisible(false);
     }
+  }, [
+    canCreate,
+    createPalace,
+    navigateToPalaceDetail,
+    selectedTemplateId,
+    trimmedName,
+    userId,
+  ]);
+
+  const { isRunning: isSubmitting, run: runCreatePalace } =
+    useAsyncAction(createPalaceAction);
+
+  const handleCreatePalace = () => {
+    void runCreatePalace();
   };
 
   return (

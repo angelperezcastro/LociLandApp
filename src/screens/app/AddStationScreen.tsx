@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -166,6 +166,7 @@ export const AddStationScreen = () => {
   const [hasHydratedEditForm, setHasHydratedEditForm] =
     useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const isSavingRef = useRef(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
 
   useEffect(() => {
@@ -215,6 +216,10 @@ export const AddStationScreen = () => {
   };
 
   const handlePickImage = async () => {
+    if (isSavingRef.current) {
+      return;
+    }
+
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -271,6 +276,10 @@ export const AddStationScreen = () => {
   };
 
   const handleRemoveImage = () => {
+    if (isSavingRef.current) {
+      return;
+    }
+
     setSelectedImage(null);
   };
 
@@ -306,6 +315,10 @@ export const AddStationScreen = () => {
   };
 
   const handleSaveStation = async () => {
+    if (isSavingRef.current) {
+      return;
+    }
+
     if (!palaceId) {
       Alert.alert(
         'Missing palace',
@@ -331,6 +344,7 @@ export const AddStationScreen = () => {
     }
 
     try {
+      isSavingRef.current = true;
       setIsSaving(true);
       setSaveStatus(isEditMode ? 'Updating station...' : 'Creating station...');
 
@@ -383,6 +397,7 @@ export const AddStationScreen = () => {
     } catch (error) {
       Alert.alert('Station not saved', getErrorMessage(error));
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
       setSaveStatus('');
     }
