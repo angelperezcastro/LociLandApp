@@ -11,7 +11,9 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  writeBatch,
   type DocumentData,
+  type DocumentReference,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
@@ -22,12 +24,46 @@ import { checkAchievements } from './achievementService';
 import { db } from './firebase';
 import { addXP, buildXPEventId } from './xpService';
 
+const FIRESTORE_BATCH_LIMIT = 450;
+
 const getPalacesCollectionRef = (userId: string) => {
   return collection(db, 'users', userId, 'palaces');
 };
 
 const getPalaceDocRef = (userId: string, palaceId: string) => {
   return doc(db, 'users', userId, 'palaces', palaceId);
+};
+
+const getStationsCollectionRef = (userId: string, palaceId: string) => {
+  return collection(db, 'users', userId, 'palaces', palaceId, 'stations');
+};
+
+const getReviewSessionsCollectionRef = (userId: string, palaceId: string) => {
+  return collection(
+    db,
+    'users',
+    userId,
+    'palaces',
+    palaceId,
+    'reviewSessions',
+  );
+};
+
+const getReviewAnswersCollectionRef = (
+  userId: string,
+  palaceId: string,
+  sessionId: string,
+) => {
+  return collection(
+    db,
+    'users',
+    userId,
+    'palaces',
+    palaceId,
+    'reviewSessions',
+    sessionId,
+    'answers',
+  );
 };
 
 const assertValidUserId = (userId: string) => {
@@ -60,15 +96,6 @@ const assertValidTemplateId = (templateId: PalaceTemplateId) => {
   }
 };
 
-/**
- * Temporary compatibility layer until P0-04 is solved.
- *
- * P0-01 correctly blocks direct client-side writes to user XP/level/streak.
- * Therefore, XP side effects must not make palace creation fail.
- *
- * The actual secure XP flow must be handled in P0-04 through a hardened,
- * idempotent flow, ideally Cloud Functions or stricter xpEvents-based rules.
- */
 const grantCreatePalaceXPSafely = async (
   userId: string,
   palaceId: string,
@@ -85,10 +112,7 @@ const grantCreatePalaceXPSafely = async (
     });
   } catch (error) {
     if (__DEV__) {
-      console.warn(
-        'XP grant after palace creation was skipped. This is expected until P0-04 is solved:',
-        error,
-      );
+      console.warn('XP grant after palace creation was skipped:', error);
     }
   }
 };
@@ -134,6 +158,68 @@ const mapPalaceDoc = (
       data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
     stationCount:
       typeof data.stationCount === 'number' ? data.stationCount : 0,
+  };
+};
+
+const commitDeleteBatch = async (
+  refs: DocumentReference<DocumentData>[],
+): Promise<void> => {
+  if (refs.length === 0) {
+    return;
+  }
+
+  for (let start = 0; start < refs.length; start += FIRESTORE_BATCH_LIMIT) {
+    const chunk = refs.slice(start, start + FIRESTORE_BATCH_LIMIT);
+    const batch = writeBatch(db);
+
+    chunk.forEach((ref) => {
+      batch.delete(ref);
+    });
+
+    await batch.commit();
+  }
+};
+
+const collectReviewAnswerRefs = async (
+  userId: string,
+  palaceId: string,
+  sessionId: string,
+): Promise<DocumentReference<DocumentData>[]> => {
+  const answersSnapshot = await getDocs(
+    getReviewAnswersCollectionRef(userId, palaceId, sessionId),
+  );
+
+  return answersSnapshot.docs.map((answerDoc) => answerDoc.ref);
+};
+
+const collectPalaceDescendantRefs = async (
+  userId: string,
+  palaceId: string,
+): Promise<{
+  answerRefs: DocumentReference<DocumentData>[];
+  reviewSessionRefs: DocumentReference<DocumentData>[];
+  stationRefs: DocumentReference<DocumentData>[];
+}> => {
+  const stationsSnapshot = await getDocs(
+    getStationsCollectionRef(userId, palaceId),
+  );
+
+  const reviewSessionsSnapshot = await getDocs(
+    getReviewSessionsCollectionRef(userId, palaceId),
+  );
+
+  const nestedAnswerRefs = await Promise.all(
+    reviewSessionsSnapshot.docs.map((sessionDoc) =>
+      collectReviewAnswerRefs(userId, palaceId, sessionDoc.id),
+    ),
+  );
+
+  return {
+    answerRefs: nestedAnswerRefs.flat(),
+    reviewSessionRefs: reviewSessionsSnapshot.docs.map(
+      (sessionDoc) => sessionDoc.ref,
+    ),
+    stationRefs: stationsSnapshot.docs.map((stationDoc) => stationDoc.ref),
   };
 };
 
@@ -192,12 +278,48 @@ export const getPalaces = async (userId: string): Promise<Palace[]> => {
   return snapshot.docs.map(mapPalaceDoc);
 };
 
-export const deletePalace = async (
+/**
+ * Deletes a palace and all Firestore descendants controlled by the app.
+ *
+ * Deletion order matters:
+ * 1. answers
+ * 2. reviewSessions
+ * 3. stations
+ * 4. palace document
+ *
+ * Firestore does not delete subcollections automatically when a parent
+ * document is deleted, so this client-side deep delete prevents orphaned
+ * app data.
+ *
+ * Storage image cleanup is intentionally left for P1-02.
+ */
+export const deletePalaceDeep = async (
   palaceId: string,
   userId: string,
 ): Promise<void> => {
   assertValidUserId(userId);
   assertValidPalaceId(palaceId);
 
-  await deleteDoc(getPalaceDocRef(userId, palaceId));
+  const palaceRef = getPalaceDocRef(userId, palaceId);
+  const palaceSnapshot = await getDoc(palaceRef);
+
+  if (!palaceSnapshot.exists()) {
+    return;
+  }
+
+  const { answerRefs, reviewSessionRefs, stationRefs } =
+    await collectPalaceDescendantRefs(userId, palaceId);
+
+  await commitDeleteBatch(answerRefs);
+  await commitDeleteBatch(reviewSessionRefs);
+  await commitDeleteBatch(stationRefs);
+
+  await deleteDoc(palaceRef);
+};
+
+export const deletePalace = async (
+  palaceId: string,
+  userId: string,
+): Promise<void> => {
+  await deletePalaceDeep(palaceId, userId);
 };
