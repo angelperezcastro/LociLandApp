@@ -4,6 +4,7 @@ import {
   collection,
   deleteField,
   doc,
+  getDoc,
   getDocs,
   increment,
   orderBy,
@@ -12,6 +13,7 @@ import {
   serverTimestamp,
   updateDoc,
   writeBatch,
+  type DocumentData,
   type FieldValue,
   type Timestamp,
 } from 'firebase/firestore';
@@ -20,6 +22,7 @@ import type { Station } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
 export interface CreateStationData {
@@ -81,6 +84,35 @@ const assertValidImageUri = (imageUri?: string) => {
   }
 };
 
+const getImageUriFromStationData = (
+  data?: DocumentData | Record<string, unknown>,
+): string | undefined => {
+  const imageUri = data?.imageUri;
+
+  return typeof imageUri === 'string' && imageUri.trim()
+    ? imageUri
+    : undefined;
+};
+
+const deleteStationImageSafely = async (
+  imageUri?: string | null,
+): Promise<void> => {
+  if (!imageUri) {
+    return;
+  }
+
+  try {
+    await deleteStationImage(imageUri);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn(
+        'stationService: station image cleanup failed after Firestore update.',
+        error,
+      );
+    }
+  }
+};
+
 const mapStationDocument = (
   id: string,
   data: Record<string, unknown>,
@@ -111,15 +143,6 @@ const isProbablyOfflineError = (error: unknown): boolean => {
   );
 };
 
-/**
- * Temporary compatibility layer until P0-04 is solved.
- *
- * P0-01 correctly blocks direct client-side writes to user XP/level/streak.
- * Therefore, XP side effects must not make station creation fail.
- *
- * The secure XP flow must be solved later with hardened xpEvents rules,
- * idempotent writes, or preferably Cloud Functions.
- */
 const awardCreateStationXPSafely = async (
   userId: string,
   palaceId: string,
@@ -136,10 +159,7 @@ const awardCreateStationXPSafely = async (
     });
   } catch (error) {
     if (__DEV__) {
-      console.warn(
-        'XP grant after station creation was skipped. This is expected until P0-04 is solved:',
-        error,
-      );
+      console.warn('XP grant after station creation was skipped:', error);
     }
   }
 };
@@ -190,7 +210,9 @@ export const createStation = async (
   }
 
   if (label.length > 40) {
-    throw new Error('stationService: station label cannot be longer than 40 characters.');
+    throw new Error(
+      'stationService: station label cannot be longer than 40 characters.',
+    );
   }
 
   if (!emoji) {
@@ -202,7 +224,9 @@ export const createStation = async (
   }
 
   if (memoryText.length > 500) {
-    throw new Error('stationService: memory text cannot be longer than 500 characters.');
+    throw new Error(
+      'stationService: memory text cannot be longer than 500 characters.',
+    );
   }
 
   const stationRef = doc(getStationsCollectionRef(userId, palaceId));
@@ -291,6 +315,7 @@ export const updateStation = async (
   assertRequiredIds(palaceId, userId);
   assertStationId(stationId);
 
+  const stationRef = getStationDocRef(userId, palaceId, stationId);
   const payload: Record<string, string | number | FieldValue> = {};
 
   if (data.order !== undefined) {
@@ -320,7 +345,9 @@ export const updateStation = async (
     }
 
     if (label.length > 40) {
-      throw new Error('stationService: station label cannot be longer than 40 characters.');
+      throw new Error(
+        'stationService: station label cannot be longer than 40 characters.',
+      );
     }
 
     payload.label = label;
@@ -330,13 +357,23 @@ export const updateStation = async (
     const memoryText = data.memoryText.trim();
 
     if (memoryText.length > 500) {
-      throw new Error('stationService: memory text cannot be longer than 500 characters.');
+      throw new Error(
+        'stationService: memory text cannot be longer than 500 characters.',
+      );
     }
 
     payload.memoryText = memoryText;
   }
 
+  let previousImageUri: string | undefined;
+
   if (data.imageUri !== undefined) {
+    const stationSnapshot = await getDoc(stationRef);
+
+    if (stationSnapshot.exists()) {
+      previousImageUri = getImageUriFromStationData(stationSnapshot.data());
+    }
+
     if (data.imageUri === null) {
       payload.imageUri = deleteField();
     } else {
@@ -349,7 +386,16 @@ export const updateStation = async (
     return;
   }
 
-  await updateDoc(getStationDocRef(userId, palaceId, stationId), payload);
+  await updateDoc(stationRef, payload);
+
+  if (data.imageUri !== undefined && previousImageUri) {
+    const nextImageUri = data.imageUri ?? undefined;
+    const imageWasRemovedOrReplaced = previousImageUri !== nextImageUri;
+
+    if (imageWasRemovedOrReplaced) {
+      await deleteStationImageSafely(previousImageUri);
+    }
+  }
 };
 
 export const deleteStation = async (
@@ -363,16 +409,48 @@ export const deleteStation = async (
   const stationRef = getStationDocRef(userId, palaceId, stationId);
   const palaceRef = getPalaceDocRef(userId, palaceId);
 
+  let imageUriToDelete: string | undefined;
+
   try {
-    await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(db, async (transaction) => {
+      const stationSnapshot = await transaction.get(stationRef);
+
+      if (!stationSnapshot.exists()) {
+        return {
+          deleted: false,
+          imageUri: undefined,
+        };
+      }
+
+      const imageUri = getImageUriFromStationData(stationSnapshot.data());
+
       transaction.delete(stationRef);
       transaction.update(palaceRef, {
         stationCount: increment(-1),
       });
+
+      return {
+        deleted: true,
+        imageUri,
+      };
     });
+
+    if (!result.deleted) {
+      return;
+    }
+
+    imageUriToDelete = result.imageUri;
   } catch (error) {
     if (!isProbablyOfflineError(error)) {
       throw error;
+    }
+
+    const cachedStationSnapshot = await getDoc(stationRef).catch(() => null);
+
+    if (cachedStationSnapshot?.exists()) {
+      imageUriToDelete = getImageUriFromStationData(
+        cachedStationSnapshot.data(),
+      );
     }
 
     const batch = writeBatch(db);
@@ -384,6 +462,8 @@ export const deleteStation = async (
 
     await batch.commit();
   }
+
+  await deleteStationImageSafely(imageUriToDelete);
 };
 
 export const reorderStations = async (
