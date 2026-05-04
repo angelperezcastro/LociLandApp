@@ -412,27 +412,40 @@ export const awardAchievement = async (
 
   const achievementRef = getAchievementDocRef(userId, achievementId);
   const existingSnapshot = await getDoc(achievementRef);
-
-  if (existingSnapshot.exists()) {
-    const xpResult = await addXP(userId, achievement.xpReward, {
-      reason: 'achievement',
-      eventId: buildXPEventId('achievement', achievementId),
-      metadata: {
-        achievementId,
-        title: achievement.title,
-        alreadyEarned: true,
-      },
-    });
-
-    return {
-      achievement,
-      awarded: false,
-      alreadyEarned: true,
-      xpResult,
-    };
-  }
-
   const xpEventId = buildXPEventId('achievement', achievementId);
+
+  if (!existingSnapshot.exists()) {
+    await setDoc(achievementRef, {
+      achievementId,
+      title: achievement.title,
+      description: achievement.description,
+      emoji: achievement.emoji,
+      xpReward: achievement.xpReward,
+      triggerType: triggerEvent.type,
+      xpEventId,
+      metadata: cleanMetadata({
+        ...('palaceId' in triggerEvent
+          ? { palaceId: triggerEvent.palaceId }
+          : {}),
+        ...('stationId' in triggerEvent
+          ? { stationId: triggerEvent.stationId }
+          : {}),
+        ...('sessionId' in triggerEvent
+          ? { sessionId: triggerEvent.sessionId }
+          : {}),
+        ...('currentStreak' in triggerEvent
+          ? { currentStreak: triggerEvent.currentStreak }
+          : {}),
+        ...('isPerfect' in triggerEvent
+          ? { isPerfect: triggerEvent.isPerfect }
+          : {}),
+        ...('durationSeconds' in triggerEvent
+          ? { durationSeconds: triggerEvent.durationSeconds }
+          : {}),
+      }),
+      earnedAt: serverTimestamp(),
+    });
+  }
 
   const xpResult = await addXP(userId, achievement.xpReward, {
     reason: 'achievement',
@@ -441,48 +454,18 @@ export const awardAchievement = async (
       achievementId,
       title: achievement.title,
       triggerType: triggerEvent.type,
+      alreadyEarned: existingSnapshot.exists(),
     },
   });
 
-  await setDoc(achievementRef, {
-    achievementId,
-    title: achievement.title,
-    description: achievement.description,
-    emoji: achievement.emoji,
-    xpReward: achievement.xpReward,
-    triggerType: triggerEvent.type,
-    xpEventId,
-    metadata: cleanMetadata({
-      ...('palaceId' in triggerEvent
-        ? { palaceId: triggerEvent.palaceId }
-        : {}),
-      ...('stationId' in triggerEvent
-        ? { stationId: triggerEvent.stationId }
-        : {}),
-      ...('sessionId' in triggerEvent
-        ? { sessionId: triggerEvent.sessionId }
-        : {}),
-      ...('currentStreak' in triggerEvent
-        ? { currentStreak: triggerEvent.currentStreak }
-        : {}),
-      ...('isPerfect' in triggerEvent
-        ? { isPerfect: triggerEvent.isPerfect }
-        : {}),
-      ...('durationSeconds' in triggerEvent
-        ? { durationSeconds: triggerEvent.durationSeconds }
-        : {}),
-    }),
-    earnedAt: serverTimestamp(),
-  });
-
-  if (xpResult.xpAdded > 0) {
+  if (!existingSnapshot.exists() && xpResult.xpAdded > 0) {
     emitAchievementToast(achievement);
   }
 
   return {
     achievement,
-    awarded: xpResult.xpAdded > 0,
-    alreadyEarned: false,
+    awarded: !existingSnapshot.exists() && xpResult.xpAdded > 0,
+    alreadyEarned: existingSnapshot.exists(),
     xpResult,
   };
 };

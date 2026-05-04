@@ -5,12 +5,10 @@ import {
   collection,
   doc,
   getDoc,
-  increment,
   runTransaction,
   serverTimestamp,
   Timestamp,
   updateDoc,
-  writeBatch,
 } from 'firebase/firestore';
 
 import type {
@@ -25,12 +23,17 @@ import type {
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
-import { addXP, buildXPEventId } from './xpService';
+import { addXP, buildXPEventId, type AddXPResult } from './xpService';
 
 const USERS_COLLECTION = 'users';
 const PALACES_COLLECTION = 'palaces';
 const REVIEW_SESSIONS_COLLECTION = 'reviewSessions';
 const REVIEW_ANSWERS_SUBCOLLECTION = 'answers';
+
+type ReviewSessionExtraFields = ReviewSessionDocument & {
+  isPerfect?: boolean;
+  xpAppliedAt?: Timestamp;
+};
 
 const timestampToDate = (value: Timestamp | null | undefined): Date | null => {
   if (!value) return null;
@@ -120,6 +123,28 @@ const mapReviewAnswer = (
   };
 };
 
+const assertRequiredReviewIds = ({
+  userId,
+  palaceId,
+  sessionId,
+}: {
+  userId: string;
+  palaceId: string;
+  sessionId?: string;
+}) => {
+  if (!userId.trim()) {
+    throw new Error('userId is required.');
+  }
+
+  if (!palaceId.trim()) {
+    throw new Error('palaceId is required.');
+  }
+
+  if (sessionId !== undefined && !sessionId.trim()) {
+    throw new Error('sessionId is required.');
+  }
+};
+
 const isCompleteReview = ({
   totalStations,
   correctAnswers,
@@ -163,15 +188,11 @@ const calculateReviewXp = ({
     return 0;
   }
 
-  const perfect = isPerfectReview({
-    totalStations,
-    correctAnswers,
-    incorrectAnswers,
-  });
-
   return (
     XP_REWARDS.COMPLETE_REVIEW +
-    (perfect ? XP_REWARDS.PERFECT_REVIEW : 0)
+    (isPerfectReview({ totalStations, correctAnswers, incorrectAnswers })
+      ? XP_REWARDS.PERFECT_REVIEW
+      : 0)
   );
 };
 
@@ -190,6 +211,27 @@ const getReviewDurationSeconds = (
   }
 
   return Math.floor(durationMs / 1000);
+};
+
+const getPalaceStationCount = async (
+  userId: string,
+  palaceId: string,
+): Promise<number> => {
+  const palaceRef = getPalaceRef(userId, palaceId);
+  const palaceSnap = await getDoc(palaceRef);
+
+  if (!palaceSnap.exists()) {
+    throw new Error('Palace not found.');
+  }
+
+  const palaceData = palaceSnap.data();
+  const stationCount = palaceData.stationCount;
+
+  if (typeof stationCount !== 'number') {
+    return 0;
+  }
+
+  return stationCount;
 };
 
 const checkAchievementsSafely = async ({
@@ -223,29 +265,79 @@ const checkAchievementsSafely = async ({
       xpEarned,
     });
   } catch (error) {
-    console.warn('Achievement check after review completion failed:', error);
+    if (__DEV__) {
+      console.warn('Achievement check after review completion failed:', error);
+    }
   }
 };
 
-const getPalaceStationCount = async (
-  userId: string,
-  palaceId: string,
-): Promise<number> => {
-  const palaceRef = getPalaceRef(userId, palaceId);
-  const palaceSnap = await getDoc(palaceRef);
+const awardReviewXPSafely = async ({
+  userId,
+  palaceId,
+  sessionId,
+  totalStations,
+  correctAnswers,
+  incorrectAnswers,
+  isPerfect,
+}: {
+  userId: string;
+  palaceId: string;
+  sessionId: string;
+  totalStations: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  isPerfect: boolean;
+}): Promise<{ applied: boolean; results: AddXPResult[] }> => {
+  const results: AddXPResult[] = [];
 
-  if (!palaceSnap.exists()) {
-    throw new Error('Palace not found.');
+  try {
+    const completeReviewResult = await addXP(
+      userId,
+      XP_REWARDS.COMPLETE_REVIEW,
+      {
+        reason: 'complete_review',
+        eventId: buildXPEventId('complete_review', sessionId),
+        metadata: {
+          palaceId,
+          sessionId,
+          totalStations,
+          correctAnswers,
+          incorrectAnswers,
+        },
+      },
+    );
+
+    results.push(completeReviewResult);
+
+    if (isPerfect) {
+      const perfectReviewResult = await addXP(
+        userId,
+        XP_REWARDS.PERFECT_REVIEW,
+        {
+          reason: 'perfect_review',
+          eventId: buildXPEventId('perfect_review', sessionId),
+          metadata: {
+            palaceId,
+            sessionId,
+            totalStations,
+            correctAnswers,
+            incorrectAnswers,
+            isPerfect: true,
+          },
+        },
+      );
+
+      results.push(perfectReviewResult);
+    }
+
+    return { applied: true, results };
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Review XP could not be applied. Review completion will remain saved:', error);
+    }
+
+    return { applied: false, results };
   }
-
-  const palaceData = palaceSnap.data();
-  const stationCount = palaceData.stationCount;
-
-  if (typeof stationCount !== 'number') {
-    return 0;
-  }
-
-  return stationCount;
 };
 
 export const startReview = async ({
@@ -253,13 +345,7 @@ export const startReview = async ({
   userId,
   totalStations,
 }: StartReviewInput): Promise<ReviewSession> => {
-  if (!palaceId.trim()) {
-    throw new Error('palaceId is required to start a review.');
-  }
-
-  if (!userId.trim()) {
-    throw new Error('userId is required to start a review.');
-  }
+  assertRequiredReviewIds({ userId, palaceId });
 
   const resolvedTotalStations =
     typeof totalStations === 'number'
@@ -282,7 +368,9 @@ export const startReview = async ({
       incorrectAnswers: 0,
       xpEarned: 0,
       xpAppliedToUser: false,
+      isPerfect: false,
       status: 'active',
+      updatedAt: serverTimestamp(),
     },
   );
 
@@ -305,35 +393,13 @@ export const recordAnswer = async ({
   stationId,
   correct,
 }: RecordAnswerInput): Promise<ReviewAnswer> => {
-  if (!userId.trim()) {
-    throw new Error('userId is required to record an answer.');
-  }
-
-  if (!palaceId.trim()) {
-    throw new Error('palaceId is required to record an answer.');
-  }
-
-  if (!sessionId.trim()) {
-    throw new Error('sessionId is required to record an answer.');
-  }
+  assertRequiredReviewIds({ userId, palaceId, sessionId });
 
   if (!stationId.trim()) {
     throw new Error('stationId is required to record an answer.');
   }
 
   const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
-  const sessionSnap = await getDoc(sessionRef);
-
-  if (!sessionSnap.exists()) {
-    throw new Error('Review session not found.');
-  }
-
-  const sessionData = sessionSnap.data() as ReviewSessionDocument;
-
-  if (sessionData.status === 'completed') {
-    throw new Error('Cannot record answers in a completed review session.');
-  }
-
   const answerRef = getReviewAnswerRef(
     userId,
     palaceId,
@@ -341,46 +407,58 @@ export const recordAnswer = async ({
     stationId,
   );
 
-  const existingAnswerSnap = await getDoc(answerRef);
+  await runTransaction(db, async (transaction) => {
+    const [sessionSnap, existingAnswerSnap] = await Promise.all([
+      transaction.get(sessionRef),
+      transaction.get(answerRef),
+    ]);
 
-  let correctDelta = 0;
-  let incorrectDelta = 0;
-
-  if (!existingAnswerSnap.exists()) {
-    if (correct) {
-      correctDelta = 1;
-    } else {
-      incorrectDelta = 1;
+    if (!sessionSnap.exists()) {
+      throw new Error('Review session not found.');
     }
-  } else {
-    const previousAnswer = existingAnswerSnap.data() as ReviewAnswerDocument;
 
-    if (previousAnswer.correct !== correct) {
+    const sessionData = sessionSnap.data() as ReviewSessionDocument;
+
+    if (sessionData.status === 'completed') {
+      throw new Error('Cannot record answers in a completed review session.');
+    }
+
+    let correctDelta = 0;
+    let incorrectDelta = 0;
+
+    if (!existingAnswerSnap.exists()) {
       if (correct) {
         correctDelta = 1;
-        incorrectDelta = -1;
       } else {
-        correctDelta = -1;
         incorrectDelta = 1;
       }
+    } else {
+      const previousAnswer = existingAnswerSnap.data() as ReviewAnswerDocument;
+
+      if (previousAnswer.correct !== correct) {
+        if (correct) {
+          correctDelta = 1;
+          incorrectDelta = -1;
+        } else {
+          correctDelta = -1;
+          incorrectDelta = 1;
+        }
+      }
     }
-  }
 
-  const batch = writeBatch(db);
+    transaction.set(answerRef, {
+      sessionId,
+      stationId,
+      correct,
+      answeredAt: serverTimestamp(),
+    });
 
-  batch.set(answerRef, {
-    sessionId,
-    stationId,
-    correct,
-    answeredAt: serverTimestamp(),
+    transaction.update(sessionRef, {
+      correctAnswers: Math.max(0, sessionData.correctAnswers + correctDelta),
+      incorrectAnswers: Math.max(0, sessionData.incorrectAnswers + incorrectDelta),
+      updatedAt: serverTimestamp(),
+    });
   });
-
-  batch.update(sessionRef, {
-    correctAnswers: increment(correctDelta),
-    incorrectAnswers: increment(incorrectDelta),
-  });
-
-  await batch.commit();
 
   const updatedAnswerSnap = await getDoc(answerRef);
 
@@ -399,17 +477,7 @@ export const completeReview = async ({
   palaceId,
   sessionId,
 }: CompleteReviewInput): Promise<ReviewSession> => {
-  if (!userId.trim()) {
-    throw new Error('userId is required to complete a review.');
-  }
-
-  if (!palaceId.trim()) {
-    throw new Error('palaceId is required to complete a review.');
-  }
-
-  if (!sessionId.trim()) {
-    throw new Error('sessionId is required to complete a review.');
-  }
+  assertRequiredReviewIds({ userId, palaceId, sessionId });
 
   const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
 
@@ -428,13 +496,19 @@ export const completeReview = async ({
       throw new Error('Review session not found.');
     }
 
-    const sessionData = sessionSnap.data() as ReviewSessionDocument;
+    const sessionData = sessionSnap.data() as ReviewSessionExtraFields;
 
     totalStations = sessionData.totalStations;
     correctAnswers = sessionData.correctAnswers;
     incorrectAnswers = sessionData.incorrectAnswers;
     startedAt =
       sessionData.startedAt instanceof Timestamp ? sessionData.startedAt : null;
+
+    perfect = isPerfectReview({
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+    });
 
     xpEarned =
       sessionData.status === 'completed'
@@ -445,40 +519,32 @@ export const completeReview = async ({
             incorrectAnswers,
           });
 
-    perfect = isPerfectReview({
-      totalStations,
-      correctAnswers,
-      incorrectAnswers,
-    });
-
     transaction.update(sessionRef, {
       completedAt: sessionData.completedAt ?? serverTimestamp(),
       xpEarned,
-      xpAppliedToUser: false,
+      xpAppliedToUser: sessionData.xpAppliedToUser ?? false,
       isPerfect: perfect,
       status: 'completed',
       updatedAt: serverTimestamp(),
     });
   });
 
-  if (xpEarned > 0) {
-    await addXP(userId, xpEarned, {
-      reason: perfect ? 'perfect_review' : 'complete_review',
-      eventId: buildXPEventId('complete_review', sessionId),
-      metadata: {
-        palaceId,
-        sessionId,
-        totalStations,
-        correctAnswers,
-        incorrectAnswers,
-        isPerfect: perfect,
-      },
-    });
-  }
+  const xpApplication =
+    xpEarned > 0
+      ? await awardReviewXPSafely({
+          userId,
+          palaceId,
+          sessionId,
+          totalStations,
+          correctAnswers,
+          incorrectAnswers,
+          isPerfect: perfect,
+        })
+      : { applied: true, results: [] };
 
   await updateDoc(sessionRef, {
-    xpAppliedToUser: true,
-    xpAppliedAt: serverTimestamp(),
+    xpAppliedToUser: xpApplication.applied,
+    ...(xpApplication.applied ? { xpAppliedAt: serverTimestamp() } : {}),
     updatedAt: serverTimestamp(),
   });
 
