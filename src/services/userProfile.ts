@@ -1,6 +1,12 @@
 // src/services/userProfile.ts
 
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 import { getLevelTitle } from '../utils/levelUtils';
 import { normalizeAgeGroup } from '../utils/ageGroup';
@@ -23,19 +29,14 @@ type EnsureUserProfileInput = {
   ageGroup?: AgeGroup;
 };
 
-type UpdateUserProfileInput = Partial<
-  Pick<
-    UserProfile,
-    | 'displayName'
-    | 'avatarEmoji'
-    | 'ageGroup'
-    | 'xp'
-    | 'level'
-    | 'levelTitle'
-    | 'streak'
-    | 'bestStreak'
-    | 'lastActiveDate'
-  >
+/**
+ * Deliberately restricted.
+ *
+ * Do not add xp, level, levelTitle, streak, bestStreak or lastActiveDate here.
+ * Those are calculated fields and must not be editable through profile updates.
+ */
+export type UpdateUserProfileInput = Partial<
+  Pick<UserProfile, 'displayName' | 'avatarEmoji' | 'ageGroup'>
 >;
 
 function getTodayDateString() {
@@ -86,7 +87,11 @@ export async function createUserProfile(
     lastActiveDate: getTodayDateString(),
   };
 
-  await setDoc(doc(db, 'users', input.uid), profile);
+  await setDoc(doc(db, 'users', input.uid), {
+    ...profile,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 
   return profile;
 }
@@ -109,39 +114,22 @@ export async function ensureUserProfile(
   if (existing) {
     const normalizedAgeGroup = normalizeAgeGroup(existing.ageGroup);
 
-    const resolvedLevel =
-      typeof existing.level === 'number' && Number.isFinite(existing.level)
-        ? existing.level
-        : getInitialUserLevel();
-
-    const resolvedLevelTitle = existing.levelTitle ?? getLevelTitle(resolvedLevel);
-
-    const resolvedBestStreak =
-      typeof existing.bestStreak === 'number' &&
-      Number.isFinite(existing.bestStreak)
-        ? existing.bestStreak
-        : existing.streak;
-
-    const needsProfileBackfill =
-      !existing.levelTitle ||
-      existing.bestStreak === undefined ||
-      existing.ageGroup !== normalizedAgeGroup;
-
-    if (needsProfileBackfill) {
+    /**
+     * Only backfill genuinely editable profile data.
+     *
+     * Do not backfill level, levelTitle, xp, streak or bestStreak from the client.
+     * Those are calculated fields and P0-01 intentionally blocks client-side writes.
+     */
+    if (existing.ageGroup !== normalizedAgeGroup) {
       await updateDoc(doc(db, 'users', input.uid), {
         ageGroup: normalizedAgeGroup,
-        level: resolvedLevel,
-        levelTitle: resolvedLevelTitle,
-        bestStreak: resolvedBestStreak,
+        updatedAt: serverTimestamp(),
       });
     }
 
     return {
       ...existing,
       ageGroup: normalizedAgeGroup,
-      level: resolvedLevel,
-      levelTitle: resolvedLevelTitle,
-      bestStreak: resolvedBestStreak,
     };
   }
 
@@ -158,16 +146,32 @@ export async function updateUserProfile(
   uid: string,
   data: UpdateUserProfileInput,
 ): Promise<void> {
-  const payload: UpdateUserProfileInput = {
-    ...data,
+  const payload: UpdateUserProfileInput & {
+    updatedAt: ReturnType<typeof serverTimestamp>;
+  } = {
+    updatedAt: serverTimestamp(),
   };
 
-  if (data.ageGroup) {
-    payload.ageGroup = normalizeAgeGroup(data.ageGroup);
+  if (data.displayName !== undefined) {
+    const displayName = data.displayName.trim();
+
+    if (!displayName) {
+      throw new Error('Display name cannot be empty.');
+    }
+
+    if (displayName.length > 40) {
+      throw new Error('Display name cannot be longer than 40 characters.');
+    }
+
+    payload.displayName = displayName;
   }
 
-  if (typeof data.level === 'number') {
-    payload.levelTitle = data.levelTitle ?? getLevelTitle(data.level);
+  if (data.avatarEmoji !== undefined) {
+    payload.avatarEmoji = data.avatarEmoji;
+  }
+
+  if (data.ageGroup !== undefined) {
+    payload.ageGroup = normalizeAgeGroup(data.ageGroup);
   }
 
   await updateDoc(doc(db, 'users', uid), payload);

@@ -10,6 +10,152 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isNonEmptyString(value, maxSize) {
+      return value is string && value.size() > 0 && value.size() <= maxSize;
+    }
+
+    function isOptionalTimestamp(fieldName) {
+      return !request.resource.data.keys().hasAny([fieldName])
+        || request.resource.data[fieldName] is timestamp;
+    }
+
+    function preservesOptionalField(fieldName) {
+      return (
+        !resource.data.keys().hasAny([fieldName])
+        && !request.resource.data.keys().hasAny([fieldName])
+      ) || (
+        resource.data.keys().hasAny([fieldName])
+        && request.resource.data.keys().hasAny([fieldName])
+        && request.resource.data[fieldName] == resource.data[fieldName]
+      );
+    }
+
+    function isValidAgeGroup(value) {
+      return value in ['6-9', '10-14'];
+    }
+
+    function isValidAvatarEmoji(value) {
+      return value is string && value.size() <= 16;
+    }
+
+    function isValidLevelTitle(value) {
+      return value is string && value.size() > 0 && value.size() <= 80;
+    }
+
+    function isValidLastActiveDate(value) {
+      return (
+        value is string
+        && value.matches('^\\d{4}-\\d{2}-\\d{2}$')
+      ) || value is timestamp;
+    }
+
+    function hasOnlyUserProfileFields() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'displayName',
+        'email',
+        'avatarEmoji',
+        'ageGroup',
+        'xp',
+        'level',
+        'levelTitle',
+        'streak',
+        'bestStreak',
+        'lastActiveDate',
+        'createdAt',
+        'updatedAt',
+        'lastXPGrantAt'
+      ]);
+    }
+
+    function hasRequiredUserProfileFields() {
+      return request.resource.data.keys().hasAll([
+        'uid',
+        'displayName',
+        'email',
+        'avatarEmoji',
+        'ageGroup',
+        'xp',
+        'level',
+        'streak',
+        'lastActiveDate'
+      ]);
+    }
+
+    function isValidUserProfileShape(uid) {
+      return hasOnlyUserProfileFields()
+        && hasRequiredUserProfileFields()
+        && request.resource.data.uid == uid
+        && isNonEmptyString(request.resource.data.displayName, 40)
+        && isNonEmptyString(request.resource.data.email, 254)
+        && isValidAvatarEmoji(request.resource.data.avatarEmoji)
+        && isValidAgeGroup(request.resource.data.ageGroup)
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        && request.resource.data.xp <= 100000
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 10
+        && (
+          !request.resource.data.keys().hasAny(['levelTitle'])
+          || isValidLevelTitle(request.resource.data.levelTitle)
+        )
+        && request.resource.data.streak is int
+        && request.resource.data.streak >= 0
+        && request.resource.data.streak <= 3650
+        && (
+          !request.resource.data.keys().hasAny(['bestStreak'])
+          || (
+            request.resource.data.bestStreak is int
+            && request.resource.data.bestStreak >= 0
+            && request.resource.data.bestStreak <= 3650
+          )
+        )
+        && isValidLastActiveDate(request.resource.data.lastActiveDate)
+        && isOptionalTimestamp('createdAt')
+        && isOptionalTimestamp('updatedAt')
+        && isOptionalTimestamp('lastXPGrantAt');
+    }
+
+    function isValidUserProfileCreate(uid) {
+      return isValidUserProfileShape(uid)
+        && request.resource.data.xp == 0
+        && request.resource.data.level == 1
+        && request.resource.data.streak == 0
+        && (
+          !request.resource.data.keys().hasAny(['bestStreak'])
+          || request.resource.data.bestStreak == 0
+        );
+    }
+
+    function onlyEditableUserProfileFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'displayName',
+        'avatarEmoji',
+        'ageGroup',
+        'updatedAt'
+      ]);
+    }
+
+    function preservesCalculatedUserProfileFields() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.xp == resource.data.xp
+        && request.resource.data.level == resource.data.level
+        && request.resource.data.streak == resource.data.streak
+        && request.resource.data.lastActiveDate == resource.data.lastActiveDate
+        && preservesOptionalField('levelTitle')
+        && preservesOptionalField('bestStreak')
+        && preservesOptionalField('createdAt')
+        && preservesOptionalField('lastXPGrantAt');
+    }
+
+    function isValidUserProfileUpdate(uid) {
+      return isValidUserProfileShape(uid)
+        && onlyEditableUserProfileFieldsChanged()
+        && preservesCalculatedUserProfileFields();
+    }
+
     function hasValidOptionalImageUri() {
       return !request.resource.data.keys().hasAny(['imageUri'])
         || (
@@ -114,19 +260,19 @@ service cloud.firestore {
         && request.resource.data.status in ['active', 'completed']
         && (
           request.resource.data.status == 'active'
-          ? request.resource.data.completedAt == null
-          : request.resource.data.completedAt is timestamp
+            ? request.resource.data.completedAt == null
+            : request.resource.data.completedAt is timestamp
         )
         && (
           request.resource.data.status == 'active'
-          ? (
+            ? (
               request.resource.data.xpEarned == 0
               && (
                 !request.resource.data.keys().hasAny(['xpAppliedToUser'])
                 || request.resource.data.xpAppliedToUser == false
               )
             )
-          : true
+            : true
         );
     }
 
@@ -145,7 +291,9 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read, create, update: if isOwner(uid);
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidUserProfileCreate(uid);
+      allow update: if isOwner(uid) && isValidUserProfileUpdate(uid);
       allow delete: if false;
 
       match /palaces/{palaceId} {
@@ -153,36 +301,25 @@ service cloud.firestore {
 
         match /stations/{stationId} {
           allow read: if isOwner(uid);
-
-          allow create: if isOwner(uid)
-            && isValidStation(uid, palaceId);
-
+          allow create: if isOwner(uid) && isValidStation(uid, palaceId);
           allow update: if isOwner(uid)
             && resource.data.userId == uid
             && resource.data.palaceId == palaceId
             && isValidStation(uid, palaceId);
-
           allow delete: if isOwner(uid);
         }
 
         match /reviewSessions/{sessionId} {
           allow read: if isOwner(uid);
-
-          allow create: if isOwner(uid)
-            && isValidReviewSessionCreate(uid, palaceId);
-
-          allow update: if isOwner(uid)
-            && isValidReviewSessionUpdate(uid, palaceId);
-
+          allow create: if isOwner(uid) && isValidReviewSessionCreate(uid, palaceId);
+          allow update: if isOwner(uid) && isValidReviewSessionUpdate(uid, palaceId);
           allow delete: if false;
 
           match /answers/{answerId} {
             allow read: if isOwner(uid);
-
             allow create, update: if isOwner(uid)
               && exists(/databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId))
               && isValidReviewAnswer(uid, palaceId, sessionId);
-
             allow delete: if false;
           }
         }
