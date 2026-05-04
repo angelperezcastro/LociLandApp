@@ -7,9 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "audit:visual": "node scripts/visual-audit.js",
     "typecheck": "tsc --noEmit",
-    "audit:deps": "npm audit --audit-level=moderate",
+    "audit": "npm audit --audit-level=moderate",
+    "audit:deps": "npm audit --audit-level=high",
+    "audit:visual": "node scripts/visual-audit.js",
     "validate": "npm run typecheck && npm run audit:deps"
   },
   "dependencies": {
