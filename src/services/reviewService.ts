@@ -145,6 +145,12 @@ const assertRequiredReviewIds = ({
   }
 };
 
+const getSafeCounter = (value: unknown): number => {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+};
+
 const isCompleteReview = ({
   totalStations,
   correctAnswers,
@@ -333,7 +339,10 @@ const awardReviewXPSafely = async ({
     return { applied: true, results };
   } catch (error) {
     if (__DEV__) {
-      console.warn('Review XP could not be applied. Review completion will remain saved:', error);
+      console.warn(
+        'Review XP could not be applied. Review completion will remain saved:',
+        error,
+      );
     }
 
     return { applied: false, results };
@@ -408,10 +417,8 @@ export const recordAnswer = async ({
   );
 
   await runTransaction(db, async (transaction) => {
-    const [sessionSnap, existingAnswerSnap] = await Promise.all([
-      transaction.get(sessionRef),
-      transaction.get(answerRef),
-    ]);
+    const sessionSnap = await transaction.get(sessionRef);
+    const existingAnswerSnap = await transaction.get(answerRef);
 
     if (!sessionSnap.exists()) {
       throw new Error('Review session not found.');
@@ -423,27 +430,50 @@ export const recordAnswer = async ({
       throw new Error('Cannot record answers in a completed review session.');
     }
 
-    let correctDelta = 0;
-    let incorrectDelta = 0;
+    const totalStations = getSafeCounter(sessionData.totalStations);
+
+    if (totalStations < 1) {
+      throw new Error('Review session has no stations.');
+    }
+
+    const currentCorrectAnswers = getSafeCounter(sessionData.correctAnswers);
+    const currentIncorrectAnswers = getSafeCounter(
+      sessionData.incorrectAnswers,
+    );
+
+    let nextCorrectAnswers = currentCorrectAnswers;
+    let nextIncorrectAnswers = currentIncorrectAnswers;
 
     if (!existingAnswerSnap.exists()) {
       if (correct) {
-        correctDelta = 1;
+        nextCorrectAnswers += 1;
       } else {
-        incorrectDelta = 1;
+        nextIncorrectAnswers += 1;
       }
     } else {
-      const previousAnswer = existingAnswerSnap.data() as ReviewAnswerDocument;
+      const previousAnswer =
+        existingAnswerSnap.data() as ReviewAnswerDocument;
 
       if (previousAnswer.correct !== correct) {
         if (correct) {
-          correctDelta = 1;
-          incorrectDelta = -1;
+          nextCorrectAnswers += 1;
+          nextIncorrectAnswers -= 1;
         } else {
-          correctDelta = -1;
-          incorrectDelta = 1;
+          nextCorrectAnswers -= 1;
+          nextIncorrectAnswers += 1;
         }
       }
+    }
+
+    nextCorrectAnswers = Math.max(0, nextCorrectAnswers);
+    nextIncorrectAnswers = Math.max(0, nextIncorrectAnswers);
+
+    const answeredStations = nextCorrectAnswers + nextIncorrectAnswers;
+
+    if (answeredStations > totalStations) {
+      throw new Error(
+        'Cannot record more answers than stations in the review.',
+      );
     }
 
     transaction.set(answerRef, {
@@ -454,8 +484,8 @@ export const recordAnswer = async ({
     });
 
     transaction.update(sessionRef, {
-      correctAnswers: Math.max(0, sessionData.correctAnswers + correctDelta),
-      incorrectAnswers: Math.max(0, sessionData.incorrectAnswers + incorrectDelta),
+      correctAnswers: nextCorrectAnswers,
+      incorrectAnswers: nextIncorrectAnswers,
       updatedAt: serverTimestamp(),
     });
   });
