@@ -26,6 +26,7 @@ import { getProgressStats, type ProgressStats } from '../../services/progressSer
 import { useUserStore } from '../../store/useUserStore';
 import {
   colors,
+  fontFamilies,
   fontSizes,
   radius,
   shadows,
@@ -134,6 +135,14 @@ function getStarsFromValue(value: number, maxReference: number): string {
   return `${'★'.repeat(filledStars)}${'☆'.repeat(emptyStars)}`;
 }
 
+function getFilledStarCount(value: number, maxReference: number): number {
+  if (value <= 0) {
+    return 0;
+  }
+
+  return Math.min(5, Math.max(1, Math.ceil((value / maxReference) * 5)));
+}
+
 function isRecentLoginRequired(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -171,6 +180,26 @@ function logProfileError(context: string, error: unknown): void {
   console.error(`[ProfileScreen] ${context}:`, error);
   console.error(`[ProfileScreen] ${context} readable:`, getReadableError(error));
 }
+
+const YoungerStarRow = ({
+  value,
+  maxReference,
+}: {
+  value: number;
+  maxReference: number;
+}) => {
+  const filledStars = getFilledStarCount(value, maxReference);
+
+  return (
+    <View style={styles.youngerStarRow}>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Text key={`star-${index}`} style={styles.youngerStarIcon}>
+          {index < filledStars ? '★' : '☆'}
+        </Text>
+      ))}
+    </View>
+  );
+};
 
 export function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -601,46 +630,31 @@ export function ProfileScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statEmoji}>🏛️</Text>
-              <Text
-                style={[
-                  styles.statValue,
-                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
-                ]}
-              >
-                {ageGroupUi.isYounger
-                  ? getStarsFromValue(stats.totalPalaces, 5)
-                  : stats.totalPalaces}
-              </Text>
+              {ageGroupUi.isYounger ? (
+                <YoungerStarRow value={stats.totalPalaces} maxReference={5} />
+              ) : (
+                <Text style={styles.statValue}>{stats.totalPalaces}</Text>
+              )}
               <Text style={styles.statLabel}>Palaces</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statEmoji}>🚩</Text>
-              <Text
-                style={[
-                  styles.statValue,
-                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
-                ]}
-              >
-                {ageGroupUi.isYounger
-                  ? getStarsFromValue(stats.totalStations, 20)
-                  : stats.totalStations}
-              </Text>
+              {ageGroupUi.isYounger ? (
+                <YoungerStarRow value={stats.totalStations} maxReference={20} />
+              ) : (
+                <Text style={styles.statValue}>{stats.totalStations}</Text>
+              )}
               <Text style={styles.statLabel}>Stations</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statEmoji}>🧠</Text>
-              <Text
-                style={[
-                  styles.statValue,
-                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
-                ]}
-              >
-                {ageGroupUi.isYounger
-                  ? getStarsFromValue(stats.totalReviews, 10)
-                  : stats.totalReviews}
-              </Text>
+              {ageGroupUi.isYounger ? (
+                <YoungerStarRow value={stats.totalReviews} maxReference={10} />
+              ) : (
+                <Text style={styles.statValue}>{stats.totalReviews}</Text>
+              )}
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
           </View>
@@ -696,9 +710,12 @@ export function ProfileScreen() {
             disabled={isBusy}
             style={styles.settingRow}
           >
-            <Text style={styles.settingLabel}>
-              {ageGroupUi.isYounger ? '🔐 Change password' : 'Change password'}
-            </Text>
+            <View style={styles.settingTextGroup}>
+              <Text style={styles.settingLabel}>
+                {ageGroupUi.isYounger ? '🔐 Change password' : 'Change password'}
+              </Text>
+            </View>
+
             {passwordLoading ? (
               <ActivityIndicator color={colors.accent} />
             ) : (
@@ -1043,7 +1060,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderRadius: radius.lg,
     paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1057,10 +1074,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
-  youngerStatValue: {
+  youngerStarRow: {
+    width: '100%',
+    maxWidth: 92,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  youngerStarIcon: {
     fontSize: fontSizes.sm,
     lineHeight: 20,
-    letterSpacing: 1,
+    color: colors.accent,
+    fontFamily: fontFamilies.bodyBold,
   },
   statLabel: {
     ...typography.small,
@@ -1087,11 +1113,13 @@ const styles = StyleSheet.create({
   },
   settingTextGroup: {
     flex: 1,
+    flexShrink: 1,
     gap: spacing.xs,
   },
   settingLabel: {
     ...typography.bodyStrong,
     color: colors.text,
+    flexShrink: 1,
   },
   settingHelper: {
     ...typography.small,
@@ -1102,6 +1130,8 @@ const styles = StyleSheet.create({
   },
   settingAction: {
     ...typography.caption,
+    maxWidth: 116,
+    flexShrink: 0,
     fontWeight: '900',
     color: colors.accent,
     textAlign: 'right',

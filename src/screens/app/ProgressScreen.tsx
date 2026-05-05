@@ -49,7 +49,10 @@ const getStarsFromProgress = (value: number, maxReference: number): string => {
     return '☆☆☆☆☆';
   }
 
-  const filledStars = Math.min(5, Math.max(1, Math.ceil((value / maxReference) * 5)));
+  const filledStars = Math.min(
+    5,
+    Math.max(1, Math.ceil((value / maxReference) * 5)),
+  );
   const emptyStars = 5 - filledStars;
 
   return `${'★'.repeat(filledStars)}${'☆'.repeat(emptyStars)}`;
@@ -732,7 +735,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.xxl,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 2,
+    borderColor: colors.accent,
     padding: spacing.xl,
     marginBottom: spacing.lg,
     ...shadows.elevated,
@@ -857,7 +862,7 @@ const styles = StyleSheet.create({
     borderColor: colors.secondary,
   },
   youngerDayCircleFilled: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentSoft,
     borderColor: colors.accent,
   },
   dayCircleEmpty: {
@@ -879,7 +884,7 @@ const styles = StyleSheet.create({
   },
   youngerDayEmoji: {
     fontSize: fontSizes.lg,
-    color: colors.text,
+    color: colors.accent,
     fontFamily: fontFamilies.bodyBold,
   },
   dayLabel: {
