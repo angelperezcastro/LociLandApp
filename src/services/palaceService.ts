@@ -22,9 +22,17 @@ import type { Palace, PalaceTemplateId } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
 const FIRESTORE_BATCH_LIMIT = 450;
+
+type PalaceDescendants = {
+  answerRefs: DocumentReference<DocumentData>[];
+  reviewSessionRefs: DocumentReference<DocumentData>[];
+  stationRefs: DocumentReference<DocumentData>[];
+  stationImageUris: string[];
+};
 
 const getPalacesCollectionRef = (userId: string) => {
   return collection(db, 'users', userId, 'palaces');
@@ -93,6 +101,58 @@ const assertValidPalaceName = (name: string) => {
 const assertValidTemplateId = (templateId: PalaceTemplateId) => {
   if (!isPalaceTemplateId(templateId)) {
     throw new Error(`Invalid palace template id: ${templateId}`);
+  }
+};
+
+const getImageUriFromStationData = (
+  data?: DocumentData | Record<string, unknown>,
+): string | undefined => {
+  const imageUri = data?.imageUri;
+
+  return typeof imageUri === 'string' && imageUri.trim()
+    ? imageUri.trim()
+    : undefined;
+};
+
+const collectUniqueStationImageUris = (
+  stationDocs: QueryDocumentSnapshot<DocumentData>[],
+): string[] => {
+  const imageUris = new Set<string>();
+
+  stationDocs.forEach((stationDoc) => {
+    const imageUri = getImageUriFromStationData(stationDoc.data());
+
+    if (imageUri) {
+      imageUris.add(imageUri);
+    }
+  });
+
+  return [...imageUris];
+};
+
+const deleteStationImagesSafely = async (
+  imageUris: string[],
+): Promise<void> => {
+  if (imageUris.length === 0) {
+    return;
+  }
+
+  const deletionResults = await Promise.allSettled(
+    imageUris.map((imageUri) => deleteStationImage(imageUri)),
+  );
+
+  if (__DEV__) {
+    deletionResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.warn(
+          'palaceService: station image cleanup failed during palace deletion.',
+          {
+            imageUri: imageUris[index],
+            reason: result.reason,
+          },
+        );
+      }
+    });
   }
 };
 
@@ -195,11 +255,7 @@ const collectReviewAnswerRefs = async (
 const collectPalaceDescendantRefs = async (
   userId: string,
   palaceId: string,
-): Promise<{
-  answerRefs: DocumentReference<DocumentData>[];
-  reviewSessionRefs: DocumentReference<DocumentData>[];
-  stationRefs: DocumentReference<DocumentData>[];
-}> => {
+): Promise<PalaceDescendants> => {
   const stationsSnapshot = await getDocs(
     getStationsCollectionRef(userId, palaceId),
   );
@@ -220,6 +276,7 @@ const collectPalaceDescendantRefs = async (
       (sessionDoc) => sessionDoc.ref,
     ),
     stationRefs: stationsSnapshot.docs.map((stationDoc) => stationDoc.ref),
+    stationImageUris: collectUniqueStationImageUris(stationsSnapshot.docs),
   };
 };
 
@@ -279,19 +336,20 @@ export const getPalaces = async (userId: string): Promise<Palace[]> => {
 };
 
 /**
- * Deletes a palace and all Firestore descendants controlled by the app.
+ * Deletes a palace and all descendants controlled by the app.
  *
  * Deletion order matters:
  * 1. answers
  * 2. reviewSessions
  * 3. stations
  * 4. palace document
+ * 5. station images in Firebase Storage
  *
  * Firestore does not delete subcollections automatically when a parent
  * document is deleted, so this client-side deep delete prevents orphaned
- * app data.
- *
- * Storage image cleanup is intentionally left for P1-02.
+ * app data. Storage cleanup is performed after Firestore deletion and uses
+ * Promise.allSettled so a missing/failing image does not leave Firestore
+ * half-deleted.
  */
 export const deletePalaceDeep = async (
   palaceId: string,
@@ -307,14 +365,20 @@ export const deletePalaceDeep = async (
     return;
   }
 
-  const { answerRefs, reviewSessionRefs, stationRefs } =
-    await collectPalaceDescendantRefs(userId, palaceId);
+  const {
+    answerRefs,
+    reviewSessionRefs,
+    stationRefs,
+    stationImageUris,
+  } = await collectPalaceDescendantRefs(userId, palaceId);
 
   await commitDeleteBatch(answerRefs);
   await commitDeleteBatch(reviewSessionRefs);
   await commitDeleteBatch(stationRefs);
 
   await deleteDoc(palaceRef);
+
+  await deleteStationImagesSafely(stationImageUris);
 };
 
 export const deletePalace = async (
