@@ -22,6 +22,11 @@ import type { Station } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import {
+  recordStationCreated,
+  recordStationDeleted,
+  recordStationImageChanged,
+} from './statsService';
 import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
@@ -192,6 +197,54 @@ const checkAchievementsSafely = async ({
   }
 };
 
+
+const recordStationCreatedSafely = async (
+  userId: string,
+  hasImage: boolean,
+): Promise<void> => {
+  try {
+    await recordStationCreated(userId, hasImage);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats update after station creation was skipped:', error);
+    }
+  }
+};
+
+const recordStationDeletedSafely = async (
+  userId: string,
+  hadImage: boolean,
+): Promise<void> => {
+  try {
+    await recordStationDeleted(userId, hadImage);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats update after station deletion was skipped:', error);
+    }
+  }
+};
+
+const recordStationImageChangedSafely = async ({
+  userId,
+  previousHadImage,
+  nextHadImage,
+}: {
+  userId: string;
+  previousHadImage: boolean;
+  nextHadImage: boolean;
+}): Promise<void> => {
+  try {
+    await recordStationImageChanged(userId, {
+      previousHadImage,
+      nextHasImage: nextHadImage,
+    });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats update after station image change was skipped:', error);
+    }
+  }
+};
+
 export const createStation = async (
   palaceId: string,
   userId: string,
@@ -266,6 +319,7 @@ export const createStation = async (
     await batch.commit();
   }
 
+  await recordStationCreatedSafely(userId, Boolean(payload.imageUri));
   await awardCreateStationXPSafely(userId, palaceId, stationRef.id);
 
   await checkAchievementsSafely({
@@ -388,12 +442,21 @@ export const updateStation = async (
 
   await updateDoc(stationRef, payload);
 
-  if (data.imageUri !== undefined && previousImageUri) {
+  if (data.imageUri !== undefined) {
     const nextImageUri = data.imageUri ?? undefined;
-    const imageWasRemovedOrReplaced = previousImageUri !== nextImageUri;
 
-    if (imageWasRemovedOrReplaced) {
-      await deleteStationImageSafely(previousImageUri);
+    await recordStationImageChangedSafely({
+      userId,
+      previousHadImage: Boolean(previousImageUri),
+      nextHadImage: Boolean(nextImageUri),
+    });
+
+    if (previousImageUri) {
+      const imageWasRemovedOrReplaced = previousImageUri !== nextImageUri;
+
+      if (imageWasRemovedOrReplaced) {
+        await deleteStationImageSafely(previousImageUri);
+      }
     }
   }
 };
@@ -463,6 +526,7 @@ export const deleteStation = async (
     await batch.commit();
   }
 
+  await recordStationDeletedSafely(userId, Boolean(imageUriToDelete));
   await deleteStationImageSafely(imageUriToDelete);
 };
 

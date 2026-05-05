@@ -7,7 +7,6 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
-  Timestamp,
 } from 'firebase/firestore';
 
 import {
@@ -19,12 +18,10 @@ import {
 import type { AgeGroup } from '../types/user';
 import { useAchievementToastStore } from '../store/useAchievementToastStore';
 import { db } from './firebase';
+import { getUserStatsSummary } from './statsService';
 import { addXP, buildXPEventId, type AddXPResult } from './xpService';
 
 const USERS_COLLECTION = 'users';
-const PALACES_COLLECTION = 'palaces';
-const STATIONS_COLLECTION = 'stations';
-const REVIEW_SESSIONS_COLLECTION = 'reviewSessions';
 const ACHIEVEMENTS_COLLECTION = 'achievements';
 
 const MAX_ACHIEVEMENT_CHECK_PASSES = 3;
@@ -100,31 +97,8 @@ const getUserRef = (userId: string) => {
   return doc(db, USERS_COLLECTION, userId);
 };
 
-const getPalacesCollectionRef = (userId: string) => {
-  return collection(db, USERS_COLLECTION, userId, PALACES_COLLECTION);
-};
 
-const getStationsCollectionRef = (userId: string, palaceId: string) => {
-  return collection(
-    db,
-    USERS_COLLECTION,
-    userId,
-    PALACES_COLLECTION,
-    palaceId,
-    STATIONS_COLLECTION,
-  );
-};
 
-const getReviewSessionsCollectionRef = (userId: string, palaceId: string) => {
-  return collection(
-    db,
-    USERS_COLLECTION,
-    userId,
-    PALACES_COLLECTION,
-    palaceId,
-    REVIEW_SESSIONS_COLLECTION,
-  );
-};
 
 const getAchievementsCollectionRef = (userId: string) => {
   return collection(db, USERS_COLLECTION, userId, ACHIEVEMENTS_COLLECTION);
@@ -148,26 +122,6 @@ const getSafeNumber = (value: unknown, fallback = 0): number => {
   return Math.max(0, Math.floor(value));
 };
 
-const isTimestamp = (value: unknown): value is Timestamp => {
-  return value instanceof Timestamp;
-};
-
-const getDurationSeconds = (
-  startedAt: unknown,
-  completedAt: unknown,
-): number | null => {
-  if (!isTimestamp(startedAt) || !isTimestamp(completedAt)) {
-    return null;
-  }
-
-  const durationMs = completedAt.toMillis() - startedAt.toMillis();
-
-  if (!Number.isFinite(durationMs) || durationMs < 0) {
-    return null;
-  }
-
-  return Math.floor(durationMs / 1000);
-};
 
 const cleanMetadata = (
   metadata: Record<string, string | number | boolean | null | undefined>,
@@ -241,7 +195,10 @@ export const getEarnedAchievements = async (
 const collectAchievementStats = async (
   userId: string,
 ): Promise<AchievementStats> => {
-  const userSnapshot = await getDoc(getUserRef(userId));
+  const [userSnapshot, statsSummary] = await Promise.all([
+    getDoc(getUserRef(userId)),
+    getUserStatsSummary(userId),
+  ]);
 
   if (!userSnapshot.exists()) {
     throw new Error(`User profile "${userId}" does not exist.`);
@@ -258,97 +215,18 @@ const collectAchievementStats = async (
   const bestStreak = getSafeNumber(userData.bestStreak, currentStreak);
   const currentLevel = getSafeNumber(userData.level, 1);
 
-  const palacesSnapshot = await getDocs(getPalacesCollectionRef(userId));
-  const palaceDocs = palacesSnapshot.docs;
-
-  const usedTemplateIds = new Set<string>();
-
-  palaceDocs.forEach((palaceDoc) => {
-    const templateId = palaceDoc.data().templateId;
-
-    if (typeof templateId === 'string' && templateId.trim()) {
-      usedTemplateIds.add(templateId);
-    }
-  });
-
-  let totalStations = 0;
-  let stationsWithImages = 0;
-  let totalReviewSessions = 0;
-  let totalPerfectReviews = 0;
-  let fastestReviewSeconds: number | null = null;
-
-  await Promise.all(
-    palaceDocs.map(async (palaceDoc) => {
-      const palaceId = palaceDoc.id;
-
-      const [stationsSnapshot, reviewSessionsSnapshot] = await Promise.all([
-        getDocs(getStationsCollectionRef(userId, palaceId)),
-        getDocs(getReviewSessionsCollectionRef(userId, palaceId)),
-      ]);
-
-      stationsSnapshot.docs.forEach((stationDoc) => {
-        const stationData = stationDoc.data();
-
-        totalStations += 1;
-
-        if (
-          typeof stationData.imageUri === 'string' &&
-          stationData.imageUri.trim().length > 0
-        ) {
-          stationsWithImages += 1;
-        }
-      });
-
-      reviewSessionsSnapshot.docs.forEach((reviewDoc) => {
-        const reviewData = reviewDoc.data();
-
-        if (reviewData.status !== 'completed') {
-          return;
-        }
-
-        totalReviewSessions += 1;
-
-        const totalStationsInReview = getSafeNumber(reviewData.totalStations);
-        const correctAnswers = getSafeNumber(reviewData.correctAnswers);
-        const incorrectAnswers = getSafeNumber(reviewData.incorrectAnswers);
-
-        const perfect =
-          reviewData.isPerfect === true ||
-          (totalStationsInReview > 0 &&
-            correctAnswers === totalStationsInReview &&
-            incorrectAnswers === 0);
-
-        if (perfect) {
-          totalPerfectReviews += 1;
-        }
-
-        const durationSeconds = getDurationSeconds(
-          reviewData.startedAt,
-          reviewData.completedAt,
-        );
-
-        if (durationSeconds !== null) {
-          fastestReviewSeconds =
-            fastestReviewSeconds === null
-              ? durationSeconds
-              : Math.min(fastestReviewSeconds, durationSeconds);
-        }
-      });
-    }),
-  );
-
   return {
-    totalPalaces: palaceDocs.length,
-    totalStations,
-    totalReviewSessions,
-    totalPerfectReviews,
+    totalPalaces: statsSummary.totalPalaces,
+    totalStations: statsSummary.totalStations,
+    totalReviewSessions: statsSummary.totalReviewSessions,
+    totalPerfectReviews: statsSummary.totalPerfectReviews,
     currentStreak,
     bestStreak,
     currentLevel,
-    usedTemplateCount: usedTemplateIds.size,
-    stationsWithImages,
+    usedTemplateCount: statsSummary.usedTemplateIds.length,
+    stationsWithImages: statsSummary.stationsWithImages,
     ageGroup,
-    fastestReviewSeconds,
+    fastestReviewSeconds: statsSummary.fastestReviewSeconds,
   };
 };
 

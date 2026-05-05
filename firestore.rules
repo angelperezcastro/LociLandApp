@@ -662,21 +662,35 @@ service cloud.firestore {
         && request.resource.data.totalStations == resource.data.totalStations;
     }
 
+    function isUnsetOrNull(fieldName) {
+      return !request.resource.data.keys().hasAny([fieldName])
+        || request.resource.data[fieldName] == null;
+    }
+
+    function isUnsetOrFalse(fieldName) {
+      return !request.resource.data.keys().hasAny([fieldName])
+        || request.resource.data[fieldName] == false;
+    }
+
+    function isUnsetOrZero(fieldName) {
+      return !request.resource.data.keys().hasAny([fieldName])
+        || request.resource.data[fieldName] == 0;
+    }
+
     function isValidActiveReviewAnswerUpdate(uid, palaceId) {
-      return resource.data.status == 'active'
-        && request.resource.data.status == 'active'
+      return resource.data.userId == uid
+        && resource.data.palaceId == palaceId
+        && resource.data.status == 'active'
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.palaceId == resource.data.palaceId
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.totalStations == resource.data.totalStations
+        && request.resource.data.status == resource.data.status
         && changedKeys().hasOnly([
           'correctAnswers',
           'incorrectAnswers',
           'updatedAt'
         ])
-        && request.resource.data.completedAt == null
-        && request.resource.data.xpEarned == 0
-        && request.resource.data.xpAppliedToUser == false
-        && (
-          !request.resource.data.keys().hasAny(['isPerfect'])
-          || request.resource.data.isPerfect == false
-        )
         && reviewCountersAreValid()
         && oneAnswerCounterTransition()
         && request.resource.data.updatedAt is timestamp;
@@ -715,6 +729,84 @@ service cloud.firestore {
         && request.resource.data.updatedAt is timestamp;
     }
 
+    function isValidRecordAnswerCounterUpdate(uid, palaceId) {
+      return resource.data.userId == uid
+        && resource.data.palaceId == palaceId
+        && resource.data.status == 'active'
+        && resource.data.totalStations is int
+        && resource.data.totalStations >= 2
+        && resource.data.totalStations <= 20
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.palaceId == resource.data.palaceId
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.totalStations == resource.data.totalStations
+        && request.resource.data.correctAnswers is int
+        && request.resource.data.incorrectAnswers is int
+        && request.resource.data.correctAnswers >= 0
+        && request.resource.data.incorrectAnswers >= 0
+        && request.resource.data.correctAnswers <= resource.data.totalStations
+        && request.resource.data.incorrectAnswers <= resource.data.totalStations
+        && request.resource.data.correctAnswers + request.resource.data.incorrectAnswers <= resource.data.totalStations
+        && (
+          (
+            request.resource.data.correctAnswers == resource.data.correctAnswers + 1
+            && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers
+          )
+          || (
+            request.resource.data.correctAnswers == resource.data.correctAnswers
+            && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers + 1
+          )
+          || (
+            request.resource.data.correctAnswers == resource.data.correctAnswers
+            && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers
+          )
+          || (
+            request.resource.data.correctAnswers == resource.data.correctAnswers + 1
+            && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers - 1
+          )
+          || (
+            request.resource.data.correctAnswers == resource.data.correctAnswers - 1
+            && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers + 1
+          )
+        )
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'correctAnswers',
+          'incorrectAnswers',
+          'updatedAt'
+        ])
+        && request.resource.data.updatedAt is timestamp;
+    }
+    function isValidCompleteReviewUpdate(uid, palaceId) {
+      return resource.data.userId == uid
+        && resource.data.palaceId == palaceId
+        && resource.data.status == 'active'
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.palaceId == resource.data.palaceId
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.totalStations == resource.data.totalStations
+        && request.resource.data.correctAnswers == resource.data.correctAnswers
+        && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers
+        && request.resource.data.status == 'completed'
+        && request.resource.data.completedAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.xpEarned is int
+        && (
+          request.resource.data.xpEarned == 20
+          || request.resource.data.xpEarned == 70
+        )
+        && request.resource.data.xpAppliedToUser == false
+        && request.resource.data.isPerfect is bool
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'completedAt',
+          'xpEarned',
+          'xpAppliedToUser',
+          'isPerfect',
+          'status',
+          'updatedAt'
+        ]);
+    }
+
     function isValidReviewSessionUpdate(uid, palaceId) {
       return request.resource.data.keys().hasOnly([
           'palaceId',
@@ -740,7 +832,15 @@ service cloud.firestore {
         );
     }
 
-    function isValidReviewAnswer(uid, palaceId, sessionId) {
+    function reviewSessionPath(uid, palaceId, sessionId) {
+      return /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId);
+    }
+
+    function stationPath(uid, palaceId, stationId) {
+      return /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/stations/$(stationId);
+    }
+
+    function isValidReviewAnswer(uid, palaceId, sessionId, answerId) {
       return request.resource.data.keys().hasOnly([
           'sessionId',
           'stationId',
@@ -750,14 +850,12 @@ service cloud.firestore {
         && request.resource.data.sessionId == sessionId
         && request.resource.data.stationId is string
         && request.resource.data.stationId.size() > 0
-        && get(
-          /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId)
-        ).data.status == 'active'
-        && exists(
-          /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/stations/$(request.resource.data.stationId)
-        )
+        && answerId == request.resource.data.stationId
         && request.resource.data.correct is bool
-        && request.resource.data.answeredAt is timestamp;
+        && (
+          !request.resource.data.keys().hasAny(['answeredAt'])
+          || request.resource.data.answeredAt is timestamp
+        );
     }
 
     function isValidAchievementWrite(uid, achievementId) {
@@ -820,6 +918,60 @@ service cloud.firestore {
         && isOptionalTimestamp('unlockedAt');
     }
 
+
+    function isValidStatsInt(value, maxValue) {
+      return value is int && value >= 0 && value <= maxValue;
+    }
+
+    function isValidStatsSummaryShape() {
+      return request.resource.data.keys().hasOnly([
+          'totalPalaces',
+          'totalStations',
+          'totalReviewSessions',
+          'totalPerfectReviews',
+          'totalCorrectAnswers',
+          'totalIncorrectAnswers',
+          'stationsWithImages',
+          'usedTemplateIds',
+          'reviewDateStrings',
+          'fastestReviewSeconds',
+          'updatedAt',
+          'rebuiltAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'totalPalaces',
+          'totalStations',
+          'totalReviewSessions',
+          'totalPerfectReviews',
+          'totalCorrectAnswers',
+          'totalIncorrectAnswers',
+          'stationsWithImages',
+          'usedTemplateIds',
+          'reviewDateStrings',
+          'fastestReviewSeconds',
+          'updatedAt'
+        ])
+        && isValidStatsInt(request.resource.data.totalPalaces, 1000)
+        && isValidStatsInt(request.resource.data.totalStations, 20000)
+        && isValidStatsInt(request.resource.data.totalReviewSessions, 100000)
+        && isValidStatsInt(request.resource.data.totalPerfectReviews, 100000)
+        && request.resource.data.totalPerfectReviews <= request.resource.data.totalReviewSessions
+        && isValidStatsInt(request.resource.data.totalCorrectAnswers, 2000000)
+        && isValidStatsInt(request.resource.data.totalIncorrectAnswers, 2000000)
+        && isValidStatsInt(request.resource.data.stationsWithImages, 20000)
+        && request.resource.data.stationsWithImages <= request.resource.data.totalStations
+        && request.resource.data.usedTemplateIds is list
+        && request.resource.data.usedTemplateIds.size() <= 6
+        && request.resource.data.reviewDateStrings is list
+        && request.resource.data.reviewDateStrings.size() <= 5000
+        && (
+          request.resource.data.fastestReviewSeconds == null
+          || isValidStatsInt(request.resource.data.fastestReviewSeconds, 86400)
+        )
+        && request.resource.data.updatedAt is timestamp
+        && isOptionalTimestamp('rebuiltAt');
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
 
@@ -830,6 +982,16 @@ service cloud.firestore {
         && isValidUserProfileUpdate(uid);
 
       allow delete: if false;
+
+      match /stats/{statsId} {
+        allow read: if isOwner(uid);
+
+        allow create, update: if isOwner(uid)
+          && statsId == 'summary'
+          && isValidStatsSummaryShape();
+
+        allow delete: if false;
+      }
 
       match /xpEvents/{eventId} {
         allow read: if isOwner(uid);
@@ -885,20 +1047,24 @@ service cloud.firestore {
             && isValidReviewSessionCreate(uid, palaceId);
 
           allow update: if isOwner(uid)
-            && isValidReviewSessionUpdate(uid, palaceId);
+            && (
+              isValidRecordAnswerCounterUpdate(uid, palaceId)
+              || isValidCompleteReviewUpdate(uid, palaceId)
+              || isValidReviewXPAppliedUpdate(uid, palaceId)
+              || isValidReviewSessionUpdate(uid, palaceId)
+            );
 
-          allow delete: if false;
+          allow delete: if isOwner(uid)
+            && resource.data.userId == uid
+            && resource.data.palaceId == palaceId;
 
           match /answers/{answerId} {
             allow read: if isOwner(uid);
 
             allow create, update: if isOwner(uid)
-              && exists(
-                /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId)
-              )
-              && isValidReviewAnswer(uid, palaceId, sessionId);
+              && isValidReviewAnswer(uid, palaceId, sessionId, answerId);
 
-            allow delete: if false;
+            allow delete: if isOwner(uid);
           }
         }
       }

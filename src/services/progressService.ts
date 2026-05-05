@@ -20,11 +20,9 @@ import {
   getXpRemainingForNextLevel,
 } from '../utils/levelUtils';
 import { db } from './firebase';
+import { getUserStatsSummary } from './statsService';
 
 const USERS_COLLECTION = 'users';
-const PALACES_COLLECTION = 'palaces';
-const STATIONS_COLLECTION = 'stations';
-const REVIEW_SESSIONS_COLLECTION = 'reviewSessions';
 const ACHIEVEMENTS_COLLECTION = 'achievements';
 
 export interface WeeklyActivityDay {
@@ -65,32 +63,6 @@ const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
 
 const getUserRef = (userId: string) => {
   return doc(db, USERS_COLLECTION, userId);
-};
-
-const getPalacesCollectionRef = (userId: string) => {
-  return collection(db, USERS_COLLECTION, userId, PALACES_COLLECTION);
-};
-
-const getStationsCollectionRef = (userId: string, palaceId: string) => {
-  return collection(
-    db,
-    USERS_COLLECTION,
-    userId,
-    PALACES_COLLECTION,
-    palaceId,
-    STATIONS_COLLECTION,
-  );
-};
-
-const getReviewSessionsCollectionRef = (userId: string, palaceId: string) => {
-  return collection(
-    db,
-    USERS_COLLECTION,
-    userId,
-    PALACES_COLLECTION,
-    palaceId,
-    REVIEW_SESSIONS_COLLECTION,
-  );
 };
 
 const getAchievementsCollectionRef = (userId: string) => {
@@ -209,7 +181,11 @@ export const getProgressStats = async (
     throw new Error('getProgressStats failed: userId is required.');
   }
 
-  const userSnapshot = await getDoc(getUserRef(userId));
+  const [userSnapshot, statsSummary, recentAchievements] = await Promise.all([
+    getDoc(getUserRef(userId)),
+    getUserStatsSummary(userId),
+    getRecentAchievements(userId),
+  ]);
 
   if (!userSnapshot.exists()) {
     throw new Error(`User profile "${userId}" does not exist.`);
@@ -224,49 +200,12 @@ export const getProgressStats = async (
   const currentStreak = getSafeNumber(userData.streak);
   const bestStreak = getSafeNumber(userData.bestStreak, currentStreak);
 
-  const palacesSnapshot = await getDocs(getPalacesCollectionRef(userId));
-  const palaceDocs = palacesSnapshot.docs;
-
-  let totalStations = 0;
-  let totalReviewsCompleted = 0;
-
-  const reviewedDateStrings = new Set<string>();
-
-  await Promise.all(
-    palaceDocs.map(async (palaceDoc) => {
-      const palaceId = palaceDoc.id;
-
-      const [stationsSnapshot, reviewSessionsSnapshot] = await Promise.all([
-        getDocs(getStationsCollectionRef(userId, palaceId)),
-        getDocs(getReviewSessionsCollectionRef(userId, palaceId)),
-      ]);
-
-      totalStations += stationsSnapshot.size;
-
-      reviewSessionsSnapshot.docs.forEach((reviewDoc) => {
-        const reviewData = reviewDoc.data();
-
-        if (reviewData.status !== 'completed') {
-          return;
-        }
-
-        totalReviewsCompleted += 1;
-
-        const completedAt = timestampToDate(reviewData.completedAt);
-
-        if (completedAt) {
-          reviewedDateStrings.add(getLocalDateString(completedAt));
-        }
-      });
-    }),
-  );
+  const reviewedDateStrings = new Set(statsSummary.reviewDateStrings);
 
   const weeklyActivity = getCurrentWeekMondayToSunday().map((day) => ({
     ...day,
     reviewed: reviewedDateStrings.has(day.dateString),
   }));
-
-  const recentAchievements = await getRecentAchievements(userId);
 
   return {
     totalXP,
@@ -279,9 +218,9 @@ export const getProgressStats = async (
     currentStreak,
     bestStreak,
 
-    totalPalaces: palaceDocs.length,
-    totalStations,
-    totalReviewsCompleted,
+    totalPalaces: statsSummary.totalPalaces,
+    totalStations: statsSummary.totalStations,
+    totalReviewsCompleted: statsSummary.totalReviewSessions,
 
     weeklyActivity,
     recentAchievements,

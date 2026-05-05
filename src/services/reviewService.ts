@@ -23,6 +23,7 @@ import type {
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { recordReviewCompleted } from './statsService';
 import { addXP, buildXPEventId, type AddXPResult } from './xpService';
 
 const USERS_COLLECTION = 'users';
@@ -349,6 +350,40 @@ const awardReviewXPSafely = async ({
   }
 };
 
+
+const recordReviewCompletedSafely = async ({
+  userId,
+  totalStations,
+  correctAnswers,
+  incorrectAnswers,
+  isPerfect,
+  durationSeconds,
+  completedAt,
+}: {
+  userId: string;
+  totalStations: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  isPerfect: boolean;
+  durationSeconds: number | null;
+  completedAt: Date;
+}): Promise<void> => {
+  try {
+    await recordReviewCompleted(userId, {
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+      isPerfect,
+      durationSeconds,
+      completedAt,
+    });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats update after review completion was skipped:', error);
+    }
+  }
+};
+
 export const startReview = async ({
   palaceId,
   userId,
@@ -522,6 +557,7 @@ export const completeReview = async ({
   let incorrectAnswers = 0;
   let startedAt: Timestamp | null = null;
   let reviewXpAlreadyApplied = false;
+  let reviewWasNewlyCompleted = false;
   let completionDateForDuration = new Date();
 
   await runTransaction(db, async (transaction) => {
@@ -587,6 +623,9 @@ export const completeReview = async ({
       incorrectAnswers,
     });
 
+    reviewWasNewlyCompleted = true;
+    completionDateForDuration = new Date();
+
     transaction.update(sessionRef, {
       completedAt: serverTimestamp(),
       xpEarned,
@@ -596,6 +635,23 @@ export const completeReview = async ({
       updatedAt: serverTimestamp(),
     });
   });
+
+  const durationSeconds = getReviewDurationSeconds(
+    startedAt,
+    completionDateForDuration,
+  );
+
+  if (reviewWasNewlyCompleted) {
+    await recordReviewCompletedSafely({
+      userId,
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+      isPerfect: perfect,
+      durationSeconds,
+      completedAt: completionDateForDuration,
+    });
+  }
 
   if (xpEarned > 0 && !reviewXpAlreadyApplied) {
     const xpApplication = await awardReviewXPSafely({
@@ -624,10 +680,7 @@ export const completeReview = async ({
     palaceId,
     sessionId,
     isPerfect: perfect,
-    durationSeconds: getReviewDurationSeconds(
-      startedAt,
-      completionDateForDuration,
-    ),
+    durationSeconds,
     correctAnswers,
     totalStations,
     xpEarned,

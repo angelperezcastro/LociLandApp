@@ -22,6 +22,10 @@ import type { Palace, PalaceTemplateId } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import {
+  rebuildUserStatsSummary,
+  recordPalaceCreated,
+} from './statsService';
 import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
@@ -198,6 +202,32 @@ const checkAchievementsSafely = async (
   }
 };
 
+
+const recordPalaceCreatedSafely = async (
+  userId: string,
+  templateId: PalaceTemplateId,
+): Promise<void> => {
+  try {
+    await recordPalaceCreated(userId, templateId);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats update after palace creation was skipped:', error);
+    }
+  }
+};
+
+const rebuildStatsAfterPalaceDeletionSafely = async (
+  userId: string,
+): Promise<void> => {
+  try {
+    await rebuildUserStatsSummary(userId);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Stats rebuild after palace deletion was skipped:', error);
+    }
+  }
+};
+
 const mapPalaceDoc = (
   snapshot: QueryDocumentSnapshot<DocumentData>,
 ): Palace => {
@@ -299,6 +329,7 @@ export const createPalace = async (
     createdAt: serverTimestamp(),
   });
 
+  await recordPalaceCreatedSafely(userId, templateId);
   await grantCreatePalaceXPSafely(userId, docRef.id, templateId);
   await checkAchievementsSafely(userId, docRef.id, templateId);
 
@@ -378,6 +409,7 @@ export const deletePalaceDeep = async (
 
   await deleteDoc(palaceRef);
 
+  await rebuildStatsAfterPalaceDeletionSafely(userId);
   await deleteStationImagesSafely(stationImageUris);
 };
 
