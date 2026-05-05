@@ -1,6 +1,10 @@
 // src/services/xpService.ts
 
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  runTransaction,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 import { useLevelUpStore } from '../store/useLevelUpStore';
 import { getLevelFromXP, getLevelTitle } from '../utils/levelUtils';

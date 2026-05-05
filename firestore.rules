@@ -88,6 +88,10 @@ service cloud.firestore {
         && value.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function xpEventPath(uid, eventId) {
+      return /databases/$(db)/documents/users/$(uid)/xpEvents/$(eventId);
+    }
+
     function hasOnlyUserProfileFields() {
       return request.resource.data.keys().hasOnly([
         'uid',
@@ -213,9 +217,6 @@ service cloud.firestore {
 
     function isValidXPGrantUserUpdate(uid) {
       let eventId = request.resource.data.lastXPEventId;
-      let event = getAfter(
-        /databases/$(db)/documents/users/$(uid)/xpEvents/$(eventId)
-      ).data;
 
       return changedKeys().hasOnly([
           'xp',
@@ -226,6 +227,8 @@ service cloud.firestore {
           'lastXPEventId'
         ])
         && isValidXPEventId(eventId)
+        && !exists(xpEventPath(uid, eventId))
+        && existsAfter(xpEventPath(uid, eventId))
         && request.resource.data.updatedAt is timestamp
         && request.resource.data.lastXPGrantAt is timestamp
         && request.resource.data.xp is int
@@ -235,14 +238,15 @@ service cloud.firestore {
         && request.resource.data.level >= 1
         && request.resource.data.level <= 10
         && isValidLevelTitle(request.resource.data.levelTitle)
-        && event.eventId == eventId
-        && event.userId == uid
-        && event.previousXP == previousXP()
-        && event.newXP == request.resource.data.xp
-        && event.previousLevel == previousLevel()
-        && event.newLevel == request.resource.data.level
-        && event.levelTitle == request.resource.data.levelTitle
-        && request.resource.data.xp == previousXP() + event.amount
+        && getAfter(xpEventPath(uid, eventId)).data.eventId == eventId
+        && getAfter(xpEventPath(uid, eventId)).data.userId == uid
+        && getAfter(xpEventPath(uid, eventId)).data.amount == request.resource.data.xp - previousXP()
+        && getAfter(xpEventPath(uid, eventId)).data.previousXP == previousXP()
+        && getAfter(xpEventPath(uid, eventId)).data.newXP == request.resource.data.xp
+        && getAfter(xpEventPath(uid, eventId)).data.previousLevel == previousLevel()
+        && getAfter(xpEventPath(uid, eventId)).data.newLevel == request.resource.data.level
+        && getAfter(xpEventPath(uid, eventId)).data.levelTitle == request.resource.data.levelTitle
+        && request.resource.data.xp == previousXP() + getAfter(xpEventPath(uid, eventId)).data.amount
         && request.resource.data.level == expectedLevelFromXP(request.resource.data.xp);
     }
 
@@ -342,7 +346,8 @@ service cloud.firestore {
     function xpEventIsLinkedToUserUpdate(uid, eventId) {
       let userAfter = getAfter(/databases/$(db)/documents/users/$(uid)).data;
 
-      return userAfter.lastXPEventId == eventId
+      return existsAfter(/databases/$(db)/documents/users/$(uid))
+        && userAfter.lastXPEventId == eventId
         && userAfter.xp == request.resource.data.newXP
         && userAfter.level == request.resource.data.newLevel
         && userAfter.levelTitle == request.resource.data.levelTitle
@@ -420,7 +425,8 @@ service cloud.firestore {
     }
 
     function isValidXPEventCreate(uid, eventId) {
-      return hasValidXPEventBase(uid, eventId)
+      return !exists(xpEventPath(uid, eventId))
+        && hasValidXPEventBase(uid, eventId)
         && xpEventIsLinkedToUserUpdate(uid, eventId)
         && (
           isValidCreatePalaceXPEvent(uid)
@@ -660,13 +666,13 @@ service cloud.firestore {
     }
 
     function immutableReviewSessionFieldsArePreserved(uid, palaceId) {
-  return resource.data.userId == uid
-    && resource.data.palaceId == palaceId
-    && request.resource.data.userId == resource.data.userId
-    && request.resource.data.palaceId == resource.data.palaceId
-    && request.resource.data.startedAt == resource.data.startedAt
-    && request.resource.data.totalStations == resource.data.totalStations;
-}
+      return resource.data.userId == uid
+        && resource.data.palaceId == palaceId
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.palaceId == resource.data.palaceId
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.totalStations == resource.data.totalStations;
+    }
 
     function isValidActiveReviewAnswerUpdate(uid, palaceId) {
       return resource.data.status == 'active'
@@ -722,29 +728,29 @@ service cloud.firestore {
     }
 
     function isValidReviewSessionUpdate(uid, palaceId) {
-  return request.resource.data.keys().hasOnly([
-      'palaceId',
-      'userId',
-      'startedAt',
-      'completedAt',
-      'totalStations',
-      'correctAnswers',
-      'incorrectAnswers',
-      'xpEarned',
-      'xpAppliedToUser',
-      'xpAppliedAt',
-      'isPerfect',
-      'status',
-      'updatedAt'
-    ])
-    && immutableReviewSessionFieldsArePreserved(uid, palaceId)
-    && hasValidReviewXpAppliedFlag()
-    && (
-      isValidActiveReviewAnswerUpdate(uid, palaceId)
-      || isValidReviewCompletionUpdate(uid, palaceId)
-      || isValidReviewXPAppliedUpdate(uid, palaceId)
-    );
-}
+      return request.resource.data.keys().hasOnly([
+          'palaceId',
+          'userId',
+          'startedAt',
+          'completedAt',
+          'totalStations',
+          'correctAnswers',
+          'incorrectAnswers',
+          'xpEarned',
+          'xpAppliedToUser',
+          'xpAppliedAt',
+          'isPerfect',
+          'status',
+          'updatedAt'
+        ])
+        && immutableReviewSessionFieldsArePreserved(uid, palaceId)
+        && hasValidReviewXpAppliedFlag()
+        && (
+          isValidActiveReviewAnswerUpdate(uid, palaceId)
+          || isValidReviewCompletionUpdate(uid, palaceId)
+          || isValidReviewXPAppliedUpdate(uid, palaceId)
+        );
+    }
 
     function isValidReviewAnswer(uid, palaceId, sessionId) {
       return request.resource.data.keys().hasOnly([
@@ -841,7 +847,7 @@ service cloud.firestore {
         allow read: if isOwner(uid);
 
         allow create: if isOwner(uid)
-          && !exists(/databases/$(db)/documents/users/$(uid)/xpEvents/$(eventId))
+          && !exists(xpEventPath(uid, eventId))
           && isValidXPEventCreate(uid, eventId);
 
         allow update, delete: if false;
