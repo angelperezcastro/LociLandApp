@@ -1,6 +1,6 @@
 // src/screens/app/ProgressScreen.tsx
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   SafeAreaView,
@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { AnimatedNumber } from '../../components/gamification/AnimatedNumber';
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
+import { useAgeGroup, type AgeGroupUi } from '../../hooks/useAgeGroup';
 import {
   getProgressStats,
   type ProgressStats,
@@ -24,6 +25,7 @@ import {
   colors,
   fontFamilies,
   fontSizes,
+  lineHeights,
   radius,
   shadows,
   spacing,
@@ -42,8 +44,20 @@ const formatAchievementDate = (date: Date | null): string => {
   });
 };
 
+const getStarsFromProgress = (value: number, maxReference: number): string => {
+  if (value <= 0) {
+    return '☆☆☆☆☆';
+  }
+
+  const filledStars = Math.min(5, Math.max(1, Math.ceil((value / maxReference) * 5)));
+  const emptyStars = 5 - filledStars;
+
+  return `${'★'.repeat(filledStars)}${'☆'.repeat(emptyStars)}`;
+};
+
 export function ProgressScreen() {
   const profile = useUserStore((state) => state.profile);
+  const ageGroupUi = useAgeGroup();
 
   const [stats, setStats] = useState<ProgressStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +114,20 @@ export function ProgressScreen() {
     }
   };
 
+  const dynamicTextStyles = useMemo(
+    () => ({
+      screenTitle: {
+        fontSize: ageGroupUi.scaleFont(fontSizes.display),
+        lineHeight: ageGroupUi.scaleLineHeight(lineHeights.display),
+      },
+      screenSubtitle: {
+        fontSize: ageGroupUi.scaleFont(fontSizes.md),
+        lineHeight: ageGroupUi.scaleLineHeight(lineHeights.md),
+      },
+    }),
+    [ageGroupUi],
+  );
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen}>
@@ -143,7 +171,10 @@ export function ProgressScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          ageGroupUi.isYounger ? styles.youngerContent : null,
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -154,9 +185,24 @@ export function ProgressScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.screenTitle}>Progress</Text>
-          <Text style={styles.screenSubtitle}>
-            Watch your memory powers grow.
+          <Text
+            style={[
+              styles.screenTitle,
+              ageGroupUi.isYounger ? dynamicTextStyles.screenTitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger ? 'Progress ⭐' : 'Progress'}
+          </Text>
+
+          <Text
+            style={[
+              styles.screenSubtitle,
+              ageGroupUi.isYounger ? dynamicTextStyles.screenSubtitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger
+              ? 'Your memory stars are growing.'
+              : 'Watch your memory powers grow.'}
           </Text>
         </View>
 
@@ -167,15 +213,126 @@ export function ProgressScreen() {
           </View>
         ) : null}
 
-        <TotalXpCard stats={stats} />
-        <LevelCard stats={stats} />
-        <WeeklyActivityCard days={stats.weeklyActivity} />
-        <StatsGrid stats={stats} />
-        <RecentAchievementsCard achievements={stats.recentAchievements} />
+        {ageGroupUi.isYounger ? (
+          <YoungerProgressDashboard stats={stats} ageGroupUi={ageGroupUi} />
+        ) : (
+          <>
+            <TotalXpCard stats={stats} />
+            <LevelCard stats={stats} />
+            <WeeklyActivityCard days={stats.weeklyActivity} />
+            <StatsGrid stats={stats} />
+            <RecentAchievementsCard
+              achievements={stats.recentAchievements}
+              showXpReward
+            />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const YoungerProgressDashboard = ({
+  stats,
+  ageGroupUi,
+}: {
+  stats: ProgressStats;
+  ageGroupUi: AgeGroupUi;
+}) => {
+  const totalMemoryActions =
+    stats.totalPalaces + stats.totalStations + stats.totalReviewsCompleted;
+
+  return (
+    <>
+      <View style={styles.youngerHeroCard}>
+        <Text
+          style={[
+            styles.youngerHeroEmoji,
+            { fontSize: ageGroupUi.scaleFont(fontSizes.display + spacing.md) },
+          ]}
+        >
+          🌟
+        </Text>
+
+        <Text
+          style={[
+            styles.youngerHeroTitle,
+            {
+              fontSize: ageGroupUi.scaleFont(fontSizes.xxl),
+              lineHeight: ageGroupUi.scaleLineHeight(lineHeights.xxl),
+            },
+          ]}
+        >
+          Memory Stars
+        </Text>
+
+        <Text style={styles.youngerStars}>
+          {getStarsFromProgress(totalMemoryActions, 20)}
+        </Text>
+
+        <Text
+          style={[
+            styles.youngerHeroSubtitle,
+            {
+              fontSize: ageGroupUi.scaleFont(fontSizes.md),
+              lineHeight: ageGroupUi.scaleLineHeight(lineHeights.md),
+            },
+          ]}
+        >
+          Keep visiting your palaces to fill more stars.
+        </Text>
+      </View>
+
+      <YoungerWeeklyActivityCard days={stats.weeklyActivity} ageGroupUi={ageGroupUi} />
+
+      <View style={styles.sectionCard}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              fontSize: ageGroupUi.scaleFont(fontSizes.xl),
+              lineHeight: ageGroupUi.scaleLineHeight(lineHeights.xl),
+            },
+          ]}
+        >
+          Your adventure 🏰
+        </Text>
+
+        <View style={styles.youngerStatsGrid}>
+          <YoungerStatTile
+            emoji="🏛️"
+            stars={getStarsFromProgress(stats.totalPalaces, 5)}
+            label="Palaces"
+            ageGroupUi={ageGroupUi}
+          />
+          <YoungerStatTile
+            emoji="🚩"
+            stars={getStarsFromProgress(stats.totalStations, 20)}
+            label="Stations"
+            ageGroupUi={ageGroupUi}
+          />
+          <YoungerStatTile
+            emoji="🧠"
+            stars={getStarsFromProgress(stats.totalReviewsCompleted, 10)}
+            label="Reviews"
+            ageGroupUi={ageGroupUi}
+          />
+          <YoungerStatTile
+            emoji="🔥"
+            stars={getStarsFromProgress(stats.bestStreak, 7)}
+            label="Streak"
+            ageGroupUi={ageGroupUi}
+          />
+        </View>
+      </View>
+
+      <RecentAchievementsCard
+        achievements={stats.recentAchievements}
+        showXpReward={false}
+      />
+    </>
+  );
+};
 
 const TotalXpCard = ({ stats }: { stats: ProgressStats }) => {
   return (
@@ -279,6 +436,75 @@ const WeeklyActivityCard = ({ days }: { days: WeeklyActivityDay[] }) => {
   );
 };
 
+const YoungerWeeklyActivityCard = ({
+  days,
+  ageGroupUi,
+}: {
+  days: WeeklyActivityDay[];
+  ageGroupUi: AgeGroupUi;
+}) => {
+  return (
+    <View style={styles.sectionCard}>
+      <Text
+        style={[
+          styles.sectionTitle,
+          {
+            fontSize: ageGroupUi.scaleFont(fontSizes.xl),
+            lineHeight: ageGroupUi.scaleLineHeight(lineHeights.xl),
+          },
+        ]}
+      >
+        This week ⭐
+      </Text>
+
+      <Text
+        style={[
+          styles.sectionSubtitle,
+          {
+            fontSize: ageGroupUi.scaleFont(fontSizes.sm),
+            lineHeight: ageGroupUi.scaleLineHeight(lineHeights.sm),
+          },
+        ]}
+      >
+        Stars show the days you practised.
+      </Text>
+
+      <View style={styles.weekRow}>
+        {days.map((day) => (
+          <View key={day.dateString} style={styles.weekDay}>
+            <View
+              style={[
+                styles.youngerDayCircle,
+                day.reviewed
+                  ? styles.youngerDayCircleFilled
+                  : styles.dayCircleEmpty,
+                day.isToday ? styles.todayCircle : null,
+              ]}
+            >
+              <Text style={styles.youngerDayEmoji}>
+                {day.reviewed ? '⭐' : '·'}
+              </Text>
+            </View>
+
+            <Text
+              style={[
+                styles.dayLabel,
+                day.isToday ? styles.todayDayLabel : null,
+                {
+                  fontSize: ageGroupUi.scaleFont(fontSizes.xs),
+                  lineHeight: ageGroupUi.scaleLineHeight(lineHeights.xs),
+                },
+              ]}
+            >
+              {day.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 const StatsGrid = ({ stats }: { stats: ProgressStats }) => {
   return (
     <View style={styles.sectionCard}>
@@ -312,14 +538,55 @@ const StatTile = ({
   );
 };
 
+const YoungerStatTile = ({
+  emoji,
+  stars,
+  label,
+  ageGroupUi,
+}: {
+  emoji: string;
+  stars: string;
+  label: string;
+  ageGroupUi: AgeGroupUi;
+}) => {
+  return (
+    <View style={styles.youngerStatTile}>
+      <Text
+        style={[
+          styles.statEmoji,
+          { fontSize: ageGroupUi.scaleFont(fontSizes.xxl) },
+        ]}
+      >
+        {emoji}
+      </Text>
+      <Text style={styles.youngerStatStars}>{stars}</Text>
+      <Text
+        style={[
+          styles.statLabel,
+          {
+            fontSize: ageGroupUi.scaleFont(fontSizes.xs),
+            lineHeight: ageGroupUi.scaleLineHeight(lineHeights.xs),
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+};
+
 const RecentAchievementsCard = ({
   achievements,
+  showXpReward,
 }: {
   achievements: RecentAchievementSummary[];
+  showXpReward: boolean;
 }) => {
   return (
     <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>Recent achievements</Text>
+      <Text style={styles.sectionTitle}>
+        {showXpReward ? 'Recent achievements' : 'Badges 🏆'}
+      </Text>
 
       {achievements.length === 0 ? (
         <View style={styles.emptyAchievementBox}>
@@ -353,11 +620,13 @@ const RecentAchievementsCard = ({
                 {formatAchievementDate(achievement.earnedAt)}
               </Text>
 
-              <View style={styles.recentAchievementXpPill}>
-                <Text style={styles.recentAchievementXpText}>
-                  +{achievement.xpReward} XP
-                </Text>
-              </View>
+              {showXpReward ? (
+                <View style={styles.recentAchievementXpPill}>
+                  <Text style={styles.recentAchievementXpText}>
+                    +{achievement.xpReward} XP
+                  </Text>
+                </View>
+              ) : null}
             </View>
           ))}
         </ScrollView>
@@ -378,6 +647,9 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: spacing.xxxl * 2,
+  },
+  youngerContent: {
+    paddingHorizontal: spacing.md,
   },
   header: {
     marginBottom: spacing.lg,
@@ -454,6 +726,36 @@ const styles = StyleSheet.create({
   heroBadgeEmoji: {
     ...typography.display,
     fontSize: fontSizes.display,
+  },
+  youngerHeroCard: {
+    minHeight: 230,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.xxl,
+    backgroundColor: colors.primary,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    ...shadows.elevated,
+  },
+  youngerHeroEmoji: {
+    marginBottom: spacing.xs,
+  },
+  youngerHeroTitle: {
+    ...typography.h1,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  youngerStars: {
+    ...typography.h1,
+    color: colors.text,
+    letterSpacing: 2,
+    marginBottom: spacing.md,
+  },
+  youngerHeroSubtitle: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    textAlign: 'center',
   },
   sectionCard: {
     borderRadius: radius.xxl,
@@ -541,9 +843,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginBottom: spacing.xs,
   },
+  youngerDayCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    marginBottom: spacing.xs,
+  },
   dayCircleFilled: {
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
+  },
+  youngerDayCircleFilled: {
+    backgroundColor: colors.primary,
+    borderColor: colors.accent,
   },
   dayCircleEmpty: {
     backgroundColor: colors.surfaceMuted,
@@ -562,6 +877,11 @@ const styles = StyleSheet.create({
   dayCircleTextFilled: {
     color: colors.surface,
   },
+  youngerDayEmoji: {
+    fontSize: fontSizes.lg,
+    color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
+  },
   dayLabel: {
     ...typography.small,
     color: colors.textSoft,
@@ -576,9 +896,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  youngerStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   statTile: {
     width: '48%',
     minHeight: 142,
+    borderRadius: radius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+  },
+  youngerStatTile: {
+    width: '48%',
+    minHeight: 150,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
@@ -593,6 +927,12 @@ const styles = StyleSheet.create({
   statValue: {
     ...typography.h1,
     color: colors.accent,
+  },
+  youngerStatStars: {
+    ...typography.bodyStrong,
+    color: colors.accent,
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
   },
   statLabel: {
     ...typography.small,

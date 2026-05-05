@@ -15,6 +15,7 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { AVATAR_EMOJI_OPTIONS } from '../../constants/validation';
+import { useAgeGroup } from '../../hooks/useAgeGroup';
 import {
   deleteCurrentUserAccount,
   resetPassword,
@@ -66,6 +67,12 @@ const AGE_GROUP_OPTIONS: Array<{
   },
 ];
 
+const AGE_GROUP_FONT_SCALE = 1.15;
+const YOUNGER_SECTION_TITLE_SIZE = Math.round(fontSizes.xl * AGE_GROUP_FONT_SCALE);
+const YOUNGER_SECTION_TITLE_LINE_HEIGHT = Math.round(30 * AGE_GROUP_FONT_SCALE);
+const YOUNGER_BADGE_TEXT_SIZE = Math.round(fontSizes.sm * AGE_GROUP_FONT_SCALE);
+const YOUNGER_BADGE_LINE_HEIGHT = Math.round(20 * AGE_GROUP_FONT_SCALE);
+
 const PROFILE_SIZES = {
   heroAvatar: 112,
   avatarEmoji: 52,
@@ -73,7 +80,7 @@ const PROFILE_SIZES = {
   achievementIconContainer: 64,
   achievementArrowContainer: 52,
   minSettingRowHeight: 60,
-  minPrimaryActionHeight: 54,
+  minPrimaryActionHeight: 56,
 } as const;
 
 function chunkArray<T>(items: T[], size: number): T[][] {
@@ -111,6 +118,20 @@ function getCurrentStreakFromWeeklyActivity(
   }
 
   return streak;
+}
+
+function getStarsFromValue(value: number, maxReference: number): string {
+  if (value <= 0) {
+    return '☆☆☆☆☆';
+  }
+
+  const filledStars = Math.min(
+    5,
+    Math.max(1, Math.ceil((value / maxReference) * 5)),
+  );
+  const emptyStars = 5 - filledStars;
+
+  return `${'★'.repeat(filledStars)}${'☆'.repeat(emptyStars)}`;
 }
 
 function isRecentLoginRequired(error: unknown): boolean {
@@ -158,6 +179,9 @@ export function ProfileScreen() {
   const setUserProfile = useUserStore((state) => state.setUserProfile);
   const clearUser = useUserStore((state) => state.clearUser);
 
+  const currentAgeGroup = normalizeAgeGroup(profile?.ageGroup);
+  const ageGroupUi = useAgeGroup(currentAgeGroup);
+
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -183,9 +207,9 @@ export function ProfileScreen() {
       : derivedCurrentStreak > 0
         ? derivedCurrentStreak
         : profile?.streak ?? 0;
+
   const levelTitle =
     progressStats?.levelTitle ?? profile?.levelTitle ?? getLevelTitle(currentLevel);
-  const currentAgeGroup = normalizeAgeGroup(profile?.ageGroup);
 
   const nextLevelXp = progressStats?.xpForNextLevel ?? getXpForNextLevel(currentLevel);
   const xpRemaining =
@@ -445,12 +469,27 @@ export function ProfileScreen() {
             <Text style={styles.avatar}>{profile.avatarEmoji ?? '🦊'}</Text>
           </View>
 
-          <Text style={styles.name}>{profile.displayName ?? 'Explorer'}</Text>
+          <Text
+            style={[
+              styles.name,
+              ageGroupUi.isYounger ? styles.youngerName : null,
+            ]}
+          >
+            {profile.displayName ?? 'Explorer'}
+          </Text>
+
           <Text style={styles.email}>{profile.email ?? 'No email found'}</Text>
 
           <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>
-              ⭐ {levelTitle} · Level {currentLevel}
+            <Text
+              style={[
+                styles.levelBadgeText,
+                ageGroupUi.isYounger ? styles.youngerLevelBadgeText : null,
+              ]}
+            >
+              {ageGroupUi.isYounger
+                ? `⭐ ${levelTitle}`
+                : `⭐ ${levelTitle} · Level ${currentLevel}`}
             </Text>
           </View>
 
@@ -462,29 +501,58 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>XP progress</Text>
-
-          <Text style={styles.sectionSubtitle}>
-            {nextLevelXp === null
-              ? `${currentXp} XP · Max level reached`
-              : `${currentXp} XP · ${xpRemaining} XP to next level`}
+          <Text
+            style={[
+              styles.sectionTitle,
+              ageGroupUi.isYounger ? styles.youngerSectionTitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger ? 'Memory power ⭐' : 'XP progress'}
           </Text>
 
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${xpProgressPercent}%` },
-              ]}
-            />
-          </View>
+          {ageGroupUi.isYounger ? (
+            <>
+              <Text style={styles.youngerProfileStars}>
+                {getStarsFromValue(currentXp, 500)}
+              </Text>
+              <Text style={styles.sectionSubtitle}>
+                Keep practising to make your memory stronger.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.sectionSubtitle}>
+                {nextLevelXp === null
+                  ? `${currentXp} XP · Max level reached`
+                  : `${currentXp} XP · ${xpRemaining} XP to next level`}
+              </Text>
+
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${xpProgressPercent}%` },
+                  ]}
+                />
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Achievements</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              ageGroupUi.isYounger ? styles.youngerSectionTitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger ? 'Badges 🏆' : 'Achievements'}
+          </Text>
 
           <Text style={styles.sectionSubtitle}>
-            View your badges, rewards, and locked mystery achievements.
+            {ageGroupUi.isYounger
+              ? 'Open your badges and see what you have unlocked.'
+              : 'View your badges, rewards, and locked mystery achievements.'}
           </Text>
 
           <Pressable
@@ -503,10 +571,12 @@ export function ProfileScreen() {
 
             <View style={styles.achievementsFloatingContent}>
               <Text style={styles.achievementsFloatingTitle}>
-                View Achievements
+                {ageGroupUi.isYounger ? 'Open Badges' : 'View Achievements'}
               </Text>
               <Text style={styles.achievementsFloatingSubtitle}>
-                Track your memory milestones
+                {ageGroupUi.isYounger
+                  ? 'See your memory prizes'
+                  : 'Track your memory milestones'}
               </Text>
             </View>
 
@@ -519,35 +589,81 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Stats</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              ageGroupUi.isYounger ? styles.youngerSectionTitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger ? 'Adventure stars 🌟' : 'Stats'}
+          </Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalPalaces}</Text>
+              <Text style={styles.statEmoji}>🏛️</Text>
+              <Text
+                style={[
+                  styles.statValue,
+                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
+                ]}
+              >
+                {ageGroupUi.isYounger
+                  ? getStarsFromValue(stats.totalPalaces, 5)
+                  : stats.totalPalaces}
+              </Text>
               <Text style={styles.statLabel}>Palaces</Text>
             </View>
 
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalStations}</Text>
+              <Text style={styles.statEmoji}>🚩</Text>
+              <Text
+                style={[
+                  styles.statValue,
+                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
+                ]}
+              >
+                {ageGroupUi.isYounger
+                  ? getStarsFromValue(stats.totalStations, 20)
+                  : stats.totalStations}
+              </Text>
               <Text style={styles.statLabel}>Stations</Text>
             </View>
 
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalReviews}</Text>
+              <Text style={styles.statEmoji}>🧠</Text>
+              <Text
+                style={[
+                  styles.statValue,
+                  ageGroupUi.isYounger ? styles.youngerStatValue : null,
+                ]}
+              >
+                {ageGroupUi.isYounger
+                  ? getStarsFromValue(stats.totalReviews, 10)
+                  : stats.totalReviews}
+              </Text>
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              ageGroupUi.isYounger ? styles.youngerSectionTitle : null,
+            ]}
+          >
+            {ageGroupUi.isYounger ? 'Settings ⚙️' : 'Settings'}
+          </Text>
 
           <Pressable
             onPress={() => setAvatarModalVisible(true)}
             disabled={isBusy}
             style={styles.settingRow}
           >
-            <Text style={styles.settingLabel}>Change avatar</Text>
+            <Text style={styles.settingLabel}>
+              {ageGroupUi.isYounger ? '🦊 Change avatar' : 'Change avatar'}
+            </Text>
             <Text style={styles.settingValue}>{profile.avatarEmoji ?? '🦊'}</Text>
           </Pressable>
 
@@ -557,7 +673,11 @@ export function ProfileScreen() {
             style={styles.settingRow}
           >
             <View style={styles.settingTextGroup}>
-              <Text style={styles.settingLabel}>Change age group</Text>
+              <Text style={styles.settingLabel}>
+                {ageGroupUi.isYounger
+                  ? '🎂 Change age group'
+                  : 'Change age group'}
+              </Text>
               <Text style={styles.settingHelper}>
                 {getAgeGroupReviewDescription(currentAgeGroup)}
               </Text>
@@ -576,7 +696,9 @@ export function ProfileScreen() {
             disabled={isBusy}
             style={styles.settingRow}
           >
-            <Text style={styles.settingLabel}>Change password</Text>
+            <Text style={styles.settingLabel}>
+              {ageGroupUi.isYounger ? '🔐 Change password' : 'Change password'}
+            </Text>
             {passwordLoading ? (
               <ActivityIndicator color={colors.accent} />
             ) : (
@@ -589,7 +711,9 @@ export function ProfileScreen() {
             disabled={isBusy}
             style={[styles.settingRow, styles.logoutRow]}
           >
-            <Text style={styles.logoutLabel}>Log out</Text>
+            <Text style={styles.logoutLabel}>
+              {ageGroupUi.isYounger ? '🚪 Log out' : 'Log out'}
+            </Text>
             {logoutLoading ? (
               <ActivityIndicator color={colors.emphasis} />
             ) : (
@@ -770,6 +894,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
+  youngerName: {
+    fontSize: Math.round(fontSizes.xxl * AGE_GROUP_FONT_SCALE),
+    lineHeight: Math.round(36 * AGE_GROUP_FONT_SCALE),
+  },
   email: {
     ...typography.caption,
     color: `${colors.text}B3`,
@@ -787,6 +915,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '900',
     textAlign: 'center',
+  },
+  youngerLevelBadgeText: {
+    fontSize: YOUNGER_BADGE_TEXT_SIZE,
+    lineHeight: YOUNGER_BADGE_LINE_HEIGHT,
   },
   streakPill: {
     backgroundColor: colors.secondary,
@@ -813,10 +945,21 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
+  youngerSectionTitle: {
+    fontSize: YOUNGER_SECTION_TITLE_SIZE,
+    lineHeight: YOUNGER_SECTION_TITLE_LINE_HEIGHT,
+  },
   sectionSubtitle: {
     ...typography.caption,
     color: `${colors.text}B3`,
     marginBottom: spacing.md,
+  },
+  youngerProfileStars: {
+    ...typography.h1,
+    color: colors.accent,
+    letterSpacing: 2,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   progressTrack: {
     height: 18,
@@ -830,6 +973,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   achievementsFloatingCard: {
+    minHeight: PROFILE_SIZES.minPrimaryActionHeight,
     marginTop: spacing.sm,
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
@@ -903,10 +1047,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  statEmoji: {
+    fontSize: fontSizes.xl,
+    marginBottom: spacing.xs,
+  },
   statValue: {
     ...typography.h1,
     color: colors.accent,
     marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  youngerStatValue: {
+    fontSize: fontSizes.sm,
+    lineHeight: 20,
+    letterSpacing: 1,
   },
   statLabel: {
     ...typography.small,
@@ -1084,12 +1238,14 @@ const styles = StyleSheet.create({
   closeModalButton: {
     minHeight: PROFILE_SIZES.minPrimaryActionHeight,
     borderRadius: radius.lg,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   closeModalButtonText: {
-    ...typography.bodyStrong,
+    ...typography.button,
     color: colors.white,
   },
 });

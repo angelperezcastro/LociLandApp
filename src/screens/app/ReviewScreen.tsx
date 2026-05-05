@@ -34,9 +34,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GuideLottie } from '../../components/review/GuideLottie';
+import { useAgeGroup } from '../../hooks/useAgeGroup';
 import { selectAuthUserId, useUserStore } from '../../store/useUserStore';
 import { useConfettiStore } from '../../store/useConfettiStore';
-import { normalizeAgeGroup } from '../../utils/ageGroup';
 import { XP_REWARDS } from '../../utils/levelUtils';
 import {
   completeReview,
@@ -167,6 +167,11 @@ const CONFETTI_PIECES = Array.from({ length: 28 }).map((_, index) => ({
 const PERFECT_SCORE_PERCENTAGE = 1;
 const SUMMARY_COUNTER_DURATION_MS = 900;
 const COMPACT_REVIEW_HEIGHT_THRESHOLD = 750;
+const YOUNGER_FONT_SCALE = 1.15;
+const MIN_TOUCH_TARGET_YOUNGER = 56;
+
+const scaleYoungerFont = (value: number) => Math.round(value * YOUNGER_FONT_SCALE);
+
 
 const REVIEW_DIMENSIONS = {
   introGuide: 210,
@@ -706,10 +711,12 @@ const ProgressBar = ({
   currentIndex,
   totalStations,
   textColor,
+  isYoungerReview = false,
 }: {
   currentIndex: number;
   totalStations: number;
   textColor: string;
+  isYoungerReview?: boolean;
 }) => {
   const progress = totalStations > 0 ? (currentIndex + 1) / totalStations : 0;
 
@@ -717,7 +724,7 @@ const ProgressBar = ({
     <View style={styles.progressWrapper}>
       <View style={styles.progressHeader}>
         <Text style={[styles.progressLabel, { color: textColor }]}>
-          Journey progress
+          {isYoungerReview ? 'Journey ⭐' : 'Journey progress'}
         </Text>
         <Text style={[styles.progressValue, { color: textColor }]}>
           {getProgressLabel(currentIndex, totalStations)}
@@ -893,6 +900,7 @@ const IntroState = ({
   buttonFillColor,
   buttonTextColor,
   isStarting,
+  isYoungerReview,
   onStart,
 }: {
   data: ReviewScreenData;
@@ -901,6 +909,7 @@ const IntroState = ({
   buttonFillColor: string;
   buttonTextColor: string;
   isStarting: boolean;
+  isYoungerReview: boolean;
   onStart: () => void;
 }) => {
   const { height } = useWindowDimensions();
@@ -947,10 +956,13 @@ const IntroState = ({
             style={[
               styles.introHeading,
               isCompactHeight && styles.introHeadingCompact,
+              isYoungerReview && styles.youngerIntroHeading,
               { color: textColor },
             ]}
           >
-            Time to visit your {data.palace.name}!
+            {isYoungerReview
+              ? `🏰 Ready for ${data.palace.name}?`
+              : `Time to visit your ${data.palace.name}!`}
           </Text>
 
           <View
@@ -964,10 +976,13 @@ const IntroState = ({
               style={[
                 styles.stationCountText,
                 isCompactHeight && styles.stationCountTextCompact,
+                isYoungerReview && styles.youngerStationCountText,
                 { color: textColor },
               ]}
             >
-              You have {data.palace.stationCount} stops on this journey
+              {isYoungerReview
+                ? `⭐ ${data.palace.stationCount} magic stops to visit`
+                : `You have ${data.palace.stationCount} stops on this journey`}
             </Text>
           </View>
         </View>
@@ -1001,7 +1016,13 @@ const IntroState = ({
           ]}
         >
           <ReviewPrimaryButton
-            label={isStarting ? 'Starting...' : INTRO_COPY.startButton}
+            label={
+              isStarting
+                ? 'Starting...'
+                : isYoungerReview
+                  ? 'Start the Journey! ⭐'
+                  : INTRO_COPY.startButton
+            }
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
             disabled={isStarting}
@@ -1020,6 +1041,7 @@ const WalkingState = ({
   textColor,
   buttonFillColor,
   buttonTextColor,
+  isYoungerReview,
   onRemember,
 }: {
   station: ReviewScreenStation;
@@ -1028,6 +1050,7 @@ const WalkingState = ({
   textColor: string;
   buttonFillColor: string;
   buttonTextColor: string;
+  isYoungerReview: boolean;
   onRemember: () => void;
 }) => {
   const { height } = useWindowDimensions();
@@ -1046,6 +1069,7 @@ const WalkingState = ({
           currentIndex={currentIndex}
           totalStations={totalStations}
           textColor={textColor}
+          isYoungerReview={isYoungerReview}
         />
 
         <View
@@ -1068,6 +1092,7 @@ const WalkingState = ({
             style={[
               styles.stationName,
               isCompactHeight && styles.stationNameCompact,
+              isYoungerReview && styles.youngerStationName,
               { color: textColor },
             ]}
           >
@@ -1078,10 +1103,11 @@ const WalkingState = ({
             style={[
               styles.walkingPrompt,
               isCompactHeight && styles.walkingPromptCompact,
+              isYoungerReview && styles.youngerWalkingPrompt,
               { color: textColor },
             ]}
           >
-            {WALKING_COPY.prompt}
+            {isYoungerReview ? `🧠 ${WALKING_COPY.prompt}` : WALKING_COPY.prompt}
           </Text>
         </View>
 
@@ -1112,7 +1138,7 @@ const WalkingState = ({
           ]}
         >
           <ReviewPrimaryButton
-            label={WALKING_COPY.rememberButton}
+            label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
             onPress={onRemember}
@@ -1126,7 +1152,8 @@ const WalkingState = ({
 const QuestionState = ({
   station,
   stations,
-  ageGroup,
+  isYoungerReview,
+  isOlderReview,
   textColor,
   overlayColor,
   buttonFillColor,
@@ -1140,7 +1167,8 @@ const QuestionState = ({
 }: {
   station: ReviewScreenStation;
   stations: ReviewScreenStation[];
-  ageGroup: ReviewAgeGroup;
+  isYoungerReview: boolean;
+  isOlderReview: boolean;
   textColor: string;
   overlayColor: string;
   buttonFillColor: string;
@@ -1163,13 +1191,25 @@ const QuestionState = ({
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
       <View style={styles.questionHeader}>
-        <Text style={[styles.questionTitle, { color: textColor }]}>
-          {QUESTION_COPY.title}
+        <Text
+          style={[
+            styles.questionTitle,
+            isYoungerReview && styles.youngerQuestionTitle,
+            { color: textColor },
+          ]}
+        >
+          {isYoungerReview ? `🧠 ${QUESTION_COPY.title}` : QUESTION_COPY.title}
         </Text>
 
-        <Text style={[styles.questionSubtitle, { color: textColor }]}>
-          {ageGroup === '6-9'
-            ? QUESTION_COPY.subtitle6to9
+        <Text
+          style={[
+            styles.questionSubtitle,
+            isYoungerReview && styles.youngerQuestionSubtitle,
+            { color: textColor },
+          ]}
+        >
+          {isYoungerReview
+            ? `⭐ ${QUESTION_COPY.subtitle6to9}`
             : QUESTION_COPY.subtitle10to14}
         </Text>
       </View>
@@ -1181,7 +1221,7 @@ const QuestionState = ({
           {station.name}
         </Text>
 
-        {ageGroup === '10-14' && (
+        {isOlderReview && (
           <View style={styles.timerSection}>
             <CountdownTimer />
             <Text style={styles.timerHint}>No pressure. Just focus.</Text>
@@ -1189,7 +1229,7 @@ const QuestionState = ({
         )}
       </View>
 
-      {ageGroup === '6-9' ? (
+      {isYoungerReview ? (
         <View style={styles.optionsGrid}>
           {options.map((option) => (
             <TouchableOpacity
@@ -1202,6 +1242,7 @@ const QuestionState = ({
               }}
               style={[
                 styles.optionButton,
+                isYoungerReview && styles.youngerOptionButton,
                 {
                   borderColor: answerBorderColor,
                   backgroundColor: answerButtonBackgroundColor,
@@ -1213,9 +1254,12 @@ const QuestionState = ({
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.76}
-                style={styles.optionButtonText}
+                style={[
+                  styles.optionButtonText,
+                  isYoungerReview && styles.youngerOptionButtonText,
+                ]}
               >
-                {option}
+                {isYoungerReview ? `🧩 ${option}` : option}
               </Text>
             </TouchableOpacity>
           ))}
@@ -1483,6 +1527,7 @@ const CompleteState = ({
   buttonFillColor,
   buttonTextColor,
   isRestarting,
+  isYoungerReview,
   onReviewAgain,
   onBack,
 }: {
@@ -1492,6 +1537,7 @@ const CompleteState = ({
   buttonFillColor: string;
   buttonTextColor: string;
   isRestarting: boolean;
+  isYoungerReview: boolean;
   onReviewAgain: () => void;
   onBack: () => void;
 }) => {
@@ -1511,12 +1557,26 @@ const CompleteState = ({
           {isPerfect ? '🏆' : '🌟'}
         </Animated.Text>
 
-        <Text style={styles.completeTitle}>Memory walk complete!</Text>
+        <Text
+          style={[
+            styles.completeTitle,
+            isYoungerReview && styles.youngerCompleteTitle,
+          ]}
+        >
+          {isYoungerReview ? 'Memory walk complete! 🌟' : 'Memory walk complete!'}
+        </Text>
 
         <GuideLottie size={120} variant="happy" />
 
         <View style={styles.completeScoreCard}>
-          <Text style={styles.completeScoreLabel}>{scoreLabel}</Text>
+          <Text
+            style={[
+              styles.completeScoreLabel,
+              isYoungerReview && styles.youngerCompleteScoreLabel,
+            ]}
+          >
+            {isYoungerReview ? 'Your memory stars' : scoreLabel}
+          </Text>
           <Text style={styles.completeStars}>{starRating}</Text>
           <Text style={styles.completeScoreHint}>
             {isPerfect
@@ -1525,10 +1585,12 @@ const CompleteState = ({
           </Text>
         </View>
 
-        <View style={styles.completeXpCard}>
-          <Text style={styles.completeXpLabel}>XP earned this session</Text>
-          <AnimatedXpCounter targetValue={xpEarned} />
-        </View>
+        {!isYoungerReview ? (
+          <View style={styles.completeXpCard}>
+            <Text style={styles.completeXpLabel}>XP earned this session</Text>
+            <AnimatedXpCounter targetValue={xpEarned} />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.completeButtonStack}>
@@ -1562,12 +1624,11 @@ export const ReviewScreen = () => {
   } = route.params;
 
   const userId = useUserStore(selectAuthUserId);
-  const profileAgeGroup = useUserStore((state) => state.profile?.ageGroup);
   const triggerConfetti = useConfettiStore((state) => state.triggerConfetti);
+  const ageGroupUi = useAgeGroup(routeAgeGroup);
 
-  const effectiveAgeGroup = useMemo<ReviewAgeGroup>(() => {
-    return normalizeAgeGroup(routeAgeGroup ?? profileAgeGroup);
-  }, [profileAgeGroup, routeAgeGroup]);
+  const isYoungerReview = ageGroupUi.isYounger;
+  const isOlderReview = ageGroupUi.isOlder;
 
   const {
     playTapFeedback,
@@ -1802,7 +1863,7 @@ export const ReviewScreen = () => {
 
     const correct = gaveUp
       ? false
-      : effectiveAgeGroup === '6-9'
+      : isYoungerReview
         ? normalizeAnswer(answer) === normalizeAnswer(correctAnswer)
         : isFreeTextAnswerCorrect(answer, correctAnswer);
 
@@ -1987,6 +2048,7 @@ export const ReviewScreen = () => {
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
           isStarting={isStarting}
+          isYoungerReview={isYoungerReview}
           onStart={handleStartJourney}
         />
       )}
@@ -1999,6 +2061,7 @@ export const ReviewScreen = () => {
           textColor={textColor}
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
+          isYoungerReview={isYoungerReview}
           onRemember={handleRemember}
         />
       )}
@@ -2007,7 +2070,8 @@ export const ReviewScreen = () => {
         <QuestionState
           station={currentStation}
           stations={data.stations}
-          ageGroup={effectiveAgeGroup}
+          isYoungerReview={isYoungerReview}
+          isOlderReview={isOlderReview}
           textColor={textColor}
           overlayColor={overlayColor}
           buttonFillColor={buttonFillColor}
@@ -2040,6 +2104,7 @@ export const ReviewScreen = () => {
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
           isRestarting={isStarting}
+          isYoungerReview={isYoungerReview}
           onReviewAgain={handleReviewAgain}
           onBack={handleGoBack}
         />
@@ -2145,6 +2210,11 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
 
+  youngerIntroHeading: {
+    fontSize: scaleYoungerFont(REVIEW_FONT_SIZES.introHeading),
+    lineHeight: scaleYoungerFont(40),
+  },
+
   stationCountPill: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -2165,6 +2235,11 @@ const styles = StyleSheet.create({
   stationCountTextCompact: {
     fontSize: fontSizes.sm,
     lineHeight: 20,
+  },
+
+  youngerStationCountText: {
+    fontSize: scaleYoungerFont(fontSizes.md),
+    lineHeight: scaleYoungerFont(22),
   },
 
   introGuideSection: {
@@ -2419,6 +2494,11 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
 
+  youngerStationName: {
+    fontSize: scaleYoungerFont(fontSizes.display),
+    lineHeight: scaleYoungerFont(40),
+  },
+
   walkingPrompt: {
     fontSize: fontSizes.xl,
     lineHeight: 30,
@@ -2429,6 +2509,11 @@ const styles = StyleSheet.create({
   walkingPromptCompact: {
     fontSize: fontSizes.lg,
     lineHeight: 26,
+  },
+
+  youngerWalkingPrompt: {
+    fontSize: scaleYoungerFont(fontSizes.xl),
+    lineHeight: scaleYoungerFont(30),
   },
 
   questionHeader: {
@@ -2444,6 +2529,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  youngerQuestionTitle: {
+    fontSize: scaleYoungerFont(fontSizes.xxl),
+    lineHeight: scaleYoungerFont(38),
+  },
+
   questionSubtitle: {
     maxWidth: 320,
     fontSize: fontSizes.md,
@@ -2451,6 +2541,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     opacity: 0.72,
+  },
+
+  youngerQuestionSubtitle: {
+    fontSize: scaleYoungerFont(fontSizes.md),
+    lineHeight: scaleYoungerFont(22),
   },
 
   questionCard: {
@@ -2504,7 +2599,7 @@ const styles = StyleSheet.create({
 
   optionButton: {
     width: '84%',
-    height: 50,
+    minHeight: MIN_TOUCH_TARGET_YOUNGER,
     borderRadius: radiusTokens.xl,
     borderWidth: 4,
     alignItems: 'center',
@@ -2516,6 +2611,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 9,
     elevation: 3,
+  },
+
+  youngerOptionButton: {
+    minHeight: 64,
+    paddingVertical: spacing.lg,
   },
 
   optionButtonPressed: {
@@ -2534,6 +2634,11 @@ const styles = StyleSheet.create({
     textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+
+  youngerOptionButtonText: {
+    fontSize: scaleYoungerFont(fontSizes.md),
+    lineHeight: scaleYoungerFont(22),
   },
 
   freeTextSection: {
@@ -2555,6 +2660,8 @@ const styles = StyleSheet.create({
 
   giveUpButton: {
     alignSelf: 'center',
+    minHeight: MIN_TOUCH_TARGET_YOUNGER,
+    justifyContent: 'center',
     marginTop: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -2800,6 +2907,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  youngerCompleteTitle: {
+    fontSize: scaleYoungerFont(fontSizes.xxl),
+    lineHeight: scaleYoungerFont(38),
+  },
+
   completeScoreCard: {
     width: '100%',
     borderRadius: radiusTokens.xxl,
@@ -2822,6 +2934,11 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     fontWeight: '900',
     textAlign: 'center',
+  },
+
+  youngerCompleteScoreLabel: {
+    fontSize: scaleYoungerFont(fontSizes.xl),
+    lineHeight: scaleYoungerFont(30),
   },
 
   completeStars: {
