@@ -39,7 +39,7 @@ export type UpdateUserProfileInput = Partial<
 >;
 
 const DEFAULT_DISPLAY_NAME = 'Explorer';
-const DEFAULT_AVATAR_EMOJI: AvatarEmoji = '🦊';
+const DEFAULT_AVATAR_EMOJI = '🧠' as AvatarEmoji;
 
 function getTodayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -59,8 +59,8 @@ function sanitizeDisplayName(displayName: string | undefined): string {
   return trimmedDisplayName.slice(0, 40);
 }
 
-function sanitizeEmail(email: string | undefined): string {
-  return (email ?? '').trim().toLowerCase();
+function sanitizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 function isValidAvatarEmoji(value: unknown): value is AvatarEmoji {
@@ -145,12 +145,11 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function ensureUserProfile(
   input: EnsureUserProfileInput,
 ): Promise<UserProfile> {
-  const profileRef = doc(db, 'users', input.uid);
-  const snapshot = await getDoc(profileRef);
+  const existing = await getUserProfile(input.uid);
 
-  if (snapshot.exists()) {
-    const rawProfile = snapshot.data() as UserProfile;
-    const normalizedProfile = normalizeUserProfile(rawProfile);
+  if (existing) {
+    const normalizedAgeGroup = normalizeAgeGroup(existing.ageGroup);
+    const normalizedAvatarEmoji = sanitizeAvatarEmoji(existing.avatarEmoji);
 
     /**
      * Only backfill genuinely editable profile data.
@@ -163,32 +162,25 @@ export async function ensureUserProfile(
       updatedAt?: ReturnType<typeof serverTimestamp>;
     } = {};
 
-    const normalizedDisplayName = sanitizeDisplayName(rawProfile.displayName);
-    const normalizedAgeGroup = normalizeAgeGroup(rawProfile.ageGroup);
-    const normalizedAvatarEmoji = sanitizeAvatarEmoji(rawProfile.avatarEmoji);
-
-    if (rawProfile.displayName !== normalizedDisplayName) {
-      profilePatch.displayName = normalizedDisplayName;
-    }
-
-    if (rawProfile.ageGroup !== normalizedAgeGroup) {
+    if (existing.ageGroup !== normalizedAgeGroup) {
       profilePatch.ageGroup = normalizedAgeGroup;
     }
 
-    if (rawProfile.avatarEmoji !== normalizedAvatarEmoji) {
+    if (existing.avatarEmoji !== normalizedAvatarEmoji) {
       profilePatch.avatarEmoji = normalizedAvatarEmoji;
     }
 
     if (Object.keys(profilePatch).length > 0) {
-      await updateDoc(profileRef, {
+      await updateDoc(doc(db, 'users', input.uid), {
         ...profilePatch,
         updatedAt: serverTimestamp(),
       });
     }
 
     return {
-      ...normalizedProfile,
-      ...profilePatch,
+      ...existing,
+      ageGroup: normalizedAgeGroup,
+      avatarEmoji: normalizedAvatarEmoji,
     };
   }
 
@@ -196,7 +188,7 @@ export async function ensureUserProfile(
     uid: input.uid,
     email: input.email,
     displayName: sanitizeDisplayName(input.displayName),
-    avatarEmoji: sanitizeAvatarEmoji(input.avatarEmoji),
+    avatarEmoji: sanitizeAvatarEmoji(input.avatarEmoji ?? DEFAULT_AVATAR_EMOJI),
     ageGroup: normalizeAgeGroup(input.ageGroup ?? '10-14'),
   });
 }

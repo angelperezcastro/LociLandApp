@@ -2,6 +2,7 @@
 
 import {
   doc,
+  getDoc,
   runTransaction,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -110,9 +111,36 @@ export const addXP = async (
   amount: number,
   options: AddXPOptions,
 ): Promise<AddXPResult> => {
+  const userRef = doc(db, 'users', userId);
+
+  if (options.reason === 'achievement') {
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      throw new Error(`addXP failed: user profile "${userId}" does not exist.`);
+    }
+
+    const userData = userSnapshot.data();
+    const currentXP = getSafeNumber(userData.xp);
+    const currentLevel = getSafeNumber(
+      userData.level,
+      getLevelFromXP(currentXP),
+    );
+
+    return {
+      previousXP: currentXP,
+      newXP: currentXP,
+      previousLevel: currentLevel,
+      newLevel: currentLevel,
+      leveledUp: false,
+      xpAdded: 0,
+      levelTitle: getLevelTitle(currentLevel),
+      alreadyAwarded: true,
+    };
+  }
+
   const xpToAdd = assertValidXPInput(userId, amount, options);
 
-  const userRef = doc(db, 'users', userId);
   const xpEventRef = doc(db, 'users', userId, 'xpEvents', options.eventId);
 
   const result = await runTransaction(db, async (transaction) => {

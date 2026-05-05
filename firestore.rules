@@ -217,6 +217,7 @@ service cloud.firestore {
 
     function isValidXPGrantUserUpdate(uid) {
       let eventId = request.resource.data.lastXPEventId;
+      let event = getAfter(xpEventPath(uid, eventId)).data;
 
       return changedKeys().hasOnly([
           'xp',
@@ -238,15 +239,16 @@ service cloud.firestore {
         && request.resource.data.level >= 1
         && request.resource.data.level <= 10
         && isValidLevelTitle(request.resource.data.levelTitle)
-        && getAfter(xpEventPath(uid, eventId)).data.eventId == eventId
-        && getAfter(xpEventPath(uid, eventId)).data.userId == uid
-        && getAfter(xpEventPath(uid, eventId)).data.amount == request.resource.data.xp - previousXP()
-        && getAfter(xpEventPath(uid, eventId)).data.previousXP == previousXP()
-        && getAfter(xpEventPath(uid, eventId)).data.newXP == request.resource.data.xp
-        && getAfter(xpEventPath(uid, eventId)).data.previousLevel == previousLevel()
-        && getAfter(xpEventPath(uid, eventId)).data.newLevel == request.resource.data.level
-        && getAfter(xpEventPath(uid, eventId)).data.levelTitle == request.resource.data.levelTitle
-        && request.resource.data.xp == previousXP() + getAfter(xpEventPath(uid, eventId)).data.amount
+        && event.eventId == eventId
+        && event.userId == uid
+        && event.reason != 'achievement'
+        && event.amount == request.resource.data.xp - previousXP()
+        && event.previousXP == previousXP()
+        && event.newXP == request.resource.data.xp
+        && event.previousLevel == previousLevel()
+        && event.newLevel == request.resource.data.level
+        && event.levelTitle == request.resource.data.levelTitle
+        && request.resource.data.xp == previousXP() + event.amount
         && request.resource.data.level == expectedLevelFromXP(request.resource.data.xp);
     }
 
@@ -289,8 +291,6 @@ service cloud.firestore {
         reason == 'perfect_review' && amount == 50
       ) || (
         reason == 'seven_day_streak' && amount == 100
-      ) || (
-        reason == 'achievement' && amount > 0 && amount <= 500
       );
     }
 
@@ -414,26 +414,14 @@ service cloud.firestore {
         && get(/databases/$(db)/documents/users/$(uid)).data.streak >= 7;
     }
 
-    function isValidAchievementXPEvent(uid) {
-      let achievementId = request.resource.data.metadata.achievementId;
-
-      return request.resource.data.reason == 'achievement'
-        && achievementId is string
-        && exists(
-          /databases/$(db)/documents/users/$(uid)/achievements/$(achievementId)
-        );
-    }
-
     function isValidXPEventCreate(uid, eventId) {
-      return !exists(xpEventPath(uid, eventId))
-        && hasValidXPEventBase(uid, eventId)
+      return hasValidXPEventBase(uid, eventId)
         && xpEventIsLinkedToUserUpdate(uid, eventId)
         && (
           isValidCreatePalaceXPEvent(uid)
           || isValidAddStationXPEvent(uid)
           || isValidReviewXPEvent(uid)
           || isValidSevenDayStreakXPEvent(uid)
-          || isValidAchievementXPEvent(uid)
         );
     }
 
@@ -665,7 +653,7 @@ service cloud.firestore {
         && request.resource.data.incorrectAnswers == 0;
     }
 
-    function immutableReviewSessionFieldsArePreserved(uid, palaceId) {
+    function immutableReviewSessionFieldsArePreserved() {
       return resource.data.userId == uid
         && resource.data.palaceId == palaceId
         && request.resource.data.userId == resource.data.userId
@@ -743,7 +731,7 @@ service cloud.firestore {
           'status',
           'updatedAt'
         ])
-        && immutableReviewSessionFieldsArePreserved(uid, palaceId)
+        && immutableReviewSessionFieldsArePreserved()
         && hasValidReviewXpAppliedFlag()
         && (
           isValidActiveReviewAnswerUpdate(uid, palaceId)
