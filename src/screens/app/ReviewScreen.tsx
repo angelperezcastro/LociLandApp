@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -707,6 +708,58 @@ const StationIconTile = ({
   );
 };
 
+const getStationImageUrl = (station: ReviewScreenStation): string | null => {
+  const imageUrl = station.imageUrl?.trim();
+
+  if (!imageUrl) {
+    return null;
+  }
+
+  return imageUrl;
+};
+
+const StationPhotoCue = ({
+  station,
+  variant,
+}: {
+  station: ReviewScreenStation;
+  variant: 'walking' | 'reveal';
+}) => {
+  const imageUrl = getStationImageUrl(station);
+
+  if (!imageUrl) {
+    return null;
+  }
+
+  const isReveal = variant === 'reveal';
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(260)}
+      style={[
+        styles.stationPhotoCue,
+        isReveal && styles.stationPhotoCueReveal,
+      ]}
+    >
+      <Image
+        accessibilityIgnoresInvertColors
+        source={{ uri: imageUrl }}
+        resizeMode="cover"
+        style={[
+          styles.stationPhotoCueImage,
+          isReveal && styles.stationPhotoCueImageReveal,
+        ]}
+      />
+
+      <View style={styles.stationPhotoCueBadge}>
+        <Text style={styles.stationPhotoCueBadgeText}>
+          {isReveal ? 'Memory picture' : 'Visual clue'}
+        </Text>
+      </View>
+    </Animated.View>
+  );
+};
+
 const ProgressBar = ({
   currentIndex,
   totalStations,
@@ -1088,6 +1141,8 @@ const WalkingState = ({
             />
           </Animated.View>
 
+          <StationPhotoCue station={station} variant="walking" />
+
           <Text
             style={[
               styles.stationName,
@@ -1311,6 +1366,7 @@ const QuestionState = ({
 };
 
 const RevealState = ({
+  station,
   result,
   isLastStation,
   isCompleting,
@@ -1318,6 +1374,7 @@ const RevealState = ({
   buttonTextColor,
   onNext,
 }: {
+  station: ReviewScreenStation;
   result: RevealResult;
   isLastStation: boolean;
   isCompleting: boolean;
@@ -1325,6 +1382,8 @@ const RevealState = ({
   buttonTextColor: string;
   onNext: () => void;
 }) => {
+  const hasStationImage = Boolean(getStationImageUrl(station));
+
   if (result.correct) {
     return (
       <Animated.View
@@ -1350,7 +1409,14 @@ const RevealState = ({
             {REVEAL_COPY.correctSubtitle}
           </Text>
 
-          <GuideLottie size={170} variant="happy" />
+          <View style={styles.revealAnswerCard}>
+            <Text style={styles.revealAnswerLabel}>You placed...</Text>
+            <Text style={styles.revealAnswerText}>{result.correctAnswer}</Text>
+          </View>
+
+          <StationPhotoCue station={station} variant="reveal" />
+
+          <GuideLottie size={hasStationImage ? 118 : 170} variant="happy" />
         </View>
 
         <View style={styles.revealButtonSection}>
@@ -1389,8 +1455,10 @@ const RevealState = ({
           <Text style={styles.correctAnswerText}>{result.correctAnswer}</Text>
         </View>
 
+        <StationPhotoCue station={station} variant="reveal" />
+
         <View style={styles.encouragementRow}>
-          <GuideLottie size={120} variant="thinking" />
+          <GuideLottie size={hasStationImage ? 96 : 120} variant="thinking" />
 
           <View style={styles.encouragementBubble}>
             <Text style={styles.encouragementBubbleText}>
@@ -2085,8 +2153,9 @@ export const ReviewScreen = () => {
         />
       )}
 
-      {screenState === 'REVEAL' && revealResult && (
+      {screenState === 'REVEAL' && revealResult && currentStation && (
         <RevealState
+          station={currentStation}
           result={revealResult}
           isLastStation={isLastStation}
           isCompleting={isCompleting}
@@ -2482,6 +2551,55 @@ const styles = StyleSheet.create({
     lineHeight: 72,
   },
 
+  stationPhotoCue: {
+    width: '100%',
+    maxWidth: 320,
+    alignSelf: 'center',
+    marginTop: spacing.md,
+    borderRadius: radiusTokens.xl,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.strongStroke,
+    backgroundColor: REVIEW_COLORS.overlayStrong,
+    overflow: 'hidden',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+
+  stationPhotoCueReveal: {
+    marginTop: spacing.sm,
+    maxWidth: 360,
+  },
+
+  stationPhotoCueImage: {
+    width: '100%',
+    height: 150,
+    backgroundColor: REVIEW_COLORS.iconTileSurface,
+  },
+
+  stationPhotoCueImageReveal: {
+    height: 132,
+  },
+
+  stationPhotoCueBadge: {
+    alignSelf: 'flex-start',
+    margin: spacing.sm,
+    borderRadius: radiusTokens.pill,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.textDark,
+    backgroundColor: REVIEW_COLORS.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+
+  stationPhotoCueBadgeText: {
+    color: REVIEW_COLORS.textDark,
+    fontSize: fontSizes.sm,
+    fontWeight: '900',
+  },
+
   stationName: {
     fontSize: fontSizes.display,
     lineHeight: 40,
@@ -2737,6 +2855,35 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     lineHeight: 23,
     fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  revealAnswerCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: radiusTokens.xl,
+    borderWidth: 3,
+    borderColor: REVIEW_COLORS.success,
+    backgroundColor: REVIEW_COLORS.greenSoft,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+
+  revealAnswerLabel: {
+    color: REVIEW_COLORS.successDark,
+    fontSize: fontSizes.sm,
+    lineHeight: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  revealAnswerText: {
+    marginTop: spacing.xs,
+    color: REVIEW_COLORS.textDark,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
+    fontWeight: '900',
     textAlign: 'center',
   },
 
