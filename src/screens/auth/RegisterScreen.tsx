@@ -12,6 +12,12 @@ import {
   View,
 } from 'react-native';
 
+import {
+  AVATAR_EMOJI_OPTIONS,
+  isValidEmail,
+  normalizeEmail,
+  VALIDATION_LIMITS,
+} from '../../constants/validation';
 import type { AuthScreenProps } from '../../navigation/types';
 import { signUp, setCurrentUserDisplayName } from '../../services/auth';
 import { createUserProfile } from '../../services/userProfile';
@@ -28,7 +34,7 @@ type FormErrors = {
   avatar?: string;
 };
 
-const AVATAR_OPTIONS: AvatarEmoji[] = ['🦊', '🐸', '🦁', '🐼', '🦋', '🐉', '🦄', '🐬'];
+const AVATAR_OPTIONS = [...AVATAR_EMOJI_OPTIONS] as AvatarEmoji[];
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   const setUserProfile = useUserStore((state) => state.setUserProfile);
@@ -46,7 +52,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     return (
       username.trim().length > 0 &&
       email.trim().length > 0 &&
-      password.trim().length >= 6 &&
+      password.trim().length >= VALIDATION_LIMITS.auth.passwordMinLength &&
       selectedAgeGroup !== null &&
       selectedAvatar !== null
     );
@@ -54,7 +60,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 
   const validateForm = (): FormErrors => {
     const nextErrors: FormErrors = {};
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     const usernameValue = username.trim();
 
     if (!usernameValue) {
@@ -64,16 +70,15 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     if (!normalizedEmail) {
       nextErrors.email = 'Email is required.';
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(normalizedEmail)) {
+      if (!isValidEmail(normalizedEmail)) {
         nextErrors.email = 'Please enter a valid email address.';
       }
     }
 
     if (!password.trim()) {
       nextErrors.password = 'Password is required.';
-    } else if (password.length < 6) {
-      nextErrors.password = 'Password must be at least 6 characters.';
+    } else if (password.length < VALIDATION_LIMITS.auth.passwordMinLength) {
+      nextErrors.password = `Password must be at least ${VALIDATION_LIMITS.auth.passwordMinLength} characters.`;
     }
 
     if (!selectedAgeGroup) {
@@ -95,7 +100,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
       return;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     const trimmedUsername = username.trim();
 
     try {
@@ -203,7 +208,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                     setErrors((prev) => ({ ...prev, password: undefined }));
                   }
                 }}
-                placeholder="At least 6 characters"
+                placeholder={`At least ${VALIDATION_LIMITS.auth.passwordMinLength} characters`}
                 placeholderTextColor={colors.text + '88'}
                 style={styles.passwordInput}
                 editable={!loading}

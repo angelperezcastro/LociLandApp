@@ -19,6 +19,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, radius, spacing, typography } from '../../theme';
 import { usePalaceStore } from '../../store/usePalaceStore';
 import { useUserStore } from '../../store/useUserStore';
+import {
+  isSupportedStationImageContentType,
+  VALIDATION_LIMITS,
+} from '../../constants/validation';
 import { uploadStationImage } from '../../services/storageService';
 import type { Station } from '../../types';
 
@@ -56,7 +60,7 @@ interface EmojiCategory {
 }
 
 const EMPTY_STATIONS: Station[] = [];
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = VALIDATION_LIMITS.station.maxImageSizeBytes;
 const SAVE_TIMEOUT_MS = 45_000;
 
 const EMOJI_CATEGORIES: EmojiCategory[] = [
@@ -255,7 +259,7 @@ export const AddStationScreen = () => {
 
     const contentType = asset.mimeType ?? 'image/jpeg';
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
+    if (!isSupportedStationImageContentType(contentType)) {
       Alert.alert(
         'Unsupported image',
         'Please choose a JPG, PNG, or WEBP image.',
@@ -490,7 +494,7 @@ export const AddStationScreen = () => {
               onChangeText={setLabel}
               placeholder="Front door"
               placeholderTextColor={colors.muted}
-              maxLength={40}
+              maxLength={VALIDATION_LIMITS.station.labelMaxLength}
               style={styles.input}
             />
           </View>
@@ -509,7 +513,7 @@ export const AddStationScreen = () => {
               placeholderTextColor={colors.muted}
               multiline
               textAlignVertical="top"
-              maxLength={500}
+              maxLength={VALIDATION_LIMITS.station.memoryTextMaxLength}
               style={[styles.input, styles.textArea]}
             />
           </View>

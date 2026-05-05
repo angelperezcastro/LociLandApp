@@ -8,9 +8,10 @@ import {
   type StorageReference,
 } from 'firebase/storage';
 
+import { VALIDATION_LIMITS } from '../constants/validation';
 import { storage } from './firebase';
 
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = VALIDATION_LIMITS.station.maxImageSizeBytes;
 const PREPARE_IMAGE_TIMEOUT_MS = 15_000;
 const UPLOAD_IMAGE_TIMEOUT_MS = 30_000;
 const DELETE_IMAGE_TIMEOUT_MS = 15_000;

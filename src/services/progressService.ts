@@ -20,7 +20,11 @@ import {
   getXpRemainingForNextLevel,
 } from '../utils/levelUtils';
 import { db } from './firebase';
-import { getUserStatsSummary } from './statsService';
+import {
+  getUserStatsSummary,
+  rebuildUserStatsSummary,
+  type UserStatsSummary,
+} from './statsService';
 
 const USERS_COLLECTION = 'users';
 const ACHIEVEMENTS_COLLECTION = 'achievements';
@@ -174,6 +178,19 @@ const getRecentAchievements = async (
     .slice(0, 3);
 };
 
+
+const statsSummaryLooksObviouslyStale = (
+  statsSummary: UserStatsSummary,
+  totalXP: number,
+): boolean => {
+  return (
+    totalXP > 0 &&
+    statsSummary.totalPalaces === 0 &&
+    statsSummary.totalStations === 0 &&
+    statsSummary.totalReviewSessions === 0
+  );
+};
+
 export const getProgressStats = async (
   userId: string,
 ): Promise<ProgressStats> => {
@@ -181,7 +198,7 @@ export const getProgressStats = async (
     throw new Error('getProgressStats failed: userId is required.');
   }
 
-  const [userSnapshot, statsSummary, recentAchievements] = await Promise.all([
+  const [userSnapshot, initialStatsSummary, recentAchievements] = await Promise.all([
     getDoc(getUserRef(userId)),
     getUserStatsSummary(userId),
     getRecentAchievements(userId),
@@ -199,6 +216,13 @@ export const getProgressStats = async (
 
   const currentStreak = getSafeNumber(userData.streak);
   const bestStreak = getSafeNumber(userData.bestStreak, currentStreak);
+
+  const statsSummary = statsSummaryLooksObviouslyStale(
+    initialStatsSummary,
+    totalXP,
+  )
+    ? await rebuildUserStatsSummary(userId)
+    : initialStatsSummary;
 
   const reviewedDateStrings = new Set(statsSummary.reviewDateStrings);
 

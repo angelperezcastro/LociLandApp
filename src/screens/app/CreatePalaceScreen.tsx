@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Timestamp } from 'firebase/firestore';
 
+import { VALIDATION_LIMITS } from '../../constants/validation';
 import { colors, radius, spacing } from '../../theme';
 import { palaceTemplates } from '../../assets/templates';
 import type { Palace, PalaceTemplate, PalaceTemplateId } from '../../types';
@@ -284,7 +285,7 @@ function CreatePalaceScreen() {
                   onChangeText={setPalaceName}
                   placeholder="My Magic Castle"
                   placeholderTextColor={colors.muted}
-                  maxLength={40}
+                  maxLength={VALIDATION_LIMITS.palace.nameMaxLength}
                   autoCapitalize="words"
                   autoCorrect={false}
                   style={styles.input}
@@ -292,7 +293,7 @@ function CreatePalaceScreen() {
               </View>
 
               <Text style={styles.characterCount}>
-                {trimmedName.length}/40 characters
+                {trimmedName.length}/{VALIDATION_LIMITS.palace.nameMaxLength} characters
               </Text>
             </View>
 

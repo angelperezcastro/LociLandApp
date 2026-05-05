@@ -1,3 +1,4 @@
+import { PALACE_TEMPLATE_IDS } from '../constants/validation';
 import type { PalaceTemplate, PalaceTemplateId } from '../types';
 
 export const palaceTemplates: PalaceTemplate[] = [
@@ -60,5 +61,5 @@ export const getPalaceTemplateById = (
 export const isPalaceTemplateId = (
   value: string,
 ): value is PalaceTemplateId => {
-  return palaceTemplates.some((template) => template.id === value);
+  return (PALACE_TEMPLATE_IDS as readonly string[]).includes(value);
 };

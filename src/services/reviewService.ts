@@ -11,6 +11,11 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
+import {
+  assertNonEmptyId,
+  assertValidReviewStationCount,
+  VALIDATION_LIMITS,
+} from '../constants/validation';
 import type {
   CompleteReviewInput,
   RecordAnswerInput,
@@ -133,16 +138,11 @@ const assertRequiredReviewIds = ({
   palaceId: string;
   sessionId?: string;
 }) => {
-  if (!userId.trim()) {
-    throw new Error('userId is required.');
-  }
+  assertNonEmptyId(userId, 'userId');
+  assertNonEmptyId(palaceId, 'palaceId');
 
-  if (!palaceId.trim()) {
-    throw new Error('palaceId is required.');
-  }
-
-  if (sessionId !== undefined && !sessionId.trim()) {
-    throw new Error('sessionId is required.');
+  if (sessionId !== undefined) {
+    assertNonEmptyId(sessionId, 'sessionId');
   }
 };
 
@@ -396,13 +396,7 @@ export const startReview = async ({
       ? totalStations
       : await getPalaceStationCount(userId, palaceId);
 
-  if (resolvedTotalStations < 2) {
-    throw new Error('A palace needs at least 2 stations to start a review.');
-  }
-
-  if (resolvedTotalStations > 20) {
-    throw new Error('A review cannot contain more than 20 stations.');
-  }
+  assertValidReviewStationCount(resolvedTotalStations);
 
   const sessionRef = await addDoc(
     getReviewSessionsCollectionRef(userId, palaceId),
@@ -443,9 +437,7 @@ export const recordAnswer = async ({
 }: RecordAnswerInput): Promise<ReviewAnswer> => {
   assertRequiredReviewIds({ userId, palaceId, sessionId });
 
-  if (!stationId.trim()) {
-    throw new Error('stationId is required to record an answer.');
-  }
+  assertNonEmptyId(stationId, 'stationId');
 
   const sessionRef = getReviewSessionRef(userId, palaceId, sessionId);
   const answerRef = getReviewAnswerRef(
@@ -471,8 +463,8 @@ export const recordAnswer = async ({
 
     const totalStations = getSafeCounter(sessionData.totalStations);
 
-    if (totalStations < 1) {
-      throw new Error('Review session has no stations.');
+    if (totalStations < VALIDATION_LIMITS.review.minStations) {
+      throw new Error('Review session does not meet the minimum station count.');
     }
 
     const currentCorrectAnswers = getSafeCounter(sessionData.correctAnswers);

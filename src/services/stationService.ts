@@ -18,16 +18,24 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 
+import {
+  assertNonEmptyId,
+  assertValidStationImageUri,
+  assertValidStationOrder,
+  normalizeStationEmoji,
+  normalizeStationLabel,
+  normalizeStationMemoryText,
+} from '../constants/validation';
 import type { Station } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { deleteStationImage } from './storageService';
 import {
   recordStationCreated,
   recordStationDeleted,
   recordStationImageChanged,
 } from './statsService';
-import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
 export interface CreateStationData {
@@ -54,39 +62,12 @@ const getStationDocRef = (userId: string, palaceId: string, stationId: string) =
   doc(db, 'users', userId, 'palaces', palaceId, 'stations', stationId);
 
 const assertRequiredIds = (palaceId: string, userId: string) => {
-  if (!palaceId.trim()) {
-    throw new Error('stationService: palaceId is required.');
-  }
-
-  if (!userId.trim()) {
-    throw new Error('stationService: userId is required.');
-  }
+  assertNonEmptyId(palaceId, 'stationService: palaceId');
+  assertNonEmptyId(userId, 'stationService: userId');
 };
 
 const assertStationId = (stationId: string) => {
-  if (!stationId.trim()) {
-    throw new Error('stationService: stationId is required.');
-  }
-};
-
-const assertValidOrder = (order: number) => {
-  if (!Number.isInteger(order) || order < 0 || order > 20) {
-    throw new Error('stationService: station order must be between 0 and 20.');
-  }
-};
-
-const assertValidImageUri = (imageUri?: string) => {
-  if (!imageUri) {
-    return;
-  }
-
-  if (imageUri.length > 2048) {
-    throw new Error('stationService: imageUri is too long.');
-  }
-
-  if (!imageUri.startsWith('https://firebasestorage.googleapis.com/')) {
-    throw new Error('stationService: imageUri must be a Firebase Storage URL.');
-  }
+  assertNonEmptyId(stationId, 'stationService: stationId');
 };
 
 const getImageUriFromStationData = (
@@ -251,36 +232,12 @@ export const createStation = async (
   data: CreateStationData,
 ): Promise<Station> => {
   assertRequiredIds(palaceId, userId);
-  assertValidOrder(data.order);
-  assertValidImageUri(data.imageUri);
+  assertValidStationOrder(data.order);
+  assertValidStationImageUri(data.imageUri);
 
-  const label = data.label.trim();
-  const emoji = data.emoji.trim();
-  const memoryText = data.memoryText?.trim() ?? '';
-
-  if (!label) {
-    throw new Error('stationService: station label is required.');
-  }
-
-  if (label.length > 40) {
-    throw new Error(
-      'stationService: station label cannot be longer than 40 characters.',
-    );
-  }
-
-  if (!emoji) {
-    throw new Error('stationService: station emoji is required.');
-  }
-
-  if (emoji.length > 16) {
-    throw new Error('stationService: station emoji is too long.');
-  }
-
-  if (memoryText.length > 500) {
-    throw new Error(
-      'stationService: memory text cannot be longer than 500 characters.',
-    );
-  }
+  const label = normalizeStationLabel(data.label);
+  const emoji = normalizeStationEmoji(data.emoji);
+  const memoryText = normalizeStationMemoryText(data.memoryText);
 
   const stationRef = doc(getStationsCollectionRef(userId, palaceId));
   const palaceRef = getPalaceDocRef(userId, palaceId);
@@ -373,50 +330,20 @@ export const updateStation = async (
   const payload: Record<string, string | number | FieldValue> = {};
 
   if (data.order !== undefined) {
-    assertValidOrder(data.order);
+    assertValidStationOrder(data.order);
     payload.order = data.order;
   }
 
   if (data.emoji !== undefined) {
-    const emoji = data.emoji.trim();
-
-    if (!emoji) {
-      throw new Error('stationService: station emoji cannot be empty.');
-    }
-
-    if (emoji.length > 16) {
-      throw new Error('stationService: station emoji is too long.');
-    }
-
-    payload.emoji = emoji;
+    payload.emoji = normalizeStationEmoji(data.emoji);
   }
 
   if (data.label !== undefined) {
-    const label = data.label.trim();
-
-    if (!label) {
-      throw new Error('stationService: station label cannot be empty.');
-    }
-
-    if (label.length > 40) {
-      throw new Error(
-        'stationService: station label cannot be longer than 40 characters.',
-      );
-    }
-
-    payload.label = label;
+    payload.label = normalizeStationLabel(data.label);
   }
 
   if (data.memoryText !== undefined) {
-    const memoryText = data.memoryText.trim();
-
-    if (memoryText.length > 500) {
-      throw new Error(
-        'stationService: memory text cannot be longer than 500 characters.',
-      );
-    }
-
-    payload.memoryText = memoryText;
+    payload.memoryText = normalizeStationMemoryText(data.memoryText);
   }
 
   let previousImageUri: string | undefined;
@@ -431,7 +358,7 @@ export const updateStation = async (
     if (data.imageUri === null) {
       payload.imageUri = deleteField();
     } else {
-      assertValidImageUri(data.imageUri);
+      assertValidStationImageUri(data.imageUri);
       payload.imageUri = data.imageUri;
     }
   }
@@ -545,7 +472,7 @@ export const reorderStations = async (
 
   orderedIds.forEach((stationId, index) => {
     assertStationId(stationId);
-    assertValidOrder(index);
+    assertValidStationOrder(index);
 
     const stationRef = getStationDocRef(userId, palaceId, stationId);
     batch.update(stationRef, { order: index });

@@ -14,6 +14,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 
+import { normalizeEmail } from '../../constants/validation';
 import type { AuthScreenProps } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 import {
@@ -80,7 +81,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   }, [googleResponse]);
 
   const handleLogin = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     if (!normalizedEmail || !password.trim()) {
       Alert.alert('Missing fields', 'Please enter your email and password.');
@@ -100,7 +101,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   };
 
   const handleForgotPassword = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     if (!normalizedEmail) {
       Alert.alert(

@@ -17,16 +17,17 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
+import { normalizePalaceName, assertNonEmptyId } from '../constants/validation';
 import { isPalaceTemplateId } from '../assets/templates';
 import type { Palace, PalaceTemplateId } from '../types';
 import { XP_REWARDS } from '../utils/levelUtils';
 import { checkAchievements } from './achievementService';
 import { db } from './firebase';
+import { deleteStationImage } from './storageService';
 import {
   rebuildUserStatsSummary,
   recordPalaceCreated,
 } from './statsService';
-import { deleteStationImage } from './storageService';
 import { addXP, buildXPEventId } from './xpService';
 
 const FIRESTORE_BATCH_LIMIT = 450;
@@ -79,28 +80,13 @@ const getReviewAnswersCollectionRef = (
 };
 
 const assertValidUserId = (userId: string) => {
-  if (!userId.trim()) {
-    throw new Error('A valid userId is required.');
-  }
+  assertNonEmptyId(userId, 'A valid userId');
 };
 
 const assertValidPalaceId = (palaceId: string) => {
-  if (!palaceId.trim()) {
-    throw new Error('A valid palaceId is required.');
-  }
+  assertNonEmptyId(palaceId, 'A valid palaceId');
 };
 
-const assertValidPalaceName = (name: string) => {
-  const trimmedName = name.trim();
-
-  if (!trimmedName) {
-    throw new Error('Palace name cannot be empty.');
-  }
-
-  if (trimmedName.length > 40) {
-    throw new Error('Palace name cannot be longer than 40 characters.');
-  }
-};
 
 const assertValidTemplateId = (templateId: PalaceTemplateId) => {
   if (!isPalaceTemplateId(templateId)) {
@@ -316,10 +302,9 @@ export const createPalace = async (
   templateId: PalaceTemplateId,
 ): Promise<Palace> => {
   assertValidUserId(userId);
-  assertValidPalaceName(name);
   assertValidTemplateId(templateId);
 
-  const trimmedName = name.trim();
+  const trimmedName = normalizePalaceName(name);
 
   const docRef = await addDoc(getPalacesCollectionRef(userId), {
     userId,

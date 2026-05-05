@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
+import { AVATAR_EMOJI_OPTIONS } from '../../constants/validation';
 import {
   deleteCurrentUserAccount,
   resetPassword,
@@ -43,16 +44,7 @@ import {
   getXpRemainingForNextLevel,
 } from '../../utils/levelUtils';
 
-const AVATAR_OPTIONS: AvatarEmoji[] = [
-  '🦊',
-  '🐸',
-  '🦁',
-  '🐼',
-  '🦋',
-  '🐉',
-  '🦄',
-  '🐬',
-];
+const AVATAR_OPTIONS = [...AVATAR_EMOJI_OPTIONS] as AvatarEmoji[];
 
 const AGE_GROUP_OPTIONS: Array<{
   value: AgeGroup;

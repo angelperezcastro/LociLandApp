@@ -8,6 +8,12 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
+import {
+  isValidAvatarEmoji,
+  normalizeDisplayName,
+  normalizeEmail,
+  VALIDATION_LIMITS,
+} from '../constants/validation';
 import { getLevelTitle } from '../utils/levelUtils';
 import { normalizeAgeGroup } from '../utils/ageGroup';
 import type { AgeGroup, AvatarEmoji, UserProfile } from '../types/user';
@@ -50,21 +56,11 @@ function getInitialUserLevel() {
 }
 
 function sanitizeDisplayName(displayName: string | undefined): string {
-  const trimmedDisplayName = displayName?.trim() ?? '';
-
-  if (!trimmedDisplayName) {
-    return DEFAULT_DISPLAY_NAME;
-  }
-
-  return trimmedDisplayName.slice(0, 40);
+  return normalizeDisplayName(displayName, DEFAULT_DISPLAY_NAME);
 }
 
 function sanitizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-function isValidAvatarEmoji(value: unknown): value is AvatarEmoji {
-  return typeof value === 'string' && value.trim().length > 0 && value.length <= 16;
+  return normalizeEmail(email);
 }
 
 function sanitizeAvatarEmoji(avatarEmoji: AvatarEmoji | undefined): AvatarEmoji {
@@ -210,8 +206,10 @@ export async function updateUserProfile(
       throw new Error('Display name cannot be empty.');
     }
 
-    if (displayName.length > 40) {
-      throw new Error('Display name cannot be longer than 40 characters.');
+    if (displayName.length > VALIDATION_LIMITS.user.displayNameMaxLength) {
+      throw new Error(
+        `Display name cannot be longer than ${VALIDATION_LIMITS.user.displayNameMaxLength} characters.`,
+      );
     }
 
     payload.displayName = displayName;
