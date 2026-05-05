@@ -1314,7 +1314,7 @@ const QuestionState = ({
                   isYoungerReview && styles.youngerOptionButtonText,
                 ]}
               >
-                {isYoungerReview ? `🧩 ${option}` : option}
+                {option}
               </Text>
             </TouchableOpacity>
           ))}
