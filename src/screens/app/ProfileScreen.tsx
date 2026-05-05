@@ -94,7 +94,6 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-
 function getCurrentStreakFromWeeklyActivity(
   days: ProgressStats['weeklyActivity'] | undefined,
 ): number {
@@ -134,6 +133,30 @@ function isRecentLoginRequired(error: unknown): boolean {
     code === 'auth/requires-recent-login' ||
     message.toLowerCase().includes('requires-recent-login')
   );
+}
+
+function getReadableError(error: unknown): string {
+  if (!error || typeof error !== 'object') {
+    return String(error);
+  }
+
+  const code = 'code' in error ? String(error.code) : '';
+  const message = 'message' in error ? String(error.message) : '';
+
+  if (code && message) {
+    return `${code}: ${message}`;
+  }
+
+  if (message) {
+    return message;
+  }
+
+  return JSON.stringify(error);
+}
+
+function logProfileError(context: string, error: unknown): void {
+  console.error(`[ProfileScreen] ${context}:`, error);
+  console.error(`[ProfileScreen] ${context} readable:`, getReadableError(error));
 }
 
 export function ProfileScreen() {
@@ -219,7 +242,9 @@ export function ProfileScreen() {
       const run = async () => {
         try {
           await loadProfileMetrics();
-        } catch {
+        } catch (error) {
+          logProfileError('loadProfileMetrics failed', error);
+
           if (isActive) {
             setProgressStats(null);
           }
@@ -239,7 +264,8 @@ export function ProfileScreen() {
 
     try {
       await loadProfileMetrics();
-    } catch {
+    } catch (error) {
+      logProfileError('refresh profile failed', error);
       Alert.alert('Error', 'Could not refresh your profile data.');
     } finally {
       setProfileRefreshLoading(false);
@@ -263,7 +289,8 @@ export function ProfileScreen() {
             setLogoutLoading(true);
             await signOut();
             clearUser();
-          } catch {
+          } catch (error) {
+            logProfileError('logout failed', error);
             Alert.alert('Error', 'Could not log out. Please try again.');
           } finally {
             setLogoutLoading(false);
@@ -288,6 +315,8 @@ export function ProfileScreen() {
               await deleteCurrentUserAccount();
               clearUser();
             } catch (error) {
+              logProfileError('delete account failed', error);
+
               if (isRecentLoginRequired(error)) {
                 Alert.alert(
                   'Log in again first',
@@ -322,7 +351,8 @@ export function ProfileScreen() {
         'Email sent',
         'We sent you a password reset email. Check your inbox.',
       );
-    } catch {
+    } catch (error) {
+      logProfileError('password reset failed', error);
       Alert.alert('Error', 'Could not send the password reset email.');
     } finally {
       setPasswordLoading(false);
@@ -334,15 +364,27 @@ export function ProfileScreen() {
       return;
     }
 
+    if (avatarEmoji === profile.avatarEmoji) {
+      setAvatarModalVisible(false);
+      return;
+    }
+
     try {
       setAvatarLoading(true);
       await updateUserProfile(profile.uid, { avatarEmoji });
-      setUserProfile({
-        ...profile,
-        avatarEmoji,
-      });
+
+      const freshProfile = await getUserProfile(profile.uid);
+
+      setUserProfile(
+        freshProfile ?? {
+          ...profile,
+          avatarEmoji,
+        },
+      );
+
       setAvatarModalVisible(false);
-    } catch {
+    } catch (error) {
+      logProfileError('avatar update failed', error);
       Alert.alert('Error', 'Could not update your avatar. Please try again.');
     } finally {
       setAvatarLoading(false);
@@ -356,15 +398,27 @@ export function ProfileScreen() {
 
     const normalizedAgeGroup = normalizeAgeGroup(ageGroup);
 
+    if (normalizedAgeGroup === currentAgeGroup) {
+      setAgeModalVisible(false);
+      return;
+    }
+
     try {
       setAgeGroupLoading(true);
       await updateUserProfile(profile.uid, { ageGroup: normalizedAgeGroup });
-      setUserProfile({
-        ...profile,
-        ageGroup: normalizedAgeGroup,
-      });
+
+      const freshProfile = await getUserProfile(profile.uid);
+
+      setUserProfile(
+        freshProfile ?? {
+          ...profile,
+          ageGroup: normalizedAgeGroup,
+        },
+      );
+
       setAgeModalVisible(false);
-    } catch {
+    } catch (error) {
+      logProfileError('age group update failed', error);
       Alert.alert('Error', 'Could not update the age group. Please try again.');
     } finally {
       setAgeGroupLoading(false);
