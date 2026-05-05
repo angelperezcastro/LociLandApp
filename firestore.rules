@@ -10,6 +10,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
     function isNonEmptyString(value, maxSize) {
       return value is string && value.size() > 0 && value.size() <= maxSize;
     }
@@ -17,17 +21,6 @@ service cloud.firestore {
     function isOptionalTimestamp(fieldName) {
       return !request.resource.data.keys().hasAny([fieldName])
         || request.resource.data[fieldName] is timestamp;
-    }
-
-    function preservesOptionalField(fieldName) {
-      return (
-        !resource.data.keys().hasAny([fieldName])
-        && !request.resource.data.keys().hasAny([fieldName])
-      ) || (
-        resource.data.keys().hasAny([fieldName])
-        && request.resource.data.keys().hasAny([fieldName])
-        && request.resource.data[fieldName] == resource.data[fieldName]
-      );
     }
 
     function isValidAgeGroup(value) {
@@ -47,6 +40,45 @@ service cloud.firestore {
         value is string
         && value.matches('^\\d{4}-\\d{2}-\\d{2}$')
       ) || value is timestamp;
+    }
+
+    function expectedLevelFromXP(xp) {
+      return xp >= 5000 ? 10
+        : xp >= 3500 ? 9
+        : xp >= 2700 ? 8
+        : xp >= 2000 ? 7
+        : xp >= 1400 ? 6
+        : xp >= 900 ? 5
+        : xp >= 500 ? 4
+        : xp >= 250 ? 3
+        : xp >= 100 ? 2
+        : 1;
+    }
+
+    function previousXP() {
+      return resource.data.xp is int ? resource.data.xp : 0;
+    }
+
+    function previousLevel() {
+      return resource.data.level is int
+        ? resource.data.level
+        : expectedLevelFromXP(previousXP());
+    }
+
+    function previousStreak() {
+      return resource.data.streak is int ? resource.data.streak : 0;
+    }
+
+    function previousBestStreak() {
+      return resource.data.bestStreak is int
+        ? resource.data.bestStreak
+        : previousStreak();
+    }
+
+    function expectedBestStreakAfterUpdate() {
+      return request.resource.data.streak > previousBestStreak()
+        ? request.resource.data.streak
+        : previousBestStreak();
     }
 
     function isValidXPEventId(value) {
@@ -71,7 +103,8 @@ service cloud.firestore {
         'lastActiveDate',
         'createdAt',
         'updatedAt',
-        'lastXPGrantAt'
+        'lastXPGrantAt',
+        'lastXPEventId'
       ]);
     }
 
@@ -121,7 +154,11 @@ service cloud.firestore {
         && isValidLastActiveDate(request.resource.data.lastActiveDate)
         && isOptionalTimestamp('createdAt')
         && isOptionalTimestamp('updatedAt')
-        && isOptionalTimestamp('lastXPGrantAt');
+        && isOptionalTimestamp('lastXPGrantAt')
+        && (
+          !request.resource.data.keys().hasAny(['lastXPEventId'])
+          || isValidXPEventId(request.resource.data.lastXPEventId)
+        );
     }
 
     function isValidUserProfileCreate(uid) {
@@ -133,11 +170,12 @@ service cloud.firestore {
           !request.resource.data.keys().hasAny(['bestStreak'])
           || request.resource.data.bestStreak == 0
         )
-        && !request.resource.data.keys().hasAny(['lastXPGrantAt']);
+        && !request.resource.data.keys().hasAny(['lastXPGrantAt'])
+        && !request.resource.data.keys().hasAny(['lastXPEventId']);
     }
 
     function editableUserProfileFieldsChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+      return changedKeys().hasOnly([
         'displayName',
         'avatarEmoji',
         'ageGroup',
@@ -146,32 +184,95 @@ service cloud.firestore {
     }
 
     function isValidDisplayNameUpdate() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName'])
+      return !changedKeys().hasAny(['displayName'])
         || isNonEmptyString(request.resource.data.displayName, 40);
     }
 
     function isValidAvatarEmojiUpdate() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarEmoji'])
+      return !changedKeys().hasAny(['avatarEmoji'])
         || isValidAvatarEmoji(request.resource.data.avatarEmoji);
     }
 
     function isValidAgeGroupUpdate() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ageGroup'])
+      return !changedKeys().hasAny(['ageGroup'])
         || isValidAgeGroup(request.resource.data.ageGroup);
     }
 
     function isValidUpdatedAtUpdate() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['updatedAt'])
+      return !changedKeys().hasAny(['updatedAt'])
         || request.resource.data.updatedAt is timestamp;
     }
 
+    function isValidEditableUserProfileUpdate() {
+      return editableUserProfileFieldsChanged()
+        && isValidDisplayNameUpdate()
+        && isValidAvatarEmojiUpdate()
+        && isValidAgeGroupUpdate()
+        && isValidUpdatedAtUpdate();
+    }
+
+    function isValidXPGrantUserUpdate(uid) {
+      let eventId = request.resource.data.lastXPEventId;
+      let event = getAfter(
+        /databases/$(db)/documents/users/$(uid)/xpEvents/$(eventId)
+      ).data;
+
+      return changedKeys().hasOnly([
+          'xp',
+          'level',
+          'levelTitle',
+          'updatedAt',
+          'lastXPGrantAt',
+          'lastXPEventId'
+        ])
+        && isValidXPEventId(eventId)
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.lastXPGrantAt is timestamp
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        && request.resource.data.xp <= 100000
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 10
+        && isValidLevelTitle(request.resource.data.levelTitle)
+        && event.eventId == eventId
+        && event.userId == uid
+        && event.previousXP == previousXP()
+        && event.newXP == request.resource.data.xp
+        && event.previousLevel == previousLevel()
+        && event.newLevel == request.resource.data.level
+        && event.levelTitle == request.resource.data.levelTitle
+        && request.resource.data.xp == previousXP() + event.amount
+        && request.resource.data.level == expectedLevelFromXP(request.resource.data.xp);
+    }
+
+    function isValidStreakUserUpdate() {
+      return changedKeys().hasOnly([
+          'streak',
+          'bestStreak',
+          'lastActiveDate',
+          'updatedAt'
+        ])
+        && request.resource.data.streak is int
+        && request.resource.data.streak >= 0
+        && request.resource.data.streak <= 3650
+        && request.resource.data.bestStreak is int
+        && request.resource.data.bestStreak >= 0
+        && request.resource.data.bestStreak <= 3650
+        && (
+          request.resource.data.streak == 1
+          || request.resource.data.streak == previousStreak() + 1
+        )
+        && request.resource.data.bestStreak == expectedBestStreakAfterUpdate()
+        && isValidLastActiveDate(request.resource.data.lastActiveDate)
+        && request.resource.data.updatedAt is timestamp;
+    }
+
     function isValidUserProfileUpdate(uid) {
-  return editableUserProfileFieldsChanged()
-    && isValidDisplayNameUpdate()
-    && isValidAvatarEmojiUpdate()
-    && isValidAgeGroupUpdate()
-    && isValidUpdatedAtUpdate();
-}
+      return isValidEditableUserProfileUpdate()
+        || isValidXPGrantUserUpdate(uid)
+        || isValidStreakUserUpdate();
+    }
 
     function isValidXPReasonAmount(reason, amount) {
       return (
@@ -206,7 +307,7 @@ service cloud.firestore {
       ]);
     }
 
-    function isValidXPEventCreate(uid, eventId) {
+    function hasValidXPEventBase(uid, eventId) {
       return hasOnlyXPEventFields()
         && request.resource.data.eventId == eventId
         && request.resource.data.userId == uid
@@ -231,13 +332,103 @@ service cloud.firestore {
         && request.resource.data.newLevel >= 1
         && request.resource.data.newLevel <= 10
         && request.resource.data.newLevel >= request.resource.data.previousLevel
+        && request.resource.data.newLevel == expectedLevelFromXP(request.resource.data.newXP)
         && isValidLevelTitle(request.resource.data.levelTitle)
         && request.resource.data.leveledUp is bool
+        && request.resource.data.metadata is map
+        && request.resource.data.createdAt is timestamp;
+    }
+
+    function xpEventIsLinkedToUserUpdate(uid, eventId) {
+      let userAfter = getAfter(/databases/$(db)/documents/users/$(uid)).data;
+
+      return userAfter.lastXPEventId == eventId
+        && userAfter.xp == request.resource.data.newXP
+        && userAfter.level == request.resource.data.newLevel
+        && userAfter.levelTitle == request.resource.data.levelTitle
+        && userAfter.lastXPGrantAt is timestamp;
+    }
+
+    function isValidCreatePalaceXPEvent(uid) {
+      let palaceId = request.resource.data.metadata.palaceId;
+
+      return request.resource.data.reason == 'create_palace'
+        && request.resource.data.amount == 25
+        && palaceId is string
+        && exists(/databases/$(db)/documents/users/$(uid)/palaces/$(palaceId));
+    }
+
+    function isValidAddStationXPEvent(uid) {
+      let palaceId = request.resource.data.metadata.palaceId;
+      let stationId = request.resource.data.metadata.stationId;
+
+      return request.resource.data.reason == 'add_station'
+        && request.resource.data.amount == 10
+        && palaceId is string
+        && stationId is string
+        && exists(
+          /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/stations/$(stationId)
+        );
+    }
+
+    function isValidReviewXPEvent(uid) {
+      let palaceId = request.resource.data.metadata.palaceId;
+      let sessionId = request.resource.data.metadata.sessionId;
+      let review = get(
+        /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId)
+      ).data;
+
+      return palaceId is string
+        && sessionId is string
+        && review.userId == uid
+        && review.palaceId == palaceId
+        && review.status == 'completed'
+        && review.completedAt is timestamp
+        && review.xpEarned is int
+        && review.correctAnswers + review.incorrectAnswers == review.totalStations
         && (
-          !request.resource.data.keys().hasAny(['metadata'])
-          || request.resource.data.metadata is map
-        )
-        && isOptionalTimestamp('createdAt');
+          (
+            request.resource.data.reason == 'complete_review'
+            && request.resource.data.amount == 20
+            && review.xpEarned >= 20
+          )
+          || (
+            request.resource.data.reason == 'perfect_review'
+            && request.resource.data.amount == 50
+            && review.isPerfect == true
+            && review.xpEarned == 70
+          )
+        );
+    }
+
+    function isValidSevenDayStreakXPEvent(uid) {
+      return request.resource.data.reason == 'seven_day_streak'
+        && request.resource.data.amount == 100
+        && request.resource.data.metadata.date is string
+        && request.resource.data.metadata.streak == 7
+        && get(/databases/$(db)/documents/users/$(uid)).data.streak >= 7;
+    }
+
+    function isValidAchievementXPEvent(uid) {
+      let achievementId = request.resource.data.metadata.achievementId;
+
+      return request.resource.data.reason == 'achievement'
+        && achievementId is string
+        && exists(
+          /databases/$(db)/documents/users/$(uid)/achievements/$(achievementId)
+        );
+    }
+
+    function isValidXPEventCreate(uid, eventId) {
+      return hasValidXPEventBase(uid, eventId)
+        && xpEventIsLinkedToUserUpdate(uid, eventId)
+        && (
+          isValidCreatePalaceXPEvent(uid)
+          || isValidAddStationXPEvent(uid)
+          || isValidReviewXPEvent(uid)
+          || isValidSevenDayStreakXPEvent(uid)
+          || isValidAchievementXPEvent(uid)
+        );
     }
 
     function isValidPalaceTemplateId(value) {
@@ -297,7 +488,7 @@ service cloud.firestore {
     }
 
     function onlyEditablePalaceFieldsChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+      return changedKeys().hasOnly([
         'name',
         'stationCount',
         'updatedAt'
@@ -313,7 +504,7 @@ service cloud.firestore {
     function isValidPalaceStationCountTransition() {
       return request.resource.data.stationCount == resource.data.stationCount
         || (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          changedKeys().hasOnly([
             'stationCount',
             'updatedAt'
           ])
@@ -373,28 +564,35 @@ service cloud.firestore {
     }
 
     function isValidReviewSessionCreate(uid, palaceId) {
+      let palace = get(
+        /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)
+      ).data;
+
       return request.resource.data.keys().hasOnly([
-        'palaceId',
-        'userId',
-        'startedAt',
-        'completedAt',
-        'totalStations',
-        'correctAnswers',
-        'incorrectAnswers',
-        'xpEarned',
-        'xpAppliedToUser',
-        'xpAppliedAt',
-        'isPerfect',
-        'status',
-        'updatedAt'
-      ])
+          'palaceId',
+          'userId',
+          'startedAt',
+          'completedAt',
+          'totalStations',
+          'correctAnswers',
+          'incorrectAnswers',
+          'xpEarned',
+          'xpAppliedToUser',
+          'xpAppliedAt',
+          'isPerfect',
+          'status',
+          'updatedAt'
+        ])
         && request.resource.data.userId == uid
         && request.resource.data.palaceId == palaceId
+        && palace.userId == uid
+        && palace.stationCount is int
+        && request.resource.data.totalStations == palace.stationCount
         && request.resource.data.startedAt is timestamp
         && request.resource.data.completedAt == null
         && request.resource.data.totalStations is int
         && request.resource.data.totalStations >= 2
-        && request.resource.data.totalStations <= 21
+        && request.resource.data.totalStations <= 20
         && request.resource.data.correctAnswers == 0
         && request.resource.data.incorrectAnswers == 0
         && request.resource.data.xpEarned == 0
@@ -416,75 +614,151 @@ service cloud.firestore {
         || request.resource.data.xpAppliedToUser is bool;
     }
 
-    function isValidReviewSessionUpdate(uid, palaceId) {
-      return request.resource.data.keys().hasOnly([
-        'palaceId',
-        'userId',
-        'startedAt',
-        'completedAt',
-        'totalStations',
-        'correctAnswers',
-        'incorrectAnswers',
-        'xpEarned',
-        'xpAppliedToUser',
-        'xpAppliedAt',
-        'isPerfect',
-        'status',
-        'updatedAt'
-      ])
-        && resource.data.userId == uid
-        && resource.data.palaceId == palaceId
-        && request.resource.data.userId == resource.data.userId
-        && request.resource.data.palaceId == resource.data.palaceId
-        && request.resource.data.startedAt == resource.data.startedAt
-        && request.resource.data.totalStations == resource.data.totalStations
-        && request.resource.data.correctAnswers is int
+    function reviewCountersAreValid() {
+      return request.resource.data.correctAnswers is int
         && request.resource.data.incorrectAnswers is int
         && request.resource.data.correctAnswers >= 0
         && request.resource.data.incorrectAnswers >= 0
         && request.resource.data.correctAnswers <= request.resource.data.totalStations
         && request.resource.data.incorrectAnswers <= request.resource.data.totalStations
-        && request.resource.data.correctAnswers + request.resource.data.incorrectAnswers <= request.resource.data.totalStations
-        && request.resource.data.xpEarned is int
-        && request.resource.data.xpEarned >= 0
-        && request.resource.data.xpEarned <= 1000
-        && hasValidReviewXpAppliedFlag()
-        && (
-          !request.resource.data.keys().hasAny(['xpAppliedAt'])
-          || request.resource.data.xpAppliedAt == null
-          || request.resource.data.xpAppliedAt is timestamp
+        && request.resource.data.correctAnswers + request.resource.data.incorrectAnswers <= request.resource.data.totalStations;
+    }
+
+    function oneAnswerCounterTransition() {
+      return (
+          request.resource.data.correctAnswers == resource.data.correctAnswers + 1
+          && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers
         )
-        && (
-          !request.resource.data.keys().hasAny(['isPerfect'])
-          || request.resource.data.isPerfect is bool
+        || (
+          request.resource.data.correctAnswers == resource.data.correctAnswers
+          && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers + 1
         )
-        && isOptionalTimestamp('updatedAt')
-        && request.resource.data.status in ['active', 'completed']
-        && (
-          request.resource.data.status == 'active'
-          ? request.resource.data.completedAt == null
-          : request.resource.data.completedAt is timestamp
+        || (
+          request.resource.data.correctAnswers == resource.data.correctAnswers
+          && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers
         )
-        && (
-          request.resource.data.status == 'active'
-          ? (
-            request.resource.data.xpEarned == 0
-            && request.resource.data.xpAppliedToUser == false
-          )
-          : true
+        || (
+          request.resource.data.correctAnswers == resource.data.correctAnswers + 1
+          && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers - 1
+        )
+        || (
+          request.resource.data.correctAnswers == resource.data.correctAnswers - 1
+          && request.resource.data.incorrectAnswers == resource.data.incorrectAnswers + 1
         );
     }
 
+    function expectedReviewXpEarned() {
+      return (
+        request.resource.data.correctAnswers == request.resource.data.totalStations
+        && request.resource.data.incorrectAnswers == 0
+      ) ? 70 : 20;
+    }
+
+    function expectedReviewIsPerfect() {
+      return request.resource.data.correctAnswers == request.resource.data.totalStations
+        && request.resource.data.incorrectAnswers == 0;
+    }
+
+    function immutableReviewSessionFieldsArePreserved(uid, palaceId) {
+  return resource.data.userId == uid
+    && resource.data.palaceId == palaceId
+    && request.resource.data.userId == resource.data.userId
+    && request.resource.data.palaceId == resource.data.palaceId
+    && request.resource.data.startedAt == resource.data.startedAt
+    && request.resource.data.totalStations == resource.data.totalStations;
+}
+
+    function isValidActiveReviewAnswerUpdate(uid, palaceId) {
+      return resource.data.status == 'active'
+        && request.resource.data.status == 'active'
+        && changedKeys().hasOnly([
+          'correctAnswers',
+          'incorrectAnswers',
+          'updatedAt'
+        ])
+        && request.resource.data.completedAt == null
+        && request.resource.data.xpEarned == 0
+        && request.resource.data.xpAppliedToUser == false
+        && (
+          !request.resource.data.keys().hasAny(['isPerfect'])
+          || request.resource.data.isPerfect == false
+        )
+        && reviewCountersAreValid()
+        && oneAnswerCounterTransition()
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidReviewCompletionUpdate(uid, palaceId) {
+      return resource.data.status == 'active'
+        && request.resource.data.status == 'completed'
+        && changedKeys().hasOnly([
+          'completedAt',
+          'xpEarned',
+          'xpAppliedToUser',
+          'isPerfect',
+          'status',
+          'updatedAt'
+        ])
+        && reviewCountersAreValid()
+        && request.resource.data.correctAnswers + request.resource.data.incorrectAnswers == request.resource.data.totalStations
+        && request.resource.data.completedAt is timestamp
+        && request.resource.data.xpEarned == expectedReviewXpEarned()
+        && request.resource.data.xpAppliedToUser == false
+        && request.resource.data.isPerfect == expectedReviewIsPerfect()
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidReviewXPAppliedUpdate(uid, palaceId) {
+      return resource.data.status == 'completed'
+        && request.resource.data.status == 'completed'
+        && changedKeys().hasOnly([
+          'xpAppliedToUser',
+          'xpAppliedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.xpAppliedToUser == true
+        && request.resource.data.xpAppliedAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidReviewSessionUpdate(uid, palaceId) {
+  return request.resource.data.keys().hasOnly([
+      'palaceId',
+      'userId',
+      'startedAt',
+      'completedAt',
+      'totalStations',
+      'correctAnswers',
+      'incorrectAnswers',
+      'xpEarned',
+      'xpAppliedToUser',
+      'xpAppliedAt',
+      'isPerfect',
+      'status',
+      'updatedAt'
+    ])
+    && immutableReviewSessionFieldsArePreserved(uid, palaceId)
+    && hasValidReviewXpAppliedFlag()
+    && (
+      isValidActiveReviewAnswerUpdate(uid, palaceId)
+      || isValidReviewCompletionUpdate(uid, palaceId)
+      || isValidReviewXPAppliedUpdate(uid, palaceId)
+    );
+}
+
     function isValidReviewAnswer(uid, palaceId, sessionId) {
       return request.resource.data.keys().hasOnly([
-        'sessionId',
-        'stationId',
-        'correct',
-        'answeredAt'
-      ])
+          'sessionId',
+          'stationId',
+          'correct',
+          'answeredAt'
+        ])
         && request.resource.data.sessionId == sessionId
         && request.resource.data.stationId is string
         && request.resource.data.stationId.size() > 0
+        && get(
+          /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/reviewSessions/$(sessionId)
+        ).data.status == 'active'
         && exists(
           /databases/$(db)/documents/users/$(uid)/palaces/$(palaceId)/stations/$(request.resource.data.stationId)
         )
@@ -494,18 +768,19 @@ service cloud.firestore {
 
     function isValidAchievementWrite(uid, achievementId) {
       return request.resource.data.keys().hasOnly([
-        'id',
-        'achievementId',
-        'title',
-        'description',
-        'emoji',
-        'xpReward',
-        'earnedAt',
-        'createdAt',
-        'unlockedAt',
-        'triggerType',
-        'xpEventId'
-      ])
+          'id',
+          'achievementId',
+          'title',
+          'description',
+          'emoji',
+          'xpReward',
+          'earnedAt',
+          'createdAt',
+          'unlockedAt',
+          'triggerType',
+          'xpEventId',
+          'metadata'
+        ])
         && (
           !request.resource.data.keys().hasAny(['id'])
           || request.resource.data.id == achievementId
@@ -541,6 +816,10 @@ service cloud.firestore {
         && (
           !request.resource.data.keys().hasAny(['xpEventId'])
           || isValidXPEventId(request.resource.data.xpEventId)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['metadata'])
+          || request.resource.data.metadata is map
         )
         && isOptionalTimestamp('earnedAt')
         && isOptionalTimestamp('createdAt')

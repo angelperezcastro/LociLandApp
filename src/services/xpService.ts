@@ -1,10 +1,6 @@
 // src/services/xpService.ts
 
-import {
-  doc,
-  runTransaction,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 import { useLevelUpStore } from '../store/useLevelUpStore';
 import { getLevelFromXP, getLevelTitle } from '../utils/levelUtils';
@@ -168,6 +164,7 @@ export const addXP = async (
       xp: newXP,
       level: newLevel,
       levelTitle,
+      lastXPEventId: options.eventId,
       updatedAt: serverTimestamp(),
       lastXPGrantAt: serverTimestamp(),
     });

@@ -32,7 +32,7 @@ const REVIEW_ANSWERS_SUBCOLLECTION = 'answers';
 
 type ReviewSessionExtraFields = ReviewSessionDocument & {
   isPerfect?: boolean;
-  xpAppliedAt?: Timestamp;
+  xpAppliedAt?: Timestamp | null;
 };
 
 const timestampToDate = (value: Timestamp | null | undefined): Date | null => {
@@ -365,6 +365,10 @@ export const startReview = async ({
     throw new Error('A palace needs at least 2 stations to start a review.');
   }
 
+  if (resolvedTotalStations > 20) {
+    throw new Error('A review cannot contain more than 20 stations.');
+  }
+
   const sessionRef = await addDoc(
     getReviewSessionsCollectionRef(userId, palaceId),
     {
@@ -517,7 +521,8 @@ export const completeReview = async ({
   let correctAnswers = 0;
   let incorrectAnswers = 0;
   let startedAt: Timestamp | null = null;
-  const completedAtClientDate = new Date();
+  let reviewXpAlreadyApplied = false;
+  let completionDateForDuration = new Date();
 
   await runTransaction(db, async (transaction) => {
     const sessionSnap = await transaction.get(sessionRef);
@@ -528,11 +533,47 @@ export const completeReview = async ({
 
     const sessionData = sessionSnap.data() as ReviewSessionExtraFields;
 
-    totalStations = sessionData.totalStations;
-    correctAnswers = sessionData.correctAnswers;
-    incorrectAnswers = sessionData.incorrectAnswers;
+    totalStations = getSafeCounter(sessionData.totalStations);
+    correctAnswers = getSafeCounter(sessionData.correctAnswers);
+    incorrectAnswers = getSafeCounter(sessionData.incorrectAnswers);
     startedAt =
       sessionData.startedAt instanceof Timestamp ? sessionData.startedAt : null;
+
+    const reviewIsComplete = isCompleteReview({
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+    });
+
+    if (!reviewIsComplete) {
+      throw new Error('Cannot complete a review before all stations are answered.');
+    }
+
+    perfect =
+      typeof sessionData.isPerfect === 'boolean'
+        ? sessionData.isPerfect
+        : isPerfectReview({
+            totalStations,
+            correctAnswers,
+            incorrectAnswers,
+          });
+
+    if (sessionData.completedAt instanceof Timestamp) {
+      completionDateForDuration = sessionData.completedAt.toDate();
+    }
+
+    if (sessionData.status === 'completed') {
+      xpEarned =
+        getSafeCounter(sessionData.xpEarned) ||
+        calculateReviewXp({
+          totalStations,
+          correctAnswers,
+          incorrectAnswers,
+        });
+
+      reviewXpAlreadyApplied = sessionData.xpAppliedToUser === true;
+      return;
+    }
 
     perfect = isPerfectReview({
       totalStations,
@@ -540,43 +581,43 @@ export const completeReview = async ({
       incorrectAnswers,
     });
 
-    xpEarned =
-      sessionData.status === 'completed'
-        ? sessionData.xpEarned
-        : calculateReviewXp({
-            totalStations,
-            correctAnswers,
-            incorrectAnswers,
-          });
+    xpEarned = calculateReviewXp({
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+    });
 
     transaction.update(sessionRef, {
-      completedAt: sessionData.completedAt ?? serverTimestamp(),
+      completedAt: serverTimestamp(),
       xpEarned,
-      xpAppliedToUser: sessionData.xpAppliedToUser ?? false,
+      xpAppliedToUser: false,
       isPerfect: perfect,
       status: 'completed',
       updatedAt: serverTimestamp(),
     });
   });
 
-  const xpApplication =
-    xpEarned > 0
-      ? await awardReviewXPSafely({
-          userId,
-          palaceId,
-          sessionId,
-          totalStations,
-          correctAnswers,
-          incorrectAnswers,
-          isPerfect: perfect,
-        })
-      : { applied: true, results: [] };
+  if (xpEarned > 0 && !reviewXpAlreadyApplied) {
+    const xpApplication = await awardReviewXPSafely({
+      userId,
+      palaceId,
+      sessionId,
+      totalStations,
+      correctAnswers,
+      incorrectAnswers,
+      isPerfect: perfect,
+    });
 
-  await updateDoc(sessionRef, {
-    xpAppliedToUser: xpApplication.applied,
-    ...(xpApplication.applied ? { xpAppliedAt: serverTimestamp() } : {}),
-    updatedAt: serverTimestamp(),
-  });
+    if (xpApplication.applied) {
+      await updateDoc(sessionRef, {
+        xpAppliedToUser: true,
+        xpAppliedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      reviewXpAlreadyApplied = true;
+    }
+  }
 
   await checkAchievementsSafely({
     userId,
@@ -585,7 +626,7 @@ export const completeReview = async ({
     isPerfect: perfect,
     durationSeconds: getReviewDurationSeconds(
       startedAt,
-      completedAtClientDate,
+      completionDateForDuration,
     ),
     correctAnswers,
     totalStations,

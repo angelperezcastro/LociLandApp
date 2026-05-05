@@ -1842,6 +1842,16 @@ export const ReviewScreen = () => {
       setRevealResult(result);
       setScreenState('REVEAL');
     } catch (error) {
+      console.error('[ReviewScreen] recordAnswer failed:', error);
+      console.error('[ReviewScreen] recordAnswer payload:', {
+        userId: currentUserId,
+        palaceId: data.palace.id,
+        sessionId,
+        stationId: currentStation.id,
+        stationLabel: currentStation.name,
+        correct,
+      });
+
       const message =
         error instanceof Error
           ? error.message
@@ -1909,6 +1919,15 @@ export const ReviewScreen = () => {
       setCompletedSession(completed);
       setScreenState('COMPLETE');
     } catch (error) {
+      console.error('[ReviewScreen] completeReview failed:', error);
+      console.error('[ReviewScreen] completeReview payload:', {
+        userId: currentUserId,
+        palaceId: data.palace.id,
+        sessionId,
+        answeredResults,
+        totalStations: data.stations.length,
+      });
+
       const message =
         error instanceof Error
           ? error.message
