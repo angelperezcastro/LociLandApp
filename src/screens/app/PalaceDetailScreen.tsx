@@ -29,10 +29,13 @@ import {
   spacing,
   typography,
 } from '../../theme';
-import { auth } from '../../services/firebase';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { usePalaceStore } from '../../store/usePalaceStore';
-import { useUserStore } from '../../store/useUserStore';
+import {
+  selectAuthUserId,
+  selectUserProfile,
+  useUserStore,
+} from '../../store/useUserStore';
 import { Button } from '../../components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
 import { StationCard } from '../../components/station/StationCard';
@@ -50,22 +53,6 @@ type PalaceDetailRoute = {
   };
 };
 
-type LooseUserProfile = {
-  id?: string;
-  uid?: string;
-  ageGroup?: string | null;
-};
-
-type LooseAuthUser = {
-  uid?: string;
-};
-
-type LooseUserStore = {
-  profile?: LooseUserProfile | null;
-  userProfile?: LooseUserProfile | null;
-  user?: LooseAuthUser | null;
-  currentUser?: LooseAuthUser | null;
-};
 
 type LooseStation = Station & {
   name?: string;
@@ -122,17 +109,8 @@ function PalaceDetailScreen() {
 
   const palaceId = route.params?.palaceId ?? null;
 
-  const userStore = useUserStore((state) => state as unknown as LooseUserStore);
-  const profile = userStore.profile ?? userStore.userProfile ?? null;
-  const storeUser = userStore.user ?? userStore.currentUser ?? null;
-  const firebaseUser = auth.currentUser;
-
-  const userId =
-    profile?.id ??
-    profile?.uid ??
-    storeUser?.uid ??
-    firebaseUser?.uid ??
-    null;
+  const userId = useUserStore(selectAuthUserId);
+  const profile = useUserStore(selectUserProfile);
 
   const reviewAgeGroup = normalizeAgeGroup(profile?.ageGroup);
 

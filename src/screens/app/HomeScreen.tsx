@@ -24,10 +24,14 @@ import {
   typography,
 } from '../../theme';
 import type { Palace } from '../../types';
-import { auth } from '../../services/firebase';
 import { getPalaceTemplateById } from '../../assets/templates';
 import { usePalaceStore } from '../../store/usePalaceStore';
-import { useUserStore } from '../../store/useUserStore';
+import {
+  selectAuthUser,
+  selectAuthUserId,
+  selectUserProfile,
+  useUserStore,
+} from '../../store/useUserStore';
 import { GuideCharacter } from '../../components/guide';
 import { PalaceCard } from '../../components/palace/PalaceCard';
 import { DeletePalaceSheet } from '../../components/palace/DeletePalaceSheet';
@@ -36,26 +40,6 @@ import { ErrorState, LoadingState } from '../../components/feedback';
 import { getUserFriendlyError } from '../../utils/errorMessages';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 
-type LooseUserProfile = {
-  id?: string;
-  uid?: string;
-  displayName?: string;
-  email?: string;
-  avatarEmoji?: string;
-};
-
-type LooseAuthUser = {
-  uid?: string;
-  displayName?: string | null;
-  email?: string | null;
-};
-
-type LooseUserStore = {
-  profile?: LooseUserProfile | null;
-  userProfile?: LooseUserProfile | null;
-  user?: LooseAuthUser | null;
-  currentUser?: LooseAuthUser | null;
-};
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -64,29 +48,19 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [palaceToDelete, setPalaceToDelete] = useState<Palace | null>(null);
 
-  const userStore = useUserStore((state) => state as unknown as LooseUserStore);
-
-  const profile = userStore.profile ?? userStore.userProfile ?? null;
-  const storeUser = userStore.user ?? userStore.currentUser ?? null;
-  const firebaseUser = auth.currentUser;
-
-  const userId =
-    profile?.id ??
-    profile?.uid ??
-    storeUser?.uid ??
-    firebaseUser?.uid ??
-    null;
+  const userId = useUserStore(selectAuthUserId);
+  const profile = useUserStore(selectUserProfile);
+  const authUser = useUserStore(selectAuthUser);
 
   const displayName = useMemo(() => {
     const rawName =
       profile?.displayName ??
-      storeUser?.displayName ??
-      firebaseUser?.displayName ??
-      firebaseUser?.email?.split('@')[0] ??
+      authUser?.displayName ??
+      authUser?.email?.split('@')[0] ??
       'Explorer';
 
     return rawName.trim() || 'Explorer';
-  }, [firebaseUser?.displayName, firebaseUser?.email, profile, storeUser]);
+  }, [authUser?.displayName, authUser?.email, profile?.displayName]);
 
   const avatarEmoji = profile?.avatarEmoji ?? '🧙‍♂️';
 

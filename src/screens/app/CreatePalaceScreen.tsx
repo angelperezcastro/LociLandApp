@@ -20,33 +20,11 @@ import { VALIDATION_LIMITS } from '../../constants/validation';
 import { colors, radius, spacing } from '../../theme';
 import { palaceTemplates } from '../../assets/templates';
 import type { Palace, PalaceTemplate, PalaceTemplateId } from '../../types';
-import { auth } from '../../services/firebase';
 import { usePalaceStore } from '../../store/usePalaceStore';
-import { useUserStore } from '../../store/useUserStore';
+import { selectAuthUserId, useUserStore } from '../../store/useUserStore';
 import { PalaceCard } from '../../components/palace/PalaceCard';
 import { Button } from '../../components/ui/Button';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
-
-type LooseUserProfile = {
-  id?: string;
-  uid?: string;
-  displayName?: string;
-  email?: string;
-  avatarEmoji?: string;
-};
-
-type LooseAuthUser = {
-  uid?: string;
-  displayName?: string | null;
-  email?: string | null;
-};
-
-type LooseUserStore = {
-  profile?: LooseUserProfile | null;
-  userProfile?: LooseUserProfile | null;
-  user?: LooseAuthUser | null;
-  currentUser?: LooseAuthUser | null;
-};
 
 
 const CREATE_PALACE_RADII = {
@@ -94,20 +72,7 @@ function CreatePalaceScreen() {
   const successScale = useRef(new Animated.Value(0.4)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
-  const userStore = useUserStore(
-    (state) => state as unknown as LooseUserStore,
-  );
-
-  const profile = userStore.profile ?? userStore.userProfile ?? null;
-  const storeUser = userStore.user ?? userStore.currentUser ?? null;
-  const firebaseUser = auth.currentUser;
-
-  const userId =
-    profile?.id ??
-    profile?.uid ??
-    storeUser?.uid ??
-    firebaseUser?.uid ??
-    null;
+  const userId = useUserStore(selectAuthUserId);
 
   const createPalace = usePalaceStore((state) => state.createPalace);
 

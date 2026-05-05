@@ -25,7 +25,7 @@ import {
   getEarnedAchievements,
   type EarnedAchievement,
 } from '../../services/achievementService';
-import { auth } from '../../services/firebase';
+import { selectAuthUserId, useUserStore } from '../../store/useUserStore';
 import { colors, fontSizes, lineHeights, radius, spacing, typography } from '../../theme';
 
 const GRID_COLUMNS = 3;
@@ -56,6 +56,7 @@ export const AchievementsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const userId = useUserStore(selectAuthUserId);
 
   const earnedAchievementMap = useMemo(() => {
     return earnedAchievements.reduce<
@@ -78,9 +79,7 @@ export const AchievementsScreen = () => {
   );
 
   const loadAchievements = useCallback(async () => {
-    const currentUserId = auth.currentUser?.uid;
-
-    if (!currentUserId) {
+    if (!userId) {
       setEarnedAchievements([]);
       setErrorMessage('You need to be logged in to view achievements.');
       return;
@@ -89,7 +88,7 @@ export const AchievementsScreen = () => {
     try {
       setErrorMessage(null);
 
-      const earned = await getEarnedAchievements(currentUserId);
+      const earned = await getEarnedAchievements(userId);
       setEarnedAchievements(earned);
     } catch (error) {
       const message =
@@ -99,7 +98,7 @@ export const AchievementsScreen = () => {
 
       setErrorMessage(message);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     let isMounted = true;

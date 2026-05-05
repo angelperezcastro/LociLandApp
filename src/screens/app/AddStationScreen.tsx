@@ -18,7 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { colors, radius, spacing, typography } from '../../theme';
 import { usePalaceStore } from '../../store/usePalaceStore';
-import { useUserStore } from '../../store/useUserStore';
+import { selectAuthUserId, useUserStore } from '../../store/useUserStore';
 import {
   isSupportedStationImageContentType,
   VALIDATION_LIMITS,
@@ -35,23 +35,6 @@ interface SelectedImage {
   uri: string;
   contentType?: string;
   isRemote?: boolean;
-}
-
-interface UserStoreSnapshot {
-  user?: {
-    uid: string;
-  } | null;
-  currentUser?: {
-    uid: string;
-  } | null;
-  profile?: {
-    id?: string;
-    uid?: string;
-  } | null;
-  userProfile?: {
-    id?: string;
-    uid?: string;
-  } | null;
 }
 
 interface EmojiCategory {
@@ -94,20 +77,6 @@ const getErrorMessage = (error: unknown): string => {
   return 'Something went wrong. Please try again.';
 };
 
-const getUserIdFromStore = (state: unknown): string | null => {
-  const snapshot = state as UserStoreSnapshot;
-
-  return (
-    snapshot.user?.uid ??
-    snapshot.currentUser?.uid ??
-    snapshot.profile?.uid ??
-    snapshot.profile?.id ??
-    snapshot.userProfile?.uid ??
-    snapshot.userProfile?.id ??
-    null
-  );
-};
-
 const withTimeout = async <T,>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -139,7 +108,7 @@ export const AddStationScreen = () => {
   const stationId = params?.stationId;
   const isEditMode = Boolean(stationId);
 
-  const userId = useUserStore(getUserIdFromStore);
+  const userId = useUserStore(selectAuthUserId);
 
   const createStation = usePalaceStore((state) => state.createStation);
   const updateStation = usePalaceStore((state) => state.updateStation);

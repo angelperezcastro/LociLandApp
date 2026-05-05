@@ -34,11 +34,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GuideLottie } from '../../components/review/GuideLottie';
-import { useUserStore } from '../../store/useUserStore';
+import { selectAuthUserId, useUserStore } from '../../store/useUserStore';
 import { useConfettiStore } from '../../store/useConfettiStore';
 import { normalizeAgeGroup } from '../../utils/ageGroup';
 import { XP_REWARDS } from '../../utils/levelUtils';
-import { auth } from '../../services/firebase';
 import {
   completeReview,
   recordAnswer,
@@ -1562,6 +1561,7 @@ export const ReviewScreen = () => {
     ageGroup: routeAgeGroup,
   } = route.params;
 
+  const userId = useUserStore(selectAuthUserId);
   const profileAgeGroup = useUserStore((state) => state.profile?.ageGroup);
   const triggerConfetti = useConfettiStore((state) => state.triggerConfetti);
 
@@ -1720,9 +1720,9 @@ export const ReviewScreen = () => {
       return;
     }
 
-    const currentUserId = auth.currentUser?.uid;
+    const activeUserId = userId;
 
-    if (!currentUserId) {
+    if (!activeUserId) {
       Alert.alert(
         'Session unavailable',
         'You need to be logged in before starting a review.',
@@ -1736,7 +1736,7 @@ export const ReviewScreen = () => {
 
       const session = await startReview({
         palaceId: data.palace.id,
-        userId: currentUserId,
+        userId: activeUserId,
         totalStations: data.stations.length,
       });
 
@@ -1786,9 +1786,9 @@ export const ReviewScreen = () => {
       return;
     }
 
-    const currentUserId = auth.currentUser?.uid;
+    const activeUserId = userId;
 
-    if (!currentUserId) {
+    if (!activeUserId) {
       Alert.alert(
         'Session unavailable',
         'You need to be logged in to record this answer.',
@@ -1824,7 +1824,7 @@ export const ReviewScreen = () => {
       setIsSubmittingAnswer(true);
 
       await recordAnswer({
-        userId: currentUserId,
+        userId: activeUserId,
         palaceId: data.palace.id,
         sessionId,
         stationId: currentStation.id,
@@ -1844,7 +1844,7 @@ export const ReviewScreen = () => {
     } catch (error) {
       console.error('[ReviewScreen] recordAnswer failed:', error);
       console.error('[ReviewScreen] recordAnswer payload:', {
-        userId: currentUserId,
+        userId: activeUserId,
         palaceId: data.palace.id,
         sessionId,
         stationId: currentStation.id,
@@ -1894,9 +1894,9 @@ export const ReviewScreen = () => {
       return;
     }
 
-    const currentUserId = auth.currentUser?.uid;
+    const activeUserId = userId;
 
-    if (!currentUserId) {
+    if (!activeUserId) {
       isAdvancingStationRef.current = false;
       Alert.alert(
         'Session unavailable',
@@ -1910,7 +1910,7 @@ export const ReviewScreen = () => {
       setIsCompleting(true);
 
       const completed = await completeReview({
-        userId: currentUserId,
+        userId: activeUserId,
         palaceId: data.palace.id,
         sessionId,
       });
@@ -1921,7 +1921,7 @@ export const ReviewScreen = () => {
     } catch (error) {
       console.error('[ReviewScreen] completeReview failed:', error);
       console.error('[ReviewScreen] completeReview payload:', {
-        userId: currentUserId,
+        userId: activeUserId,
         palaceId: data.palace.id,
         sessionId,
         answeredResults,

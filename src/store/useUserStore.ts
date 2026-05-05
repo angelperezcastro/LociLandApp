@@ -4,7 +4,7 @@ import type { User } from 'firebase/auth';
 import type { UserProfile } from '../types/user';
 import { ensureUserProfile, getUserProfile } from '../services/userProfile';
 
-type UserStore = {
+export type UserStore = {
   authUser: User | null;
   profile: UserProfile | null;
   isAuthenticated: boolean;
@@ -74,3 +74,11 @@ export const useUserStore = create<UserStore>((set) => ({
     });
   },
 }));
+
+export const selectAuthUser = (state: UserStore): User | null => state.authUser;
+
+export const selectAuthUserId = (state: UserStore): string | null =>
+  state.authUser?.uid ?? null;
+
+export const selectUserProfile = (state: UserStore): UserProfile | null =>
+  state.profile;
