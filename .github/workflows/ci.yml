@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - visual-polish-vcg
 
 jobs:
   validate:
@@ -39,3 +40,6 @@ jobs:
 
       - name: Audit high-severity runtime dependency issues
         run: npm run audit:runtime
+
+      - name: Run visual audit
+        run: npm run audit:visual
