@@ -471,438 +471,70 @@ Achievements show long-term motivation and system depth.
 
 LociLand is a **frontend-heavy mobile application** backed by Firebase services. There is no custom Express/FastAPI backend in the repository; Firebase provides authentication, database, storage and security rules.
 
+> Diagram format note: diagrams are stored as static SVG files under `docs/diagrams/` to keep a white background and stable rendering in GitHub, regardless of Mermaid or browser theme settings.
+
 ### High-Level Architecture
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-flowchart TB
-    subgraph Mobile[Expo / React Native Mobile App]
-        App[App.tsx]
-        Root[RootNavigator]
-        AuthNav[AuthNavigator]
-        AppNav[AppNavigator]
-        Screens[App Screens]
-        UI[Reusable UI + Gamification Components]
-        Stores[Zustand Stores]
-        Services[Typed Service Layer]
-    end
+<p align="center">
+  <img src="docs/diagrams/high-level-architecture.svg" alt="High-level architecture diagram" width="100%" />
+</p>
 
-    subgraph Firebase[Firebase Backend-as-a-Service]
-        Auth[Firebase Auth]
-        Firestore[(Cloud Firestore)]
-        Storage[(Firebase Storage)]
-        Rules[Firestore + Storage Rules]
-    end
-
-    subgraph Quality[Quality Gate]
-        Typecheck[TypeScript Typecheck]
-        RulesTests[Firebase Emulator Rules Tests]
-        Audit[Runtime Dependency Audit]
-        VisualAudit[Visual Audit Script]
-        CI[GitHub Actions CI]
-    end
-
-    App --> Root
-    Root --> AuthNav
-    Root --> AppNav
-    AppNav --> Screens
-    Screens --> UI
-    Screens --> Stores
-    Stores --> Services
-    Services --> Auth
-    Services --> Firestore
-    Services --> Storage
-    Rules --> Firestore
-    Rules --> Storage
-    CI --> Typecheck
-    CI --> RulesTests
-    CI --> Audit
-    CI --> VisualAudit
-
-    style Mobile fill:#FFFFFF,stroke:#FFD93D,stroke-width:2px,color:#2D3436
-    style Firebase fill:#FFFFFF,stroke:#4D96FF,stroke-width:2px,color:#2D3436
-    style Quality fill:#FFFFFF,stroke:#6BCB77,stroke-width:2px,color:#2D3436
-
-    classDef mobile fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
-    classDef firebase fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
-    classDef quality fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
-
-    class App,Root,AuthNav,AppNav,Screens,UI,Stores,Services mobile
-    class Auth,Firestore,Storage,Rules firebase
-    class Typecheck,RulesTests,Audit,VisualAudit,CI quality
-```
 
 ### Navigation Architecture
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-flowchart LR
-    Start[App Launch] --> Fonts[Load Fonts]
-    Fonts --> Splash[Keep Splash Visible]
-    Splash --> AuthObserver[Firebase Auth Observer]
-    AuthObserver -->|No User| AuthNavigator
-    AuthObserver -->|User Found| HydrateProfile[Hydrate Firestore Profile]
-    HydrateProfile --> AppNavigator
+<p align="center">
+  <img src="docs/diagrams/navigation-architecture.svg" alt="Navigation architecture diagram" width="100%" />
+</p>
 
-    AuthNavigator --> Onboarding[Onboarding 01-03]
-    AuthNavigator --> Login[Login]
-    AuthNavigator --> Register[Register]
-
-    AppNavigator --> Tabs[Bottom Tabs]
-    Tabs --> Home[Home]
-    Tabs --> Progress[Progress]
-    Tabs --> Profile[Profile]
-
-    AppNavigator --> CreatePalace[Create Palace Modal]
-    AppNavigator --> PalaceDetail[Palace Detail]
-    AppNavigator --> AddStation[Add Station Modal]
-    AppNavigator --> EditStation[Edit Station Modal]
-    AppNavigator --> Review[Review]
-    AppNavigator --> Achievements[Achievements]
-
-    classDef boot fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
-    classDef auth fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
-    classDef app fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
-
-    class Start,Fonts,Splash,AuthObserver boot
-    class AuthNavigator,Onboarding,Login,Register auth
-    class HydrateProfile,AppNavigator,Tabs,Home,Progress,Profile,CreatePalace,PalaceDetail,AddStation,EditStation,Review,Achievements app
-```
 
 ### User Flow
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-journey
-    title LociLand Core User Journey
-    section First use
-      Open app: 4: Child
-      Complete onboarding: 4: Child
-      Register profile with age group and avatar: 5: Child
-    section Build palace
-      Create a palace from a themed template: 5: Child
-      Add memory stations: 5: Child
-      Attach optional station images: 4: Child
-      Reorder stations into a route: 5: Child
-    section Practise memory
-      Start guided review: 5: Child
-      Walk through stations: 5: Child
-      Answer prompts: 4: Child
-      Receive encouraging feedback: 5: Child
-    section Progress
-      Earn XP and achievements: 5: Child
-      View progress dashboard: 4: Child
-      Return to keep streak alive: 4: Child
-```
+<p align="center">
+  <img src="docs/diagrams/user-flow.svg" alt="LociLand user flow diagram" width="100%" />
+</p>
+
 
 ### Data Flow
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-sequenceDiagram
-    participant User as Child User
-    participant Screen as React Native Screen
-    participant Store as Zustand Store
-    participant Service as Service Layer
-    participant Rules as Firebase Rules
-    participant DB as Firestore
-    participant Storage as Firebase Storage
+<p align="center">
+  <img src="docs/diagrams/data-flow.svg" alt="Data flow diagram" width="100%" />
+</p>
 
-    User->>Screen: Create palace / station / review
-    Screen->>Store: Dispatch typed action
-    Store->>Service: Call domain service
-    Service->>Rules: Request read/write
-    Rules->>DB: Allow only user-scoped valid data
-    DB-->>Service: Persisted document
-    Service-->>Store: Typed result
-    Store-->>Screen: Updated state
-    Screen-->>User: Visual feedback
-
-    alt Station image selected
-        Service->>Rules: Upload image request
-        Rules->>Storage: Validate owner, file type, size and path
-        Storage-->>Service: Download URL
-        Service->>DB: Save imageUri on station
-    end
-```
 
 ### Component and Module Architecture
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-flowchart TB
-    subgraph Screens[src/screens]
-        OnboardingScreens[Onboarding]
-        AuthScreens[Auth]
-        AppScreens[Home / Palace / Station / Review / Progress / Profile]
-    end
+<p align="center">
+  <img src="docs/diagrams/component-module-architecture.svg" alt="Component and module architecture diagram" width="100%" />
+</p>
 
-    subgraph Components[src/components]
-        UI[ui: Button, Card, Input, Typography]
-        Feedback[feedback: Loading, Empty, Error]
-        Palace[palace components]
-        Station[station components]
-        ReviewComponents[review components]
-        Gamification[gamification overlays and toasts]
-        ProgressComponents[progress visual cards]
-        Guide[guide character]
-    end
-
-    subgraph Domain[src/services]
-        AuthService[auth]
-        UserProfile[userProfile]
-        PalaceService[palaceService]
-        StationService[stationService]
-        ReviewService[reviewService]
-        XPService[xpService]
-        AchievementService[achievementService]
-        StatsService[statsService]
-        StorageService[storageService]
-    end
-
-    subgraph State[src/store]
-        UserStore[useUserStore]
-        PalaceStore[usePalaceStore]
-        ConfettiStore[useConfettiStore]
-        LevelUpStore[useLevelUpStore]
-        ToastStore[useAchievementToastStore]
-    end
-
-    subgraph Foundation[src/theme + src/constants + src/types]
-        Theme[colors / typography / spacing / worlds / motion]
-        Validation[validation constants]
-        Types[domain types]
-    end
-
-    Screens --> Components
-    Screens --> State
-    State --> Domain
-    Domain --> Foundation
-    Components --> Foundation
-
-    style Screens fill:#FFFFFF,stroke:#FFD93D,stroke-width:2px,color:#2D3436
-    style Components fill:#FFFFFF,stroke:#4D96FF,stroke-width:2px,color:#2D3436
-    style Domain fill:#FFFFFF,stroke:#6BCB77,stroke-width:2px,color:#2D3436
-    style State fill:#FFFFFF,stroke:#FF6B6B,stroke-width:2px,color:#2D3436
-    style Foundation fill:#FFFFFF,stroke:#FFB703,stroke-width:2px,color:#2D3436
-
-    classDef screens fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
-    classDef components fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
-    classDef domain fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
-    classDef state fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
-    classDef foundation fill:#FFF1C2,stroke:#FFB703,stroke-width:1.5px,color:#2D3436
-
-    class OnboardingScreens,AuthScreens,AppScreens screens
-    class UI,Feedback,Palace,Station,ReviewComponents,Gamification,ProgressComponents,Guide components
-    class AuthService,UserProfile,PalaceService,StationService,ReviewService,XPService,AchievementService,StatsService,StorageService domain
-    class UserStore,PalaceStore,ConfettiStore,LevelUpStore,ToastStore state
-    class Theme,Validation,Types foundation
-```
 
 ### Authentication Flow
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-sequenceDiagram
-    participant App
-    participant RootNavigator
-    participant FirebaseAuth as Firebase Auth
-    participant UserStore as useUserStore
-    participant UserProfileService as userProfile service
-    participant Firestore
+<p align="center">
+  <img src="docs/diagrams/authentication-flow.svg" alt="Authentication flow diagram" width="100%" />
+</p>
 
-    App->>RootNavigator: Mount navigation tree
-    RootNavigator->>FirebaseAuth: Subscribe to auth state
-    FirebaseAuth-->>RootNavigator: User or null
-
-    alt No authenticated user
-        RootNavigator->>UserStore: clearUser()
-        RootNavigator-->>App: Render AuthNavigator
-    else Authenticated user
-        RootNavigator->>UserStore: hydrateFromAuthUser(user)
-        UserStore->>UserProfileService: getUserProfile(uid)
-        UserProfileService->>Firestore: Read users/{uid}
-        alt Profile exists
-            Firestore-->>UserProfileService: Profile document
-        else Profile missing
-            UserProfileService->>Firestore: Create safe default profile
-        end
-        UserProfileService-->>UserStore: UserProfile
-        RootNavigator-->>App: Render AppNavigator
-    end
-```
 
 ### Review State Machine
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-stateDiagram-v2
-    [*] --> INTRO
-    INTRO --> WALKING: Start Journey
-    WALKING --> QUESTION: I remember
-    QUESTION --> REVEAL: Submit answer
-    QUESTION --> REVEAL: Give up / Show me
-    REVEAL --> WALKING: Next station
-    REVEAL --> COMPLETE: Last station answered
-    COMPLETE --> INTRO: Review again
-    COMPLETE --> PalaceDetail: Back to palace
+<p align="center">
+  <img src="docs/diagrams/review-state-machine.svg" alt="Review state machine diagram" width="100%" />
+</p>
 
-    note right of QUESTION
-      6-9: multiple choice
-      10-14: free text + timer
-    end note
-
-    note right of REVEAL
-      Correct: celebration
-      Incorrect: encouraging reveal
-    end note
-
-    classDef reviewState fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
-    classDef feedbackState fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
-    classDef completeState fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
-
-    class INTRO,WALKING,QUESTION reviewState
-    class REVEAL feedbackState
-    class COMPLETE completeState
-```
 
 ### Database / Entity Relationship Diagram
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-erDiagram
-    USER_PROFILE ||--o{ PALACE : owns
-    USER_PROFILE ||--o{ XP_EVENT : records
-    USER_PROFILE ||--o{ ACHIEVEMENT : unlocks
-    USER_PROFILE ||--|| STATS_SUMMARY : aggregates
-    PALACE ||--o{ STATION : contains
-    PALACE ||--o{ REVIEW_SESSION : has
-    REVIEW_SESSION ||--o{ REVIEW_ANSWER : records
+<p align="center">
+  <img src="docs/diagrams/data-model-er.svg" alt="Data model entity relationship diagram" width="100%" />
+</p>
 
-    USER_PROFILE {
-        string uid PK
-        string displayName
-        string email
-        string avatarEmoji
-        string ageGroup
-        int xp
-        int level
-        string levelTitle
-        int streak
-        int bestStreak
-        string_or_timestamp lastActiveDate
-    }
-
-    PALACE {
-        string id PK
-        string userId FK
-        string name
-        string templateId
-        int stationCount
-        timestamp createdAt
-        timestamp updatedAt
-    }
-
-    STATION {
-        string id PK
-        string palaceId FK
-        string userId FK
-        int order
-        string emoji
-        string label
-        string memoryText
-        string imageUri
-        timestamp createdAt
-    }
-
-    REVIEW_SESSION {
-        string id PK
-        string palaceId FK
-        string userId FK
-        timestamp startedAt
-        timestamp completedAt
-        int totalStations
-        int correctAnswers
-        int incorrectAnswers
-        int xpEarned
-        bool xpAppliedToUser
-        bool isPerfect
-        string status
-    }
-
-    REVIEW_ANSWER {
-        string stationId PK
-        string sessionId FK
-        bool correct
-        timestamp answeredAt
-    }
-
-    XP_EVENT {
-        string eventId PK
-        string reason
-        int amount
-        int previousXP
-        int newXP
-        int previousLevel
-        int newLevel
-        map metadata
-    }
-
-    ACHIEVEMENT {
-        string achievementId PK
-        string title
-        string description
-        string emoji
-        int xpReward
-        timestamp earnedAt
-    }
-
-    STATS_SUMMARY {
-        int totalPalaces
-        int totalStations
-        int totalReviewSessions
-        int totalPerfectReviews
-        int totalCorrectAnswers
-        int totalIncorrectAnswers
-        string_array usedTemplateIds
-        string_array reviewDateStrings
-        int fastestReviewSeconds
-    }
-```
 
 ### Deployment / Runtime Architecture
 
-```mermaid
-%%{init: {"theme":"base","themeCSS":"svg { background: #ffffff !important; } .mermaid { background: #ffffff !important; } .label, .nodeLabel, .edgeLabel, .cluster-label, .messageText, .actor, .stateLabel, .entityLabel { color: #2D3436 !important; fill: #2D3436 !important; }","themeVariables":{"darkMode":false,"background":"#ffffff","mainBkg":"#ffffff","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","lineColor":"#4D96FF","textColor":"#2D3436","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#ffffff","clusterBorder":"#E9DFC7","edgeLabelBackground":"#ffffff","nodeBkg":"#FFF7DF","nodeBorder":"#FFD93D","defaultLinkColor":"#4D96FF","titleColor":"#2D3436","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","actorLineColor":"#4D96FF","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","messageLine0":"#4D96FF","messageLine1":"#6BCB77","messageTextColor":"#2D3436","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#E9DFC7","labelTextColor":"#2D3436","loopTextColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","noteBorderColor":"#FFD93D","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","compositeBackground":"#ffffff","altBackground":"#ffffff","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","entityTextColor":"#2D3436","attributeBackgroundColorOdd":"#ffffff","attributeBackgroundColorEven":"#FFF7DF","relationLabelBackground":"#ffffff","sectionBkgColor":"#FFF7DF","sectionBkgColor2":"#DDEBFF","taskBkgColor":"#ffffff","taskBorderColor":"#FFD93D","taskTextColor":"#2D3436","taskTextLightColor":"#2D3436","taskTextOutsideColor":"#2D3436","activeTaskBkgColor":"#DDF8E1","activeTaskBorderColor":"#6BCB77","doneTaskBkgColor":"#DDF8E1","doneTaskBorderColor":"#6BCB77","critBkgColor":"#FFE0E0","critBorderColor":"#FF6B6B","gridColor":"#E9DFC7","todayLineColor":"#FF6B6B","person0":"#4D96FF","person1":"#6BCB77","person2":"#FFD93D","person3":"#FF6B6B","pie1":"#FFD93D","pie2":"#4D96FF","pie3":"#6BCB77","pie4":"#FF6B6B"}}}%%
-flowchart LR
-    Dev[Developer Machine] --> NPM[npm install / npm ci]
-    NPM --> ExpoDev[Expo Dev Server]
-    ExpoDev --> Device[Expo Go / Development Build]
+<p align="center">
+  <img src="docs/diagrams/deployment-runtime-architecture.svg" alt="Deployment and runtime architecture diagram" width="100%" />
+</p>
 
-    Dev --> FirebaseDeploy[Firebase Rules Deploy]
-    FirebaseDeploy --> FirestoreRules[Firestore Rules]
-    FirebaseDeploy --> StorageRules[Storage Rules]
-
-    Dev --> EAS[EAS Build]
-    EAS --> Android[Android Preview / APK]
-    EAS --> iOS[iOS Build - if configured]
-
-    GitHub[GitHub Repository] --> Actions[GitHub Actions CI]
-    Actions --> Typecheck[TypeScript]
-    Actions --> RulesTests[Firebase Emulator Tests]
-    Actions --> Audit[Runtime Audit]
-    Actions --> VisualAudit[Visual Audit]
-
-    classDef local fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
-    classDef firebase fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
-    classDef build fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
-    classDef ci fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
-
-    class Dev,NPM,ExpoDev,Device local
-    class FirebaseDeploy,FirestoreRules,StorageRules firebase
-    class EAS,Android,iOS build
-    class GitHub,Actions,Typecheck,RulesTests,Audit,VisualAudit ci
-```
 
 ---
 

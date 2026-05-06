@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-label="High-Level Architecture">
+<rect width="1280" height="760" fill="#FFFFFF"/>
+
+<defs>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#2D3436" flood-opacity="0.10"/>
+  </filter>
+  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#4D96FF" />
+  </marker>
+  <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#6BCB77" />
+  </marker>
+  <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#FF6B6B" />
+  </marker>
+</defs>
+
+
+<style>
+  .title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 30px; font-weight: 800; fill: #2D3436; }
+  .subtitle { font-family: Inter, Nunito, Arial, sans-serif; font-size: 16px; font-weight: 600; fill: #586267; }
+  .group-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 18px; font-weight: 800; fill: #2D3436; }
+  .box-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #2D3436; }
+  .box-text { font-family: Inter, Nunito, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #586267; }
+  .small { font-family: Inter, Nunito, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #586267; }
+  .tiny { font-family: Inter, Nunito, Arial, sans-serif; font-size: 10px; font-weight: 600; fill: #586267; }
+  .arrow { stroke: #4D96FF; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+  .arrow-green { stroke: #6BCB77; stroke-width: 2.4; fill: none; marker-end: url(#arrowGreen); }
+  .arrow-red { stroke: #FF6B6B; stroke-width: 2.4; fill: none; marker-end: url(#arrowRed); }
+  .dash { stroke-dasharray: 7 5; }
+</style>
+
+<rect x="12" y="12" width="1256" height="736" rx="28" fill="#FFFFFF" stroke="#E9DFC7" stroke-width="2"/>
+<text x="42" y="58" class="title">High-Level Architecture</text>
+<text x="42" y="85" class="subtitle">Expo mobile app backed by Firebase services and validated by CI</text>
+<rect x="55" y="120" width="360" height="560" rx="24" fill="#FFFFFF" stroke="#FFD93D" stroke-width="2.5"/>
+<text x="77" y="154" class="group-title">Mobile App</text>
+<rect x="460" y="120" width="340" height="560" rx="24" fill="#FFFFFF" stroke="#4D96FF" stroke-width="2.5"/>
+<text x="482" y="154" class="group-title">Firebase Backend</text>
+<rect x="845" y="120" width="380" height="560" rx="24" fill="#FFFFFF" stroke="#6BCB77" stroke-width="2.5"/>
+<text x="867" y="154" class="group-title">Quality Gate</text>
+<rect x="95" y="170" width="280" height="58" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="235.0" y="197" text-anchor="middle" class="box-title">App.tsx</text>
+<text x="235.0" y="200" text-anchor="middle" class="box-text">Root app + providers</text>
+<rect x="95" y="258" width="280" height="58" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="235.0" y="285" text-anchor="middle" class="box-title">RootNavigator</text>
+<text x="235.0" y="288" text-anchor="middle" class="box-text">Auth/app switching</text>
+<rect x="95" y="346" width="280" height="58" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="235.0" y="373" text-anchor="middle" class="box-title">App Screens</text>
+<text x="235.0" y="376" text-anchor="middle" class="box-text">Home, Review, Progress</text>
+<rect x="95" y="434" width="280" height="58" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="235.0" y="461" text-anchor="middle" class="box-title">Zustand Stores</text>
+<text x="235.0" y="464" text-anchor="middle" class="box-text">User + palace state</text>
+<rect x="95" y="522" width="280" height="58" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="235.0" y="549" text-anchor="middle" class="box-title">Typed Services</text>
+<text x="235.0" y="552" text-anchor="middle" class="box-text">Firebase domain logic</text>
+<rect x="500" y="185" width="260" height="64" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="630.0" y="212" text-anchor="middle" class="box-title">Firebase Auth</text>
+<text x="630.0" y="221" text-anchor="middle" class="box-text">Email/password + Google</text>
+<rect x="500" y="285" width="260" height="64" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="630.0" y="312" text-anchor="middle" class="box-title">Cloud Firestore</text>
+<text x="630.0" y="321" text-anchor="middle" class="box-text">User-scoped app data</text>
+<rect x="500" y="385" width="260" height="64" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="630.0" y="412" text-anchor="middle" class="box-title">Firebase Storage</text>
+<text x="630.0" y="421" text-anchor="middle" class="box-text">Station images</text>
+<rect x="500" y="485" width="260" height="64" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="630.0" y="512" text-anchor="middle" class="box-title">Security Rules</text>
+<text x="630.0" y="521" text-anchor="middle" class="box-text">Schema + owner checks</text>
+<rect x="890" y="170" width="290" height="58" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="1035.0" y="197" text-anchor="middle" class="box-title">TypeScript</text>
+<text x="1035.0" y="200" text-anchor="middle" class="box-text">tsc --noEmit</text>
+<rect x="890" y="258" width="290" height="58" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="1035.0" y="285" text-anchor="middle" class="box-title">Rules Tests</text>
+<text x="1035.0" y="288" text-anchor="middle" class="box-text">Firestore + Storage emulator</text>
+<rect x="890" y="346" width="290" height="58" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="1035.0" y="373" text-anchor="middle" class="box-title">Runtime Audit</text>
+<text x="1035.0" y="376" text-anchor="middle" class="box-text">npm audit runtime</text>
+<rect x="890" y="434" width="290" height="58" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="1035.0" y="461" text-anchor="middle" class="box-title">Visual Audit</text>
+<text x="1035.0" y="464" text-anchor="middle" class="box-text">Design consistency script</text>
+<rect x="890" y="522" width="290" height="58" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="1035.0" y="549" text-anchor="middle" class="box-title">GitHub Actions</text>
+<text x="1035.0" y="552" text-anchor="middle" class="box-text">CI on push / PR</text>
+<line x1="235" y1="228" x2="235" y2="258" class="arrow"/>
+<line x1="235" y1="316" x2="235" y2="346" class="arrow"/>
+<line x1="235" y1="404" x2="235" y2="434" class="arrow"/>
+<line x1="235" y1="492" x2="235" y2="522" class="arrow"/>
+<path d="M375,548 C437.5,548 437.5,415 500,415" class="arrow"/>
+<path d="M760,415 C825.0,415 825.0,286 890,286" class="arrow-green"/>
+<path d="M760,415 C825.0,415 825.0,550 890,550" class="arrow-green"/>
+<text x="420" y="390" class="small">reads/writes</text>
+<text x="805" y="390" class="small">validated by</text>
+</svg>

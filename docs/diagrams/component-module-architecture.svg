@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-label="Component and Module Architecture">
+<rect width="1280" height="820" fill="#FFFFFF"/>
+
+<defs>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#2D3436" flood-opacity="0.10"/>
+  </filter>
+  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#4D96FF" />
+  </marker>
+  <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#6BCB77" />
+  </marker>
+  <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M2,2 L10,6 L2,10 Z" fill="#FF6B6B" />
+  </marker>
+</defs>
+
+
+<style>
+  .title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 30px; font-weight: 800; fill: #2D3436; }
+  .subtitle { font-family: Inter, Nunito, Arial, sans-serif; font-size: 16px; font-weight: 600; fill: #586267; }
+  .group-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 18px; font-weight: 800; fill: #2D3436; }
+  .box-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #2D3436; }
+  .box-text { font-family: Inter, Nunito, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #586267; }
+  .small { font-family: Inter, Nunito, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #586267; }
+  .tiny { font-family: Inter, Nunito, Arial, sans-serif; font-size: 10px; font-weight: 600; fill: #586267; }
+  .arrow { stroke: #4D96FF; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+  .arrow-green { stroke: #6BCB77; stroke-width: 2.4; fill: none; marker-end: url(#arrowGreen); }
+  .arrow-red { stroke: #FF6B6B; stroke-width: 2.4; fill: none; marker-end: url(#arrowRed); }
+  .dash { stroke-dasharray: 7 5; }
+</style>
+
+<rect x="12" y="12" width="1256" height="796" rx="28" fill="#FFFFFF" stroke="#E9DFC7" stroke-width="2"/>
+<text x="42" y="58" class="title">Component and Module Architecture</text>
+<text x="42" y="85" class="subtitle">Screens compose reusable components, state dispatches domain services, foundation tokens keep design coherent</text>
+<rect x="70" y="130" width="190" height="600" rx="24" fill="#FFFFFF" stroke="#FFD93D" stroke-width="2.5"/>
+<text x="92" y="164" class="group-title">Screens</text>
+<rect x="95" y="195" width="140" height="54" rx="10" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="165.0" y="222" text-anchor="middle" class="small">Onboarding</text>
+<rect x="95" y="287" width="140" height="54" rx="10" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="165.0" y="314" text-anchor="middle" class="small">Auth</text>
+<rect x="95" y="379" width="140" height="54" rx="10" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="165.0" y="406" text-anchor="middle" class="small">Home / Palace /</text>
+<text x="165.0" y="423" text-anchor="middle" class="small">Review /</text>
+<rect x="310" y="130" width="190" height="600" rx="24" fill="#FFFFFF" stroke="#4D96FF" stroke-width="2.5"/>
+<text x="332" y="164" class="group-title">Components</text>
+<rect x="335" y="195" width="140" height="54" rx="10" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="405.0" y="222" text-anchor="middle" class="small">UI primitives</text>
+<rect x="335" y="287" width="140" height="54" rx="10" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="405.0" y="314" text-anchor="middle" class="small">Feedback states</text>
+<rect x="335" y="379" width="140" height="54" rx="10" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="405.0" y="406" text-anchor="middle" class="small">Palace / Station</text>
+<text x="405.0" y="423" text-anchor="middle" class="small">/ Review</text>
+<rect x="335" y="471" width="140" height="54" rx="10" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="405.0" y="498" text-anchor="middle" class="small">Gamification</text>
+<text x="405.0" y="515" text-anchor="middle" class="small">overlays</text>
+<rect x="335" y="563" width="140" height="54" rx="10" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="405.0" y="590" text-anchor="middle" class="small">Progress visuals</text>
+<rect x="570" y="130" width="190" height="600" rx="24" fill="#FFFFFF" stroke="#FF6B6B" stroke-width="2.5"/>
+<text x="592" y="164" class="group-title">State</text>
+<rect x="595" y="195" width="140" height="54" rx="10" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2" filter="url(#shadow)"/>
+<text x="665.0" y="222" text-anchor="middle" class="small">useUserStore</text>
+<rect x="595" y="287" width="140" height="54" rx="10" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2" filter="url(#shadow)"/>
+<text x="665.0" y="314" text-anchor="middle" class="small">usePalaceStore</text>
+<rect x="595" y="379" width="140" height="54" rx="10" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2" filter="url(#shadow)"/>
+<text x="665.0" y="406" text-anchor="middle" class="small">Confetti /</text>
+<text x="665.0" y="423" text-anchor="middle" class="small">LevelUp / Toast</text>
+<rect x="800" y="130" width="190" height="600" rx="24" fill="#FFFFFF" stroke="#6BCB77" stroke-width="2.5"/>
+<text x="822" y="164" class="group-title">Services</text>
+<rect x="825" y="195" width="140" height="54" rx="10" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="895.0" y="222" text-anchor="middle" class="small">auth / profile</text>
+<rect x="825" y="287" width="140" height="54" rx="10" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="895.0" y="314" text-anchor="middle" class="small">palace / station</text>
+<rect x="825" y="379" width="140" height="54" rx="10" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="895.0" y="406" text-anchor="middle" class="small">review / xp</text>
+<rect x="825" y="471" width="140" height="54" rx="10" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="895.0" y="498" text-anchor="middle" class="small">achievements /</text>
+<text x="895.0" y="515" text-anchor="middle" class="small">stats</text>
+<rect x="825" y="563" width="140" height="54" rx="10" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="895.0" y="590" text-anchor="middle" class="small">storage</text>
+<rect x="1040" y="130" width="190" height="600" rx="24" fill="#FFFFFF" stroke="#FFB703" stroke-width="2.5"/>
+<text x="1062" y="164" class="group-title">Foundation</text>
+<rect x="1065" y="195" width="140" height="54" rx="10" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1135.0" y="222" text-anchor="middle" class="small">colors /</text>
+<text x="1135.0" y="239" text-anchor="middle" class="small">typography</text>
+<rect x="1065" y="287" width="140" height="54" rx="10" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1135.0" y="314" text-anchor="middle" class="small">spacing / radius</text>
+<text x="1135.0" y="331" text-anchor="middle" class="small">/ shadows</text>
+<rect x="1065" y="379" width="140" height="54" rx="10" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1135.0" y="406" text-anchor="middle" class="small">world palettes /</text>
+<text x="1135.0" y="423" text-anchor="middle" class="small">motion</text>
+<rect x="1065" y="471" width="140" height="54" rx="10" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1135.0" y="498" text-anchor="middle" class="small">validation</text>
+<text x="1135.0" y="515" text-anchor="middle" class="small">constants</text>
+<rect x="1065" y="563" width="140" height="54" rx="10" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1135.0" y="590" text-anchor="middle" class="small">domain types</text>
+<line x1="260" y1="430" x2="310" y2="430" class="arrow"/>
+<line x1="500" y1="430" x2="570" y2="430" class="arrow"/>
+<line x1="760" y1="430" x2="800" y2="430" class="arrow-green"/>
+<line x1="990" y1="430" x2="1040" y2="430" class="arrow-green"/>
+<text x="70" y="770" class="small">Direction of dependency: feature screens → reusable components/state → domain services → theme, validation and types.</text>
+</svg>
