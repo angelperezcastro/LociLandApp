@@ -39,6 +39,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
 import { StationCard } from '../../components/station/StationCard';
+import { MemoryPathMap } from '../../components/memory/MemoryPathMap';
 import type { Station } from '../../types';
 import { getUserFriendlyError } from '../../utils/errorMessages';
 import { normalizeAgeGroup } from '../../utils/ageGroup';
@@ -418,8 +419,18 @@ function PalaceDetailScreen() {
           </View>
         </View>
 
+        {hasStations ? (
+          <MemoryPathMap
+            templateId={palace.templateId}
+            stations={stations}
+            title="Visual memory route"
+            subtitle="Follow the path and visit each station in order."
+            onStationPress={handleEditStation}
+          />
+        ) : null}
+
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Memory route</Text>
+          <Text style={styles.sectionTitle}>Station controls</Text>
           <Text style={styles.sectionHint}>{sectionHint}</Text>
         </View>
 
