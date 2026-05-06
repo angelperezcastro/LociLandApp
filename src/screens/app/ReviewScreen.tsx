@@ -180,6 +180,7 @@ const REVIEW_DIMENSIONS = {
   introGuideCompact: 112,
   walkingGuide: 132,
   walkingGuideCompact: 168,
+  completeGuide: 92,
 } as const;
 
 const REVIEW_FONT_SIZES = {
@@ -1070,7 +1071,7 @@ const IntroState = ({
   onStart: () => void;
 }) => {
   const { height } = useWindowDimensions();
-  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
+  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD || isYoungerReview;
   const floating = useSharedValue(0);
 
   useEffect(() => {
@@ -1153,28 +1154,6 @@ const IntroState = ({
 
         <View
           style={[
-            styles.introGuideSection,
-            isCompactHeight && styles.introGuideSectionCompact,
-          ]}
-        >
-          <GuideLottie
-            size={
-              isCompactHeight
-                ? REVIEW_DIMENSIONS.introGuideCompact
-                : REVIEW_DIMENSIONS.introGuide
-            }
-            variant="forward"
-          />
-
-          {!isCompactHeight ? (
-            <View style={styles.guideSpeechBubble}>
-              <Text style={styles.guideSpeechBubbleText}>Follow me!</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View
-          style={[
             styles.introButtonSection,
             isCompactHeight && styles.introButtonSectionCompact,
           ]}
@@ -1189,9 +1168,42 @@ const IntroState = ({
             }
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
+            compact={isCompactHeight}
             disabled={isStarting}
             onPress={onStart}
           />
+        </View>
+
+        <View
+          style={[
+            styles.introGuideSection,
+            isCompactHeight && styles.introGuideSectionCompact,
+          ]}
+        >
+          <GuideLottie
+            size={
+              isCompactHeight
+                ? REVIEW_DIMENSIONS.introGuideCompact
+                : REVIEW_DIMENSIONS.introGuide
+            }
+            variant="forward"
+          />
+
+          <View
+            style={[
+              styles.guideSpeechBubble,
+              isCompactHeight && styles.guideSpeechBubbleFitted,
+            ]}
+          >
+            <Text
+              style={[
+                styles.guideSpeechBubbleText,
+                isCompactHeight && styles.guideSpeechBubbleTextFitted,
+              ]}
+            >
+              Follow me!
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </Animated.View>
@@ -1778,8 +1790,6 @@ const CompleteState = ({
       <FireworksLayer />
 
       <View style={styles.completeContent}>
-        {isPerfect ? <PerfectMemoryBadge /> : null}
-
         <Animated.Text entering={BounceIn.duration(850)} style={styles.completeEmoji}>
           {isPerfect ? '🏆' : '🌟'}
         </Animated.Text>
@@ -1793,7 +1803,9 @@ const CompleteState = ({
           {isYoungerReview ? 'Memory walk complete! 🌟' : 'Memory walk complete!'}
         </Text>
 
-        <GuideLottie size={120} variant="happy" />
+        {isPerfect ? <PerfectMemoryBadge /> : null}
+
+        <GuideLottie size={REVIEW_DIMENSIONS.completeGuide} variant="happy" />
 
         <View style={styles.completeScoreCard}>
           <Text
@@ -1825,6 +1837,7 @@ const CompleteState = ({
           label={isRestarting ? 'Starting...' : 'Review Again'}
           backgroundColor={buttonFillColor}
           textColor={buttonTextColor}
+          compact
           disabled={isRestarting}
           onPress={onReviewAgain}
         />
@@ -2406,8 +2419,9 @@ const styles = StyleSheet.create({
   },
 
   introScrollContentCompact: {
-    justifyContent: 'space-between',
-    paddingBottom: spacing.xs,
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
   },
 
   introTopSection: {
@@ -2417,7 +2431,7 @@ const styles = StyleSheet.create({
   },
 
   introTopSectionCompact: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.none,
   },
 
@@ -2482,7 +2496,7 @@ const styles = StyleSheet.create({
   },
 
   introGuideSectionCompact: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
 
   walkingGuideSection: {
@@ -2538,7 +2552,7 @@ const styles = StyleSheet.create({
 
   introButtonSectionCompact: {
     marginTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
 
   walkingButtonSection: {
@@ -3296,8 +3310,8 @@ const styles = StyleSheet.create({
   completeScreen: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.md,
   },
 
   fireworksLayer: {
@@ -3313,13 +3327,13 @@ const styles = StyleSheet.create({
   completeContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
   },
 
   perfectBadgeWrapper: {
-    width: 270,
-    minHeight: 82,
+    width: '100%',
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xxs,
@@ -3334,71 +3348,71 @@ const styles = StyleSheet.create({
   },
 
   perfectBadge: {
-    minHeight: 58,
+    minHeight: 44,
     borderRadius: radiusTokens.xl,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: REVIEW_COLORS.greenSoft,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: REVIEW_COLORS.success,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   perfectBadgeIcon: {
-    fontSize: fontSizes.xl,
+    fontSize: fontSizes.lg,
   },
 
   perfectBadgeText: {
     color: REVIEW_COLORS.successDark,
-    fontSize: fontSizes.lg,
-    lineHeight: 24,
+    fontSize: fontSizes.md,
+    lineHeight: 22,
     fontWeight: '900',
   },
 
   completeEmoji: {
-    fontSize: REVIEW_FONT_SIZES.completeEmoji,
+    fontSize: fontSizes.display + spacing.md,
   },
 
   completeTitle: {
     color: REVIEW_COLORS.textDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 38,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   youngerCompleteTitle: {
-    fontSize: scaleYoungerFont(fontSizes.xxl),
-    lineHeight: scaleYoungerFont(38),
+    fontSize: scaleYoungerFont(fontSizes.xl),
+    lineHeight: scaleYoungerFont(30),
   },
 
   completeScoreCard: {
     width: '100%',
     borderRadius: radiusTokens.xxl,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     backgroundColor: REVIEW_COLORS.overlayStrong,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.strongStroke,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   completeScoreLabel: {
     color: REVIEW_COLORS.textDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 34,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
   },
@@ -3409,10 +3423,10 @@ const styles = StyleSheet.create({
   },
 
   completeStars: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     color: REVIEW_COLORS.warning,
-    fontSize: fontSizes.xxl,
-    lineHeight: 36,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
     letterSpacing: 1,
@@ -3422,20 +3436,20 @@ const styles = StyleSheet.create({
   },
 
   completeScoreHint: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     maxWidth: 290,
     color: REVIEW_COLORS.textMuted,
     fontSize: fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
 
   completeXpCard: {
     minWidth: 220,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radiusTokens.xl,
     backgroundColor: REVIEW_COLORS.greenSoft,
     borderWidth: 3,
@@ -3456,21 +3470,21 @@ const styles = StyleSheet.create({
   completeXpText: {
     marginTop: spacing.xxs,
     color: REVIEW_COLORS.successDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 36,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
   },
 
   completeButtonStack: {
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xxs,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
 
   summarySecondaryButton: {
     width: '86%',
     maxWidth: 340,
-    minHeight: 58,
+    minHeight: 52,
     borderRadius: radiusTokens.xl,
     alignItems: 'center',
     justifyContent: 'center',
