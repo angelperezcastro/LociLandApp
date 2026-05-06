@@ -1,107 +1,109 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="640" viewBox="0 0 1800 640" role="img" aria-label="Core User Flow">
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="660" viewBox="0 0 1500 660" role="img" aria-labelledby="title desc">
+<title id="title">Core User Journey</title>
+<desc id="desc">Professional architecture diagram for the LociLand README.</desc>
 <defs>
   <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M2,2 L10,6 L2,10 Z" fill="#4D96FF" />
+    <path d="M 1 1 L 11 6 L 1 11 z" fill="#48606A" />
   </marker>
-  <style>
-    .title { font: 700 26px Arial, Helvetica, sans-serif; fill: #2D3436; }
-    .panel-title { font: 700 18px Arial, Helvetica, sans-serif; fill: #2D3436; }
-    .box-text { font: 600 15px Arial, Helvetica, sans-serif; fill: #2D3436; }
-    .small-text { font: 600 13px Arial, Helvetica, sans-serif; fill: #586267; }
-    .edge-label { font: 600 12px Arial, Helvetica, sans-serif; fill: #586267; }
-    .arrow { fill: none; stroke: #4D96FF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
-    .arrow-soft { fill: none; stroke: #4D96FF; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); stroke-dasharray: 8 6; }
-    .relation { fill: none; stroke: #4D96FF; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-  </style>
+  <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+    <path d="M 1 1 L 11 6 L 1 11 z" fill="#4D96FF" />
+  </marker>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2D3436" flood-opacity="0.10"/>
+  </filter>
 </defs>
-<rect x="0" y="0" width="1800" height="640" fill="#FFFFFF"/>
-<text x="32" y="42" class="title" text-anchor="start">Core User Flow</text>
-<rect x="50" y="90" width="390" height="440" rx="24" fill="#FFFFFF" stroke="#FFD93D" stroke-width="3"/>
-<text x="74" y="122" class="panel-title" text-anchor="start">First use</text>
-<rect x="145" y="150" width="200" height="62" rx="18" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
-<text x="245.0" y="186.0" class="box-text" text-anchor="middle">
-<tspan x="245.0" dy="0">Open app</tspan>
+<rect x="0" y="0" width="1500" height="660" fill="#FFFFFF"/>
+<text x="750.0" y="38" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2D3436">Core User Journey</text>
+<line x1="50" y1="58" x2="1450" y2="58" stroke="#E9DFC7" stroke-width="2" stroke-linecap="round"/>
+<rect x="65" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#FFD93D" stroke-width="3" filter="url(#shadow)"/>
+<rect x="65" y="115" width="250" height="58" rx="22" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2"/>
+<text x="190" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">1. First use</text>
+<rect x="97" y="227" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="190.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="190.0" dy="0">Open app</tspan>
 </text>
-<rect x="145" y="242" width="200" height="62" rx="18" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
-<text x="245.0" y="269.0" class="box-text" text-anchor="middle">
-<tspan x="245.0" dy="0">Complete</tspan>
-<tspan x="245.0" dy="18">onboarding</tspan>
+<line x1="190" y1="289" x2="190" y2="311" stroke="#FFD93D" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="97" y="321" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="190.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="190.0" dy="0">Complete onboarding</tspan>
 </text>
-<path class="arrow" d="M 245 212 L 245 242"/>
-<rect x="145" y="334" width="200" height="62" rx="18" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
-<text x="245.0" y="361.0" class="box-text" text-anchor="middle">
-<tspan x="245.0" dy="0">Register profile</tspan>
-<tspan x="245.0" dy="18">Avatar + age</tspan>
+<line x1="190" y1="383" x2="190" y2="405" stroke="#FFD93D" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="97" y="415" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
+<text x="190.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="190.0" dy="0">Create child profile</tspan>
 </text>
-<path class="arrow" d="M 245 304 L 245 334"/>
-<rect x="485" y="90" width="390" height="440" rx="24" fill="#FFFFFF" stroke="#4D96FF" stroke-width="3"/>
-<text x="509" y="122" class="panel-title" text-anchor="start">Build palace</text>
-<rect x="580" y="150" width="200" height="62" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="680.0" y="177.0" class="box-text" text-anchor="middle">
-<tspan x="680.0" dy="0">Create palace</tspan>
-<tspan x="680.0" dy="18">from template</tspan>
+<line x1="315" y1="320" x2="363" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="363" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#4D96FF" stroke-width="3" filter="url(#shadow)"/>
+<rect x="363" y="115" width="250" height="58" rx="22" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2"/>
+<text x="488" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">2. Build palace</text>
+<rect x="395" y="227" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="488.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="488.0" dy="0">Choose template</tspan>
 </text>
-<rect x="580" y="242" width="200" height="62" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="680.0" y="269.0" class="box-text" text-anchor="middle">
-<tspan x="680.0" dy="0">Add memory</tspan>
-<tspan x="680.0" dy="18">stations</tspan>
+<line x1="488" y1="289" x2="488" y2="311" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="395" y="321" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="488.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="488.0" dy="0">Name memory world</tspan>
 </text>
-<path class="arrow" d="M 680 212 L 680 242"/>
-<rect x="580" y="334" width="200" height="62" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="680.0" y="361.0" class="box-text" text-anchor="middle">
-<tspan x="680.0" dy="0">Attach optional</tspan>
-<tspan x="680.0" dy="18">images</tspan>
+<line x1="488" y1="383" x2="488" y2="405" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="395" y="415" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="488.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="488.0" dy="0">Preview palace</tspan>
 </text>
-<path class="arrow" d="M 680 304 L 680 334"/>
-<rect x="580" y="426" width="200" height="62" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="680.0" y="462.0" class="box-text" text-anchor="middle">
-<tspan x="680.0" dy="0">Reorder route</tspan>
+<line x1="613" y1="320" x2="661" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="661" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#6BCB77" stroke-width="3" filter="url(#shadow)"/>
+<rect x="661" y="115" width="250" height="58" rx="22" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2"/>
+<text x="786" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">3. Add stations</text>
+<rect x="693" y="227" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="786.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="786.0" dy="0">Create memory anchors</tspan>
 </text>
-<path class="arrow" d="M 680 396 L 680 426"/>
-<path class="arrow" d="M 345 365 L 505 365 L 505 181 L 580 181"/>
-<rect x="920" y="90" width="390" height="440" rx="24" fill="#FFFFFF" stroke="#6BCB77" stroke-width="3"/>
-<text x="944" y="122" class="panel-title" text-anchor="start">Practice memory</text>
-<rect x="1015" y="150" width="200" height="62" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="1115.0" y="177.0" class="box-text" text-anchor="middle">
-<tspan x="1115.0" dy="0">Start guided</tspan>
-<tspan x="1115.0" dy="18">review</tspan>
+<line x1="786" y1="289" x2="786" y2="311" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="693" y="321" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="786.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="786.0" dy="0">Attach text/images</tspan>
 </text>
-<rect x="1015" y="242" width="200" height="62" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="1115.0" y="269.0" class="box-text" text-anchor="middle">
-<tspan x="1115.0" dy="0">Walk through</tspan>
-<tspan x="1115.0" dy="18">stations</tspan>
+<line x1="786" y1="383" x2="786" y2="405" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="693" y="415" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
+<text x="786.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="786.0" dy="0">Order the route</tspan>
 </text>
-<path class="arrow" d="M 1115 212 L 1115 242"/>
-<rect x="1015" y="334" width="200" height="62" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="1115.0" y="370.0" class="box-text" text-anchor="middle">
-<tspan x="1115.0" dy="0">Answer prompts</tspan>
+<line x1="911" y1="320" x2="959" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="959" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#7F5AD8" stroke-width="3" filter="url(#shadow)"/>
+<rect x="959" y="115" width="250" height="58" rx="22" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2"/>
+<text x="1084" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">4. Practise recall</text>
+<rect x="991" y="227" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
+<text x="1084.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1084.0" dy="0">Start guided review</tspan>
 </text>
-<path class="arrow" d="M 1115 304 L 1115 334"/>
-<rect x="1015" y="426" width="200" height="62" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="1115.0" y="453.0" class="box-text" text-anchor="middle">
-<tspan x="1115.0" dy="0">Receive</tspan>
-<tspan x="1115.0" dy="18">feedback</tspan>
+<line x1="1084" y1="289" x2="1084" y2="311" stroke="#7F5AD8" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="991" y="321" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
+<text x="1084.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1084.0" dy="0">Answer each station</tspan>
 </text>
-<path class="arrow" d="M 1115 396 L 1115 426"/>
-<path class="arrow" d="M 780 457 L 940 457 L 940 181 L 1015 181"/>
-<rect x="1355" y="90" width="390" height="440" rx="24" fill="#FFFFFF" stroke="#FF6B6B" stroke-width="3"/>
-<text x="1379" y="122" class="panel-title" text-anchor="start">Progress</text>
-<rect x="1450" y="150" width="200" height="62" rx="18" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2.5"/>
-<text x="1550.0" y="177.0" class="box-text" text-anchor="middle">
-<tspan x="1550.0" dy="0">Earn XP +</tspan>
-<tspan x="1550.0" dy="18">achievements</tspan>
+<line x1="1084" y1="383" x2="1084" y2="405" stroke="#7F5AD8" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="991" y="415" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
+<text x="1084.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1084.0" dy="0">Reveal feedback</tspan>
 </text>
-<rect x="1450" y="242" width="200" height="62" rx="18" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2.5"/>
-<text x="1550.0" y="269.0" class="box-text" text-anchor="middle">
-<tspan x="1550.0" dy="0">View progress</tspan>
-<tspan x="1550.0" dy="18">dashboard</tspan>
+<line x1="1209" y1="320" x2="1257" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1257" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#FFB703" stroke-width="3" filter="url(#shadow)"/>
+<rect x="1257" y="115" width="250" height="58" rx="22" fill="#FFF1C2" stroke="#FFB703" stroke-width="2"/>
+<text x="1382" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">5. Progress</text>
+<rect x="1289" y="227" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1382.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1382.0" dy="0">Earn XP</tspan>
 </text>
-<path class="arrow" d="M 1550 212 L 1550 242"/>
-<rect x="1450" y="334" width="200" height="62" rx="18" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2.5"/>
-<text x="1550.0" y="361.0" class="box-text" text-anchor="middle">
-<tspan x="1550.0" dy="0">Return and keep</tspan>
-<tspan x="1550.0" dy="18">streak alive</tspan>
+<line x1="1382" y1="289" x2="1382" y2="311" stroke="#FFB703" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1289" y="321" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1382.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1382.0" dy="0">Unlock achievements</tspan>
 </text>
-<path class="arrow" d="M 1550 304 L 1550 334"/>
-<path class="arrow" d="M 1215 457 L 1375 457 L 1375 181 L 1450 181"/>
+<line x1="1382" y1="383" x2="1382" y2="405" stroke="#FFB703" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1289" y="415" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
+<text x="1382.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
+<tspan x="1382.0" dy="0">Track streaks</tspan>
+</text>
+<rect x="210" y="570" width="1080" height="48" rx="24" fill="#F8FAFC" stroke="#E9DFC7" stroke-width="1"/>
+<text x="750" y="601" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2D3436">Outcome: a child transforms information into a memorable spatial route and reinforces it through repeated guided walks.</text>
 </svg>
