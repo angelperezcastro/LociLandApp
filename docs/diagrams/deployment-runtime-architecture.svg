@@ -1,129 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="740" viewBox="0 0 1320 740" role="img" aria-labelledby="title desc">
-<title id="title">Deployment and Runtime Architecture</title>
-<desc id="desc">Professional architecture diagram for the LociLand README.</desc>
-<defs>
-  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#48606A" />
-  </marker>
-  <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#4D96FF" />
-  </marker>
-  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2D3436" flood-opacity="0.10"/>
-  </filter>
-</defs>
-<rect x="0" y="0" width="1320" height="740" fill="#FFFFFF"/>
-<text x="660.0" y="38" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2D3436">Deployment and Runtime Architecture</text>
-<line x1="50" y1="58" x2="1270" y2="58" stroke="#E9DFC7" stroke-width="2" stroke-linecap="round"/>
-<rect x="70" y="110" width="330" height="520" rx="24" fill="#FFFFFF" stroke="#FFD93D" stroke-width="3" filter="url(#shadow)"/>
-<text x="94" y="148" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#2D3436">Local Development</text>
-<rect x="495" y="110" width="330" height="520" rx="24" fill="#FFFFFF" stroke="#4D96FF" stroke-width="3" filter="url(#shadow)"/>
-<text x="519" y="148" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#2D3436">Firebase Runtime</text>
-<rect x="920" y="110" width="330" height="520" rx="24" fill="#FFFFFF" stroke="#6BCB77" stroke-width="3" filter="url(#shadow)"/>
-<text x="944" y="148" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#2D3436">CI / Release</text>
-<rect x="105" y="175" width="260" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="235.0" y="206" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="235.0" dy="0">Developer machine</tspan>
-</text>
-<text x="235.0" y="231" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="235.0" dy="0">Windows / VS Code</tspan>
-</text>
-<line x1="235" y1="237" x2="235" y2="267" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="105" y="267" width="260" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="235.0" y="298" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="235.0" dy="0">npm install</tspan>
-</text>
-<text x="235.0" y="323" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="235.0" dy="0">project dependencies</tspan>
-</text>
-<line x1="235" y1="329" x2="235" y2="359" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="105" y="359" width="260" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="235.0" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="235.0" dy="0">Expo dev server</tspan>
-</text>
-<text x="235.0" y="415" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="235.0" dy="0">npx expo start</tspan>
-</text>
-<line x1="235" y1="421" x2="235" y2="451" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="105" y="451" width="260" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="235.0" y="482" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="235.0" dy="0">Device preview</tspan>
-</text>
-<text x="235.0" y="507" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="235.0" dy="0">Expo Go or dev build</tspan>
-</text>
-<rect x="530" y="175" width="260" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="660.0" y="206" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="660.0" dy="0">Firebase project</tspan>
-</text>
-<text x="660.0" y="231" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="660.0" dy="0">Auth, Firestore, Storage</tspan>
-</text>
-<line x1="660" y1="237" x2="660" y2="267" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
-<rect x="530" y="267" width="260" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="660.0" y="298" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="660.0" dy="0">Security rules</tspan>
-</text>
-<text x="660.0" y="323" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="660.0" dy="0">firestore.rules + storage.rules</tspan>
-</text>
-<line x1="660" y1="329" x2="660" y2="359" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
-<rect x="530" y="359" width="260" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="660.0" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="660.0" dy="0">User data</tspan>
-</text>
-<text x="660.0" y="415" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="660.0" dy="0">cloud persistence</tspan>
-</text>
-<line x1="660" y1="421" x2="660" y2="451" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
-<rect x="530" y="451" width="260" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="660.0" y="482" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="660.0" dy="0">Station images</tspan>
-</text>
-<text x="660.0" y="507" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="660.0" dy="0">storage bucket</tspan>
-</text>
-<rect x="955" y="175" width="260" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="1085.0" y="206" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1085.0" dy="0">GitHub repository</tspan>
-</text>
-<text x="1085.0" y="231" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="1085.0" dy="0">main branch</tspan>
-</text>
-<line x1="1085" y1="237" x2="1085" y2="267" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="955" y="267" width="260" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="1085.0" y="298" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1085.0" dy="0">GitHub Actions</tspan>
-</text>
-<text x="1085.0" y="323" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="1085.0" dy="0">Node 20 + Java 21</tspan>
-</text>
-<line x1="1085" y1="329" x2="1085" y2="359" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="955" y="359" width="260" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="1085.0" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1085.0" dy="0">Validation</tspan>
-</text>
-<text x="1085.0" y="415" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="1085.0" dy="0">typecheck + rules tests + audit</tspan>
-</text>
-<line x1="1085" y1="421" x2="1085" y2="451" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="955" y="451" width="260" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="1085.0" y="482" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1085.0" dy="0">EAS Build</tspan>
-</text>
-<text x="1085.0" y="507" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#586267">
-<tspan x="1085.0" dy="0">production builds when configured</tspan>
-</text>
-<polyline points="365,330 430,330 430,245 530,245" fill="none" stroke="#4D96FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
-<text x="450" y="225" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="450" dy="0">runtime calls</tspan>
-</text>
-<polyline points="365,514 430,514 430,338 530,338" fill="none" stroke="#4D96FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
-<text x="454" y="494" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="454" dy="0">rules deploy</tspan>
-</text>
-<polyline points="790,245 875,245 875,245 955,245" fill="none" stroke="#6BCB77" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
-<text x="872" y="225" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="872" dy="0">validated on push / PR</tspan>
-</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1550" height="900" viewBox="0 0 1550 900" role="img" aria-label="Deployment and Runtime Architecture">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#4C617A" />
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#12253f" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <text x="775.0" y="48" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#203040">Deployment and Runtime Architecture</text>
+
+  <rect x="70" y="110" width="360" height="700" rx="20" fill="#FFF8E1" stroke="#E9C351" stroke-width="2"/>
+  <rect x="92" y="92" width="183" height="36" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2"/>
+  <text x="183.5" y="115" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Local Development</text>
+
+  <rect x="590" y="110" width="360" height="700" rx="20" fill="#EAF3FF" stroke="#6AA5FF" stroke-width="2"/>
+  <rect x="612" y="92" width="174" height="36" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2"/>
+  <text x="699.0" y="115" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Firebase Runtime</text>
+
+  <rect x="1110" y="110" width="360" height="700" rx="20" fill="#EAF8EE" stroke="#68B984" stroke-width="2"/>
+  <rect x="1132" y="92" width="138" height="36" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2"/>
+  <text x="1201.0" y="115" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">CI / Release</text>
+<rect x="140" y="170" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="250.0" y="198" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="250.0" dy="0">Developer machine</tspan></text>
+<text x="250.0" y="232" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="250.0" dy="0">Windows / VS Code</tspan></text>
+<rect x="140" y="298" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="250.0" y="326" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="250.0" dy="0">npm install</tspan></text>
+<text x="250.0" y="360" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="250.0" dy="0">project dependencies</tspan></text>
+<rect x="140" y="426" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="250.0" y="454" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="250.0" dy="0">Expo dev server</tspan></text>
+<text x="250.0" y="488" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="250.0" dy="0">npx expo start</tspan></text>
+<rect x="140" y="554" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="250.0" y="582" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="250.0" dy="0">Device preview</tspan></text>
+<text x="250.0" y="616" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="250.0" dy="0">Expo Go or dev build</tspan></text>
+<rect x="660" y="170" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="770.0" y="198" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="770.0" dy="0">Firebase project</tspan></text>
+<text x="770.0" y="232" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="770.0" dy="0">Auth / Firestore / Storage</tspan></text>
+<rect x="660" y="298" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="770.0" y="326" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="770.0" dy="0">Security rules</tspan></text>
+<text x="770.0" y="360" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="770.0" dy="0">Firestore + Storage rules</tspan></text>
+<rect x="660" y="426" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="770.0" y="454" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="770.0" dy="0">User data</tspan></text>
+<text x="770.0" y="488" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="770.0" dy="0">profiles, palaces, reviews</tspan></text>
+<rect x="660" y="554" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="770.0" y="582" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="770.0" dy="0">Station images</tspan></text>
+<text x="770.0" y="616" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="770.0" dy="0">Storage bucket paths</tspan></text>
+<rect x="1180" y="170" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1290.0" y="198" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1290.0" dy="0">GitHub repository</tspan></text>
+<text x="1290.0" y="232" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1290.0" dy="0">source of truth</tspan></text>
+<rect x="1180" y="298" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1290.0" y="326" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1290.0" dy="0">GitHub Actions</tspan></text>
+<text x="1290.0" y="360" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1290.0" dy="0">Node + Java CI</tspan></text>
+<rect x="1180" y="426" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1290.0" y="454" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1290.0" dy="0">Validation</tspan></text>
+<text x="1290.0" y="488" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1290.0" dy="0">typecheck, tests, audits</tspan></text>
+<rect x="1180" y="554" width="220" height="80" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1290.0" y="582" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1290.0" dy="0">EAS Build</tspan></text>
+<text x="1290.0" y="616" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1290.0" dy="0">mobile binaries when configured</tspan></text>
+<path d="M 360 466 L 470 466 L 470 210 L 660 210" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="470.0" y="330.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">runtime config</text>
+<path d="M 360 594 L 470 594 L 470 466 L 660 466" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="470.0" y="522.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">user actions</text>
+<path d="M 880 210 L 1010 210 L 1010 210 L 1180 210" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1010.0" y="202.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">linked in repo / CI</text>
+<path d="M 1400 466 L 1460 466 L 1460 466 L 880 466" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1460.0" y="458.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">deploy rules / builds</text>
+<path d="M 1400 594 L 1460 594 L 1460 594 L 360 594" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1460.0" y="586.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">release build</text>
 </svg>

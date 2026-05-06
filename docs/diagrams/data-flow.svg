@@ -1,95 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
-<title id="title">Data Flow</title>
-<desc id="desc">Professional architecture diagram for the LociLand README.</desc>
-<defs>
-  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#48606A" />
-  </marker>
-  <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#4D96FF" />
-  </marker>
-  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2D3436" flood-opacity="0.10"/>
-  </filter>
-</defs>
-<rect x="0" y="0" width="1440" height="760" fill="#FFFFFF"/>
-<text x="720.0" y="38" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2D3436">Data Flow</text>
-<line x1="50" y1="58" x2="1390" y2="58" stroke="#E9DFC7" stroke-width="2" stroke-linecap="round"/>
-<rect x="30" y="100" width="150" height="52" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="105.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="105.0" dy="0">Child User</tspan>
-</text>
-<line x1="105" y1="160" x2="105" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="235" y="100" width="150" height="52" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="310.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="310.0" dy="0">Screen</tspan>
-</text>
-<line x1="310" y1="160" x2="310" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="440" y="100" width="150" height="52" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="515.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="515.0" dy="0">Zustand Store</tspan>
-</text>
-<line x1="515" y1="160" x2="515" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="645" y="100" width="150" height="52" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="720.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="720.0" dy="0">Service Layer</tspan>
-</text>
-<line x1="720" y1="160" x2="720" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="850" y="100" width="150" height="52" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="925.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="925.0" dy="0">Firebase Rules</tspan>
-</text>
-<line x1="925" y1="160" x2="925" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="1055" y="100" width="150" height="52" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="1130.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="1130.0" dy="0">Firestore</tspan>
-</text>
-<line x1="1130" y1="160" x2="1130" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<rect x="1260" y="100" width="150" height="52" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="1335.0" y="124.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#2D3436">
-<tspan x="1335.0" dy="0">Storage</tspan>
-</text>
-<line x1="1335" y1="160" x2="1335" y2="685" stroke="#DCE3EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 8"/>
-<line x1="105" y1="220" x2="310" y2="220" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="207.5" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="207.5" dy="0">create palace / station /</tspan>
-<tspan x="207.5" dy="18">review</tspan>
-</text>
-<line x1="310" y1="285" x2="515" y2="285" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="412.5" y="275" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="412.5" dy="0">dispatch typed action</tspan>
-</text>
-<line x1="515" y1="350" x2="720" y2="350" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="617.5" y="340" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="617.5" dy="0">call domain service</tspan>
-</text>
-<line x1="720" y1="415" x2="925" y2="415" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="822.5" y="405" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="822.5" dy="0">request read/write</tspan>
-</text>
-<line x1="925" y1="480" x2="1130" y2="480" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="1027.5" y="470" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1027.5" dy="0">allow owner-scoped valid</tspan>
-<tspan x="1027.5" dy="18">data</tspan>
-</text>
-<line x1="1130" y1="545" x2="720" y2="545" stroke="#48606A" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
-<text x="925.0" y="535" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="925.0" dy="0">persisted document /</tspan>
-<tspan x="925.0" dy="18">typed result</tspan>
-</text>
-<line x1="720" y1="610" x2="515" y2="610" stroke="#48606A" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
-<text x="617.5" y="600" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="617.5" dy="0">update local state</tspan>
-</text>
-<line x1="515" y1="655" x2="310" y2="655" stroke="#48606A" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
-<text x="412.5" y="645" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="412.5" dy="0">render fresh UI</tspan>
-</text>
-<rect x="690" y="635" width="650" height="80" rx="18" fill="#D8F9FB" stroke="#38C4CE" stroke-width="2"/>
-<text x="715" y="662" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">Optional station image branch</text>
-<line x1="790" y1="682" x2="925" y2="682" stroke="#38C4CE" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<line x1="925" y1="682" x2="1335" y2="682" stroke="#38C4CE" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<text x="1065" y="704" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1065" dy="0">validate owner, file type, size and path</tspan>
-</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-label="Data Flow">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#4C617A" />
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#12253f" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <text x="800.0" y="48" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#203040">Data Flow</text>
+<rect x="30" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="110.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="110.0" dy="0">Child User</tspan></text>
+<line x1="110" y1="168" x2="110" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="240" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="320.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="320.0" dy="0">Screen</tspan></text>
+<line x1="320" y1="168" x2="320" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="450" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="530.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="530.0" dy="0">Zustand Store</tspan></text>
+<line x1="530" y1="168" x2="530" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="680" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="760.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="760.0" dy="0">Service Layer</tspan></text>
+<line x1="760" y1="168" x2="760" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="920" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1000.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="1000.0" dy="0">Firebase Rules</tspan></text>
+<line x1="1000" y1="168" x2="1000" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="1160" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">Firestore</tspan></text>
+<line x1="1240" y1="168" x2="1240" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="1380" y="110" width="160" height="58" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1460.0" y="139.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#324154"><tspan x="1460.0" dy="0">Storage</tspan></text>
+<line x1="1460" y1="168" x2="1460" y2="760" stroke="#D7E0EA" stroke-width="2" stroke-dasharray="6 6"/>
+<path d="M 110 250 L 320 250" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="215.0" y="242.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">create palace / station / review</text>
+<path d="M 320 305 L 530 305" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="425.0" y="297.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">dispatch typed action</text>
+<path d="M 530 360 L 760 360" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="645.0" y="352.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">call domain service</text>
+<path d="M 760 415 L 1000 415" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="880.0" y="407.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">request read/write</text>
+<path d="M 1000 470 L 1240 470" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1120.0" y="462.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">allow valid user-scoped data</text>
+<path d="M 1240 525 L 760 525" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1000.0" y="517.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">persisted document</text>
+<path d="M 760 580 L 530 580" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="645.0" y="572.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">typed result</text>
+<path d="M 530 635 L 320 635" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="425.0" y="627.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">update local state</text>
+<path d="M 320 690 L 110 690" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="215.0" y="682.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">render feedback</text>
+
+  <rect x="700" y="760" width="780" height="120" rx="20" fill="#E8FBFC" stroke="#52C7D5" stroke-width="2"/>
+  <rect x="722" y="742" width="273" height="36" rx="14" fill="#FFFFFF" stroke="#52C7D5" stroke-width="2"/>
+  <text x="858.5" y="765" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Optional station image path</text>
+<path d="M 760 800 L 1000 800 L 1000 830 L 1460 830" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1000.0" y="807.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">upload image</text>
+<path d="M 1460 860 L 760 860" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="1110.0" y="852.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">download URL / save imageUri</text>
 </svg>

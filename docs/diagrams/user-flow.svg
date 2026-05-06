@@ -1,109 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="660" viewBox="0 0 1500 660" role="img" aria-labelledby="title desc">
-<title id="title">Core User Journey</title>
-<desc id="desc">Professional architecture diagram for the LociLand README.</desc>
-<defs>
-  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#48606A" />
-  </marker>
-  <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#4D96FF" />
-  </marker>
-  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2D3436" flood-opacity="0.10"/>
-  </filter>
-</defs>
-<rect x="0" y="0" width="1500" height="660" fill="#FFFFFF"/>
-<text x="750.0" y="38" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2D3436">Core User Journey</text>
-<line x1="50" y1="58" x2="1450" y2="58" stroke="#E9DFC7" stroke-width="2" stroke-linecap="round"/>
-<rect x="65" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#FFD93D" stroke-width="3" filter="url(#shadow)"/>
-<rect x="65" y="115" width="250" height="58" rx="22" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2"/>
-<text x="190" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">1. First use</text>
-<rect x="97" y="227" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="190.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="190.0" dy="0">Open app</tspan>
-</text>
-<line x1="190" y1="289" x2="190" y2="311" stroke="#FFD93D" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="97" y="321" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="190.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="190.0" dy="0">Complete onboarding</tspan>
-</text>
-<line x1="190" y1="383" x2="190" y2="405" stroke="#FFD93D" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="97" y="415" width="186" height="62" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<text x="190.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="190.0" dy="0">Create child profile</tspan>
-</text>
-<line x1="315" y1="320" x2="363" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="363" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#4D96FF" stroke-width="3" filter="url(#shadow)"/>
-<rect x="363" y="115" width="250" height="58" rx="22" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2"/>
-<text x="488" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">2. Build palace</text>
-<rect x="395" y="227" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="488.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="488.0" dy="0">Choose template</tspan>
-</text>
-<line x1="488" y1="289" x2="488" y2="311" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="395" y="321" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="488.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="488.0" dy="0">Name memory world</tspan>
-</text>
-<line x1="488" y1="383" x2="488" y2="405" stroke="#4D96FF" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="395" y="415" width="186" height="62" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<text x="488.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="488.0" dy="0">Preview palace</tspan>
-</text>
-<line x1="613" y1="320" x2="661" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="661" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#6BCB77" stroke-width="3" filter="url(#shadow)"/>
-<rect x="661" y="115" width="250" height="58" rx="22" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2"/>
-<text x="786" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">3. Add stations</text>
-<rect x="693" y="227" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="786.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="786.0" dy="0">Create memory anchors</tspan>
-</text>
-<line x1="786" y1="289" x2="786" y2="311" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="693" y="321" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="786.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="786.0" dy="0">Attach text/images</tspan>
-</text>
-<line x1="786" y1="383" x2="786" y2="405" stroke="#6BCB77" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="693" y="415" width="186" height="62" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<text x="786.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="786.0" dy="0">Order the route</tspan>
-</text>
-<line x1="911" y1="320" x2="959" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="959" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#7F5AD8" stroke-width="3" filter="url(#shadow)"/>
-<rect x="959" y="115" width="250" height="58" rx="22" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2"/>
-<text x="1084" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">4. Practise recall</text>
-<rect x="991" y="227" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
-<text x="1084.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1084.0" dy="0">Start guided review</tspan>
-</text>
-<line x1="1084" y1="289" x2="1084" y2="311" stroke="#7F5AD8" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="991" y="321" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
-<text x="1084.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1084.0" dy="0">Answer each station</tspan>
-</text>
-<line x1="1084" y1="383" x2="1084" y2="405" stroke="#7F5AD8" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="991" y="415" width="186" height="62" rx="16" fill="#ECE3FF" stroke="#7F5AD8" stroke-width="2" filter="url(#shadow)"/>
-<text x="1084.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1084.0" dy="0">Reveal feedback</tspan>
-</text>
-<line x1="1209" y1="320" x2="1257" y2="320" stroke="#48606A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="1257" y="115" width="250" height="410" rx="22" fill="#FFFFFF" stroke="#FFB703" stroke-width="3" filter="url(#shadow)"/>
-<rect x="1257" y="115" width="250" height="58" rx="22" fill="#FFF1C2" stroke="#FFB703" stroke-width="2"/>
-<text x="1382" y="152" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#2D3436">5. Progress</text>
-<rect x="1289" y="227" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
-<text x="1382.0" y="256.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1382.0" dy="0">Earn XP</tspan>
-</text>
-<line x1="1382" y1="289" x2="1382" y2="311" stroke="#FFB703" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="1289" y="321" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
-<text x="1382.0" y="350.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1382.0" dy="0">Unlock achievements</tspan>
-</text>
-<line x1="1382" y1="383" x2="1382" y2="405" stroke="#FFB703" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="1289" y="415" width="186" height="62" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2" filter="url(#shadow)"/>
-<text x="1382.0" y="444.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#2D3436">
-<tspan x="1382.0" dy="0">Track streaks</tspan>
-</text>
-<rect x="210" y="570" width="1080" height="48" rx="24" fill="#F8FAFC" stroke="#E9DFC7" stroke-width="1"/>
-<text x="750" y="601" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2D3436">Outcome: a child transforms information into a memorable spatial route and reinforces it through repeated guided walks.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="780" viewBox="0 0 1500 780" role="img" aria-label="Core User Journey">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#4C617A" />
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#12253f" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <text x="750.0" y="48" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#203040">Core User Journey</text>
+
+  <rect x="45" y="120" width="250" height="500" rx="20" fill="#FFF8E1" stroke="#E9C351" stroke-width="2"/>
+  <rect x="67" y="102" width="138" height="36" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2"/>
+  <text x="136.0" y="125" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">1. First use</text>
+<rect x="80" y="185" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="170.0" y="223.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="170.0" dy="0">Open app</tspan></text>
+<rect x="80" y="295" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="170.0" y="333.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="170.0" dy="0">Complete onboarding</tspan></text>
+<rect x="80" y="405" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="170.0" y="443.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="170.0" dy="0">Create child profile</tspan></text>
+
+  <rect x="337" y="120" width="250" height="500" rx="20" fill="#EAF3FF" stroke="#6AA5FF" stroke-width="2"/>
+  <rect x="359" y="102" width="165" height="36" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2"/>
+  <text x="441.5" y="125" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">2. Build palace</text>
+<rect x="372" y="185" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="462.0" y="223.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="462.0" dy="0">Choose template</tspan></text>
+<rect x="372" y="295" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="462.0" y="333.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="462.0" dy="0">Name memory world</tspan></text>
+<rect x="372" y="405" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="462.0" y="443.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="462.0" dy="0">Preview palace</tspan></text>
+
+  <rect x="629" y="120" width="250" height="500" rx="20" fill="#EAF8EE" stroke="#68B984" stroke-width="2"/>
+  <rect x="651" y="102" width="165" height="36" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2"/>
+  <text x="733.5" y="125" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">3. Add stations</text>
+<rect x="664" y="185" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="754.0" y="223.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="754.0" dy="0">Create memory anchors</tspan></text>
+<rect x="664" y="295" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="754.0" y="333.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="754.0" dy="0">Attach optional images</tspan></text>
+<rect x="664" y="405" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="754.0" y="443.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="754.0" dy="0">Order the route</tspan></text>
+
+  <rect x="921" y="120" width="250" height="500" rx="20" fill="#F1EDFF" stroke="#9A7BFF" stroke-width="2"/>
+  <rect x="943" y="102" width="192" height="36" rx="14" fill="#FFFFFF" stroke="#9A7BFF" stroke-width="2"/>
+  <text x="1039.0" y="125" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">4. Practise recall</text>
+<rect x="956" y="185" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#9A7BFF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1046.0" y="223.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1046.0" dy="0">Start guided review</tspan></text>
+<rect x="956" y="295" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#9A7BFF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1046.0" y="333.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1046.0" dy="0">Answer each station</tspan></text>
+<rect x="956" y="405" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#9A7BFF" stroke-width="2" filter="url(#shadow)"/>
+<text x="1046.0" y="443.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1046.0" dy="0">Reveal feedback</tspan></text>
+
+  <rect x="1213" y="120" width="250" height="500" rx="20" fill="#FFF2E5" stroke="#F6AE5D" stroke-width="2"/>
+  <rect x="1235" y="102" width="130" height="36" rx="14" fill="#FFFFFF" stroke="#F6AE5D" stroke-width="2"/>
+  <text x="1300.0" y="125" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">5. Progress</text>
+<rect x="1248" y="185" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#F6AE5D" stroke-width="2" filter="url(#shadow)"/>
+<text x="1338.0" y="223.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1338.0" dy="0">Earn XP</tspan></text>
+<rect x="1248" y="295" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#F6AE5D" stroke-width="2" filter="url(#shadow)"/>
+<text x="1338.0" y="333.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1338.0" dy="0">Unlock achievements</tspan></text>
+<rect x="1248" y="405" width="180" height="76" rx="14" fill="#FFFFFF" stroke="#F6AE5D" stroke-width="2" filter="url(#shadow)"/>
+<text x="1338.0" y="443.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1338.0" dy="0">Track streaks</tspan></text>
+<line x1="295.0" y1="370" x2="337.0" y2="370" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="587.0" y1="370" x2="629.0" y2="370" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="879.0" y1="370" x2="921.0" y2="370" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="1171.0" y1="370" x2="1213.0" y2="370" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="180" y="655" width="1140" height="52" rx="14" fill="#F8FAFC" stroke="#D7E0EA" stroke-width="1.5"/>
+<text x="750.0" y="683" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500" fill="#607086"><tspan x="750.0" dy="0">Outcome: a child transforms information into a memorable spatial route and reinforces it through repeated guided walks.</tspan></text>
 </svg>

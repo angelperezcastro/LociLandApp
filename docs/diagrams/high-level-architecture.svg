@@ -1,155 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="780" viewBox="0 0 1280 780" role="img" aria-labelledby="title desc">
-<title id="title">High-Level Architecture</title>
-<desc id="desc">Professional architecture diagram for the LociLand README.</desc>
-<defs>
-  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#48606A" />
-  </marker>
-  <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M 1 1 L 11 6 L 1 11 z" fill="#4D96FF" />
-  </marker>
-  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2D3436" flood-opacity="0.10"/>
-  </filter>
-</defs>
-<rect x="0" y="0" width="1280" height="780" fill="#FFFFFF"/>
-<text x="640.0" y="38" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#2D3436">High-Level Architecture</text>
-<line x1="50" y1="58" x2="1230" y2="58" stroke="#E9DFC7" stroke-width="2" stroke-linecap="round"/>
-<rect x="60" y="100" width="340" height="585" rx="24" fill="#FFFFFF" stroke="#FFD93D" stroke-width="3" filter="url(#shadow)"/>
-<text x="84" y="138" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#2D3436">Mobile App</text>
-<rect x="470" y="100" width="340" height="585" rx="24" fill="#FFFFFF" stroke="#4D96FF" stroke-width="3" filter="url(#shadow)"/>
-<text x="494" y="138" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#2D3436">Firebase Backend</text>
-<rect x="880" y="100" width="340" height="585" rx="24" fill="#FFFFFF" stroke="#6BCB77" stroke-width="3" filter="url(#shadow)"/>
-<text x="904" y="138" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#2D3436">Quality Gate</text>
-<rect x="95" y="160" width="270" height="74" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<rect x="95" y="160" width="8" height="74" rx="16" fill="#FFD93D" stroke="#FFD93D" stroke-width="0"/>
-<text x="230.0" y="191" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="230.0" dy="0">App Root</tspan>
-</text>
-<text x="230.0" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="230.0" dy="0">Splash, fonts, providers</tspan>
-</text>
-<line x1="230" y1="234" x2="230" y2="254" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="95" y="254" width="270" height="74" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<rect x="95" y="254" width="8" height="74" rx="16" fill="#FFD93D" stroke="#FFD93D" stroke-width="0"/>
-<text x="230.0" y="285" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="230.0" dy="0">Navigation</tspan>
-</text>
-<text x="230.0" y="310" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="230.0" dy="0">Root, Auth, App stacks</tspan>
-</text>
-<line x1="230" y1="328" x2="230" y2="348" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="95" y="348" width="270" height="74" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<rect x="95" y="348" width="8" height="74" rx="16" fill="#FFD93D" stroke="#FFD93D" stroke-width="0"/>
-<text x="230.0" y="379" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="230.0" dy="0">Screens</tspan>
-</text>
-<text x="230.0" y="404" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="230.0" dy="0">Home, Palace, Review, Progress</tspan>
-</text>
-<line x1="230" y1="422" x2="230" y2="442" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="95" y="442" width="270" height="74" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<rect x="95" y="442" width="8" height="74" rx="16" fill="#FFD93D" stroke="#FFD93D" stroke-width="0"/>
-<text x="230.0" y="473" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="230.0" dy="0">State</tspan>
-</text>
-<text x="230.0" y="498" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="230.0" dy="0">Zustand stores</tspan>
-</text>
-<line x1="230" y1="516" x2="230" y2="536" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="95" y="536" width="270" height="74" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2" filter="url(#shadow)"/>
-<rect x="95" y="536" width="8" height="74" rx="16" fill="#FFD93D" stroke="#FFD93D" stroke-width="0"/>
-<text x="230.0" y="567" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="230.0" dy="0">Services</tspan>
-</text>
-<text x="230.0" y="592" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="230.0" dy="0">Typed Firebase access</tspan>
-</text>
-<rect x="505" y="170" width="270" height="82" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<rect x="505" y="170" width="8" height="82" rx="16" fill="#4D96FF" stroke="#4D96FF" stroke-width="0"/>
-<text x="640.0" y="201" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="640.0" dy="0">Firebase Auth</tspan>
-</text>
-<text x="640.0" y="226" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="640.0" dy="0">Email/password + Google credential</tspan>
-</text>
-<line x1="640" y1="252" x2="640" y2="273" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="505" y="273" width="270" height="82" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<rect x="505" y="273" width="8" height="82" rx="16" fill="#4D96FF" stroke="#4D96FF" stroke-width="0"/>
-<text x="640.0" y="304" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="640.0" dy="0">Cloud Firestore</tspan>
-</text>
-<text x="640.0" y="329" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="640.0" dy="0">User-scoped app data</tspan>
-</text>
-<line x1="640" y1="355" x2="640" y2="376" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="505" y="376" width="270" height="82" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<rect x="505" y="376" width="8" height="82" rx="16" fill="#4D96FF" stroke="#4D96FF" stroke-width="0"/>
-<text x="640.0" y="407" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="640.0" dy="0">Firebase Storage</tspan>
-</text>
-<text x="640.0" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="640.0" dy="0">Station images</tspan>
-</text>
-<line x1="640" y1="458" x2="640" y2="479" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="505" y="479" width="270" height="82" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2" filter="url(#shadow)"/>
-<rect x="505" y="479" width="8" height="82" rx="16" fill="#4D96FF" stroke="#4D96FF" stroke-width="0"/>
-<text x="640.0" y="510" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="640.0" dy="0">Security Rules</tspan>
-</text>
-<text x="640.0" y="535" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="640.0" dy="0">Owner + shape validation</tspan>
-</text>
-<rect x="915" y="160" width="270" height="74" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<rect x="915" y="160" width="8" height="74" rx="16" fill="#6BCB77" stroke="#6BCB77" stroke-width="0"/>
-<text x="1050.0" y="191" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="1050.0" dy="0">GitHub Actions</tspan>
-</text>
-<text x="1050.0" y="216" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1050.0" dy="0">Automated validation</tspan>
-</text>
-<line x1="1050" y1="234" x2="1050" y2="254" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="915" y="254" width="270" height="74" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<rect x="915" y="254" width="8" height="74" rx="16" fill="#6BCB77" stroke="#6BCB77" stroke-width="0"/>
-<text x="1050.0" y="285" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="1050.0" dy="0">TypeScript</tspan>
-</text>
-<text x="1050.0" y="310" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1050.0" dy="0">Static typecheck</tspan>
-</text>
-<line x1="1050" y1="328" x2="1050" y2="348" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="915" y="348" width="270" height="74" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<rect x="915" y="348" width="8" height="74" rx="16" fill="#6BCB77" stroke="#6BCB77" stroke-width="0"/>
-<text x="1050.0" y="379" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="1050.0" dy="0">Firebase Emulators</tspan>
-</text>
-<text x="1050.0" y="404" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1050.0" dy="0">Rules tests</tspan>
-</text>
-<line x1="1050" y1="422" x2="1050" y2="442" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="915" y="442" width="270" height="74" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<rect x="915" y="442" width="8" height="74" rx="16" fill="#6BCB77" stroke="#6BCB77" stroke-width="0"/>
-<text x="1050.0" y="473" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="1050.0" dy="0">npm audit</tspan>
-</text>
-<text x="1050.0" y="498" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1050.0" dy="0">Runtime dependency audit</tspan>
-</text>
-<line x1="1050" y1="516" x2="1050" y2="536" stroke="#48606A" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)"/>
-<rect x="915" y="536" width="270" height="74" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2" filter="url(#shadow)"/>
-<rect x="915" y="536" width="8" height="74" rx="16" fill="#6BCB77" stroke="#6BCB77" stroke-width="0"/>
-<text x="1050.0" y="567" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#2D3436">
-<tspan x="1050.0" dy="0">Visual audit</tspan>
-</text>
-<text x="1050.0" y="592" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="1050.0" dy="0">Token and style checks</tspan>
-</text>
-<polyline points="365,610 430,610 430,270 505,270" fill="none" stroke="#4D96FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
-<text x="435" y="245" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="435" dy="0">service calls</tspan>
-</text>
-<polyline points="775,508 840,508 840,448 915,448" fill="none" stroke="#6BCB77" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
-<text x="842" y="430" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#586267">
-<tspan x="842" dy="0">validated in CI</tspan>
-</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900" role="img" aria-label="High-Level Architecture">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#4C617A" />
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#12253f" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <text x="750.0" y="48" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#203040">High-Level Architecture</text>
+
+  <rect x="60" y="90" width="400" height="720" rx="20" fill="#FFF8E1" stroke="#E9C351" stroke-width="2"/>
+  <rect x="82" y="72" width="192" height="36" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2"/>
+  <text x="178.0" y="95" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Mobile Application</text>
+
+  <rect x="550" y="90" width="400" height="720" rx="20" fill="#EAF3FF" stroke="#6AA5FF" stroke-width="2"/>
+  <rect x="572" y="72" width="174" height="36" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2"/>
+  <text x="659.0" y="95" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Firebase Backend</text>
+
+  <rect x="1040" y="90" width="400" height="720" rx="20" fill="#EAF8EE" stroke="#68B984" stroke-width="2"/>
+  <rect x="1062" y="72" width="138" height="36" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2"/>
+  <text x="1131.0" y="95" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154">Quality Gate</text>
+<rect x="135" y="150" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="260.0" y="178" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="260.0" dy="0">App Root</tspan></text>
+<text x="260.0" y="214" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="260.0" dy="0">App.tsx, fonts, splash</tspan></text>
+<rect x="135" y="266" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="260.0" y="294" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="260.0" dy="0">Navigation</tspan></text>
+<text x="260.0" y="330" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="260.0" dy="0">Root, Auth, App navigators</tspan></text>
+<rect x="135" y="382" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="260.0" y="410" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="260.0" dy="0">Screens</tspan></text>
+<text x="260.0" y="446" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="260.0" dy="0">Home, Palace, Review, Progress</tspan></text>
+<rect x="135" y="498" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="260.0" y="526" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="260.0" dy="0">State</tspan></text>
+<text x="260.0" y="562" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="260.0" dy="0">Zustand stores</tspan></text>
+<rect x="135" y="614" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#E9C351" stroke-width="2" filter="url(#shadow)"/>
+<text x="260.0" y="642" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="260.0" dy="0">Services</tspan></text>
+<text x="260.0" y="678" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="260.0" dy="0">Typed Firebase-facing services</tspan></text>
+<line x1="260" y1="232" x2="260" y2="266" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="260" y1="348" x2="260" y2="382" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="260" y1="464" x2="260" y2="498" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="260" y1="580" x2="260" y2="614" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="625" y="180" width="250" height="88" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="750.0" y="208" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="750.0" dy="0">Firebase Auth</tspan></text>
+<text x="750.0" y="250" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="750.0" dy="0">Email/password, Google sign-in</tspan></text>
+<rect x="625" y="312" width="250" height="88" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="750.0" y="340" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="750.0" dy="0">Cloud Firestore</tspan></text>
+<text x="750.0" y="382" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="750.0" dy="0">User-scoped app data</tspan></text>
+<rect x="625" y="444" width="250" height="88" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="750.0" y="472" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="750.0" dy="0">Firebase Storage</tspan></text>
+<text x="750.0" y="514" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="750.0" dy="0">Station images</tspan></text>
+<rect x="625" y="576" width="250" height="88" rx="14" fill="#FFFFFF" stroke="#6AA5FF" stroke-width="2" filter="url(#shadow)"/>
+<text x="750.0" y="604" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="750.0" dy="0">Security Rules</tspan></text>
+<text x="750.0" y="646" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="750.0" dy="0">Ownership + schema validation</tspan></text>
+<line x1="750" y1="268" x2="750" y2="312" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="750" y1="400" x2="750" y2="444" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="750" y1="532" x2="750" y2="576" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1115" y="150" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="178" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">GitHub Actions</tspan></text>
+<text x="1240.0" y="214" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1240.0" dy="0">CI workflow</tspan></text>
+<rect x="1115" y="266" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="294" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">TypeScript</tspan></text>
+<text x="1240.0" y="330" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1240.0" dy="0">Static typecheck</tspan></text>
+<rect x="1115" y="382" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="410" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">Firebase Emulators</tspan></text>
+<text x="1240.0" y="446" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1240.0" dy="0">Rules tests</tspan></text>
+<rect x="1115" y="498" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="526" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">npm audit</tspan></text>
+<text x="1240.0" y="562" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1240.0" dy="0">Runtime dependency audit</tspan></text>
+<rect x="1115" y="614" width="250" height="82" rx="14" fill="#FFFFFF" stroke="#68B984" stroke-width="2" filter="url(#shadow)"/>
+<text x="1240.0" y="642" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#324154"><tspan x="1240.0" dy="0">Visual audit</tspan></text>
+<text x="1240.0" y="678" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#607086"><tspan x="1240.0" dy="0">Theme and style checks</tspan></text>
+<line x1="1240" y1="232" x2="1240" y2="266" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="1240" y1="348" x2="1240" y2="382" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="1240" y1="464" x2="1240" y2="498" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="1240" y1="580" x2="1240" y2="614" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M 385 655 L 470 655 L 470 224 L 625 224" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="470.0" y="431.5" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">auth</text>
+<path d="M 385 655 L 485 655 L 485 356 L 625 356" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="485.0" y="497.5" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">data</text>
+<path d="M 385 655 L 500 655 L 500 488 L 625 488" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="500.0" y="563.5" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">images</text>
+<path d="M 875 620 L 955 620 L 955 224 L 1115 224" fill="none" stroke="#4C617A" stroke-width="2.5" marker-end="url(#arrow)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="955.0" y="414.0" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#607086">validated in CI</text>
 </svg>
