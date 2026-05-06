@@ -170,6 +170,7 @@ const SUMMARY_COUNTER_DURATION_MS = 900;
 const COMPACT_REVIEW_HEIGHT_THRESHOLD = 750;
 const YOUNGER_FONT_SCALE = 1.15;
 const MIN_TOUCH_TARGET_YOUNGER = 56;
+const MAX_REVIEW_ROUTE_PREVIEW_STATIONS = 8;
 
 const scaleYoungerFont = (value: number) => Math.round(value * YOUNGER_FONT_SCALE);
 
@@ -178,7 +179,8 @@ const REVIEW_DIMENSIONS = {
   introGuide: 210,
   introGuideCompact: 112,
   walkingGuide: 132,
-  walkingGuideCompact: 124,
+  walkingGuideCompact: 168,
+  completeGuide: 92,
 } as const;
 
 const REVIEW_FONT_SIZES = {
@@ -761,7 +763,7 @@ const StationPhotoCue = ({
       <Image
         accessibilityIgnoresInvertColors
         source={{ uri: imageUrl }}
-        resizeMode="cover"
+        resizeMode="contain"
         style={[
           styles.stationPhotoCueImage,
           compact && styles.stationPhotoCueImageCompact,
@@ -823,6 +825,81 @@ const ProgressBar = ({
     </View>
   );
 };
+
+
+const ReviewJourneyRail = ({
+  stations,
+  currentIndex,
+  textColor,
+  compact = false,
+}: {
+  stations: ReviewScreenStation[];
+  currentIndex: number;
+  textColor: string;
+  compact?: boolean;
+}) => {
+  const visibleStations = stations.slice(0, MAX_REVIEW_ROUTE_PREVIEW_STATIONS);
+  const hiddenStationCount = Math.max(0, stations.length - visibleStations.length);
+  const safeCurrentIndex = clamp(currentIndex, 0, Math.max(visibleStations.length - 1, 0));
+
+  if (visibleStations.length === 0) {
+    return null;
+  }
+
+  return (
+    <View
+      style={[
+        styles.reviewJourneyRail,
+        compact && styles.reviewJourneyRailCompact,
+      ]}
+    >
+      <View style={styles.reviewJourneyRailTrack}>
+        {visibleStations.map((station, index) => {
+          const isCurrent = index === safeCurrentIndex;
+          const isCompleted = index < safeCurrentIndex;
+
+          return (
+            <React.Fragment key={station.id}>
+              {index > 0 ? (
+                <View
+                  style={[
+                    styles.reviewJourneyConnector,
+                    isCompleted && styles.reviewJourneyConnectorCompleted,
+                  ]}
+                />
+              ) : null}
+
+              <View
+                style={[
+                  styles.reviewJourneyNode,
+                  isCompleted && styles.reviewJourneyNodeCompleted,
+                  isCurrent && styles.reviewJourneyNodeCurrent,
+                ]}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.reviewJourneyNodeText,
+                    isCurrent && styles.reviewJourneyNodeTextCurrent,
+                  ]}
+                >
+                  {isCompleted ? '✓' : station.emoji}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      <Text style={[styles.reviewJourneyRailLabel, { color: textColor }]}>
+        {hiddenStationCount > 0
+          ? `Showing first ${visibleStations.length} stops · ${hiddenStationCount} more in this walk`
+          : `Stop ${currentIndex + 1} of ${stations.length}`}
+      </Text>
+    </View>
+  );
+};
+
 
 const CountdownTimer = () => {
   const [remainingSeconds, setRemainingSeconds] = useState(30);
@@ -994,7 +1071,7 @@ const IntroState = ({
   onStart: () => void;
 }) => {
   const { height } = useWindowDimensions();
-  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
+  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD || isYoungerReview;
   const floating = useSharedValue(0);
 
   useEffect(() => {
@@ -1068,27 +1145,12 @@ const IntroState = ({
           </View>
         </View>
 
-        <View
-          style={[
-            styles.introGuideSection,
-            isCompactHeight && styles.introGuideSectionCompact,
-          ]}
-        >
-          <GuideLottie
-            size={
-              isCompactHeight
-                ? REVIEW_DIMENSIONS.introGuideCompact
-                : REVIEW_DIMENSIONS.introGuide
-            }
-            variant="forward"
-          />
-
-          {!isCompactHeight ? (
-            <View style={styles.guideSpeechBubble}>
-              <Text style={styles.guideSpeechBubbleText}>Follow me!</Text>
-            </View>
-          ) : null}
-        </View>
+        <ReviewJourneyRail
+          stations={data.stations}
+          currentIndex={0}
+          textColor={textColor}
+          compact={isCompactHeight}
+        />
 
         <View
           style={[
@@ -1106,9 +1168,42 @@ const IntroState = ({
             }
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
+            compact={isCompactHeight}
             disabled={isStarting}
             onPress={onStart}
           />
+        </View>
+
+        <View
+          style={[
+            styles.introGuideSection,
+            isCompactHeight && styles.introGuideSectionCompact,
+          ]}
+        >
+          <GuideLottie
+            size={
+              isCompactHeight
+                ? REVIEW_DIMENSIONS.introGuideCompact
+                : REVIEW_DIMENSIONS.introGuide
+            }
+            variant="forward"
+          />
+
+          <View
+            style={[
+              styles.guideSpeechBubble,
+              isCompactHeight && styles.guideSpeechBubbleFitted,
+            ]}
+          >
+            <Text
+              style={[
+                styles.guideSpeechBubbleText,
+                isCompactHeight && styles.guideSpeechBubbleTextFitted,
+              ]}
+            >
+              Follow me!
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </Animated.View>
@@ -1117,6 +1212,7 @@ const IntroState = ({
 
 const WalkingState = ({
   station,
+  stations,
   currentIndex,
   totalStations,
   textColor,
@@ -1126,6 +1222,7 @@ const WalkingState = ({
   onRemember,
 }: {
   station: ReviewScreenStation;
+  stations: ReviewScreenStation[];
   currentIndex: number;
   totalStations: number;
   textColor: string;
@@ -1134,10 +1231,7 @@ const WalkingState = ({
   isYoungerReview: boolean;
   onRemember: () => void;
 }) => {
-  const { height } = useWindowDimensions();
-  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
-  const hasPhotoCue = Boolean(getStationImageUrl(station));
-  const shouldUseFittedLayout = isCompactHeight || hasPhotoCue;
+  const shouldUseFittedLayout = true;
 
   return (
     <Animated.View
@@ -1161,9 +1255,17 @@ const WalkingState = ({
           isYoungerReview={isYoungerReview}
         />
 
+        <ReviewJourneyRail
+          stations={stations}
+          currentIndex={currentIndex}
+          textColor={textColor}
+          compact={shouldUseFittedLayout}
+        />
+
         <View
           style={[
             styles.walkingContent,
+            styles.walkingStationPanel,
             shouldUseFittedLayout && styles.walkingContentFitted,
           ]}
         >
@@ -1210,6 +1312,21 @@ const WalkingState = ({
 
         <View
           style={[
+            styles.walkingButtonSection,
+            shouldUseFittedLayout && styles.walkingButtonSectionFitted,
+          ]}
+        >
+          <ReviewPrimaryButton
+            label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            compact={shouldUseFittedLayout}
+            onPress={onRemember}
+          />
+        </View>
+
+        <View
+          style={[
             styles.walkingGuideSection,
             shouldUseFittedLayout && styles.walkingGuideSectionFitted,
           ]}
@@ -1238,21 +1355,6 @@ const WalkingState = ({
               Take your time.
             </Text>
           </View>
-        </View>
-
-        <View
-          style={[
-            styles.walkingButtonSection,
-            shouldUseFittedLayout && styles.walkingButtonSectionFitted,
-          ]}
-        >
-          <ReviewPrimaryButton
-            label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
-            backgroundColor={buttonFillColor}
-            textColor={buttonTextColor}
-            compact={shouldUseFittedLayout}
-            onPress={onRemember}
-          />
         </View>
       </ScrollView>
     </Animated.View>
@@ -1295,6 +1397,10 @@ const QuestionState = ({
   }, [station, stations]);
 
   const canSubmitFreeText = freeTextAnswer.trim().length > 0 && !isSubmittingAnswer;
+  const currentStationIndex = Math.max(
+    0,
+    stations.findIndex((item) => item.id === station.id),
+  );
 
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
@@ -1325,6 +1431,13 @@ const QuestionState = ({
             : QUESTION_COPY.subtitle10to14}
         </Text>
       </View>
+
+      <ReviewJourneyRail
+        stations={stations}
+        currentIndex={currentStationIndex}
+        textColor={textColor}
+        compact
+      />
 
       <View style={styles.questionCard}>
         <StationIconTile emoji={station.emoji} size="medium" />
@@ -1677,8 +1790,6 @@ const CompleteState = ({
       <FireworksLayer />
 
       <View style={styles.completeContent}>
-        {isPerfect ? <PerfectMemoryBadge /> : null}
-
         <Animated.Text entering={BounceIn.duration(850)} style={styles.completeEmoji}>
           {isPerfect ? '🏆' : '🌟'}
         </Animated.Text>
@@ -1692,7 +1803,9 @@ const CompleteState = ({
           {isYoungerReview ? 'Memory walk complete! 🌟' : 'Memory walk complete!'}
         </Text>
 
-        <GuideLottie size={120} variant="happy" />
+        {isPerfect ? <PerfectMemoryBadge /> : null}
+
+        <GuideLottie size={REVIEW_DIMENSIONS.completeGuide} variant="happy" />
 
         <View style={styles.completeScoreCard}>
           <Text
@@ -1724,6 +1837,7 @@ const CompleteState = ({
           label={isRestarting ? 'Starting...' : 'Review Again'}
           backgroundColor={buttonFillColor}
           textColor={buttonTextColor}
+          compact
           disabled={isRestarting}
           onPress={onReviewAgain}
         />
@@ -2182,6 +2296,7 @@ export const ReviewScreen = () => {
       {screenState === 'WALKING' && currentStation && (
         <WalkingState
           station={currentStation}
+          stations={data.stations}
           currentIndex={currentStationIndex}
           totalStations={data.stations.length}
           textColor={textColor}
@@ -2304,8 +2419,9 @@ const styles = StyleSheet.create({
   },
 
   introScrollContentCompact: {
-    justifyContent: 'space-between',
-    paddingBottom: spacing.xs,
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
   },
 
   introTopSection: {
@@ -2315,7 +2431,7 @@ const styles = StyleSheet.create({
   },
 
   introTopSectionCompact: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.none,
   },
 
@@ -2380,7 +2496,7 @@ const styles = StyleSheet.create({
   },
 
   introGuideSectionCompact: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
 
   walkingGuideSection: {
@@ -2392,7 +2508,7 @@ const styles = StyleSheet.create({
   },
 
   walkingGuideSectionFitted: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xl,
     gap: spacing.md,
   },
 
@@ -2412,7 +2528,7 @@ const styles = StyleSheet.create({
   },
 
   guideSpeechBubbleFitted: {
-    marginTop: spacing.none,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
@@ -2436,7 +2552,7 @@ const styles = StyleSheet.create({
 
   introButtonSectionCompact: {
     marginTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
 
   walkingButtonSection: {
@@ -2445,7 +2561,7 @@ const styles = StyleSheet.create({
   },
 
   walkingButtonSectionFitted: {
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
     paddingBottom: spacing.xs,
   },
 
@@ -2556,6 +2672,86 @@ const styles = StyleSheet.create({
     borderRadius: radiusTokens.pill,
   },
 
+  reviewJourneyRail: {
+    width: '100%',
+    borderRadius: radiusTokens.xl,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.strongStroke,
+    backgroundColor: REVIEW_COLORS.overlayLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  reviewJourneyRailCompact: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+
+  reviewJourneyRailTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  reviewJourneyConnector: {
+    width: spacing.md,
+    height: spacing.xs,
+    borderRadius: radiusTokens.pill,
+    backgroundColor: REVIEW_COLORS.subtleStroke,
+  },
+
+  reviewJourneyConnectorCompleted: {
+    backgroundColor: REVIEW_COLORS.success,
+  },
+
+  reviewJourneyNode: {
+    width: spacing.xl,
+    height: spacing.xl,
+    borderRadius: radiusTokens.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.subtleStroke,
+    backgroundColor: REVIEW_COLORS.overlayStrong,
+  },
+
+  reviewJourneyNodeCompleted: {
+    borderColor: REVIEW_COLORS.success,
+    backgroundColor: REVIEW_COLORS.greenSoft,
+  },
+
+  reviewJourneyNodeCurrent: {
+    borderColor: REVIEW_COLORS.textDark,
+    backgroundColor: REVIEW_COLORS.white,
+    transform: [{ scale: 1.08 }],
+  },
+
+  reviewJourneyNodeText: {
+    fontSize: fontSizes.sm,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+
+  reviewJourneyNodeTextCurrent: {
+    fontWeight: '900',
+  },
+
+  reviewJourneyRailLabel: {
+    marginTop: spacing.xs,
+    fontSize: fontSizes.xs,
+    lineHeight: 16,
+    fontWeight: '900',
+    textAlign: 'center',
+    opacity: 0.78,
+  },
+
   walkingScrollContent: {
     flexGrow: 1,
   },
@@ -2572,9 +2768,25 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
 
+  walkingStationPanel: {
+    width: '100%',
+    borderRadius: radiusTokens.xxl,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.strongStroke,
+    backgroundColor: REVIEW_COLORS.overlayLight,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+
   walkingContentFitted: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     gap: spacing.xs,
+    paddingVertical: spacing.md,
   },
 
   // TILE EXTERIOR
@@ -2762,7 +2974,7 @@ const styles = StyleSheet.create({
 
   questionHeader: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     gap: spacing.sm,
   },
 
@@ -3098,8 +3310,8 @@ const styles = StyleSheet.create({
   completeScreen: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.md,
   },
 
   fireworksLayer: {
@@ -3115,13 +3327,13 @@ const styles = StyleSheet.create({
   completeContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
   },
 
   perfectBadgeWrapper: {
-    width: 270,
-    minHeight: 82,
+    width: '100%',
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xxs,
@@ -3136,71 +3348,71 @@ const styles = StyleSheet.create({
   },
 
   perfectBadge: {
-    minHeight: 58,
+    minHeight: 44,
     borderRadius: radiusTokens.xl,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: REVIEW_COLORS.greenSoft,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: REVIEW_COLORS.success,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   perfectBadgeIcon: {
-    fontSize: fontSizes.xl,
+    fontSize: fontSizes.lg,
   },
 
   perfectBadgeText: {
     color: REVIEW_COLORS.successDark,
-    fontSize: fontSizes.lg,
-    lineHeight: 24,
+    fontSize: fontSizes.md,
+    lineHeight: 22,
     fontWeight: '900',
   },
 
   completeEmoji: {
-    fontSize: REVIEW_FONT_SIZES.completeEmoji,
+    fontSize: fontSizes.display + spacing.md,
   },
 
   completeTitle: {
     color: REVIEW_COLORS.textDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 38,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
   },
 
   youngerCompleteTitle: {
-    fontSize: scaleYoungerFont(fontSizes.xxl),
-    lineHeight: scaleYoungerFont(38),
+    fontSize: scaleYoungerFont(fontSizes.xl),
+    lineHeight: scaleYoungerFont(30),
   },
 
   completeScoreCard: {
     width: '100%',
     borderRadius: radiusTokens.xxl,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     backgroundColor: REVIEW_COLORS.overlayStrong,
     borderWidth: 3,
     borderColor: REVIEW_COLORS.strongStroke,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   completeScoreLabel: {
     color: REVIEW_COLORS.textDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 34,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
   },
@@ -3211,10 +3423,10 @@ const styles = StyleSheet.create({
   },
 
   completeStars: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     color: REVIEW_COLORS.warning,
-    fontSize: fontSizes.xxl,
-    lineHeight: 36,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
     textAlign: 'center',
     letterSpacing: 1,
@@ -3224,20 +3436,20 @@ const styles = StyleSheet.create({
   },
 
   completeScoreHint: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     maxWidth: 290,
     color: REVIEW_COLORS.textMuted,
     fontSize: fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
 
   completeXpCard: {
     minWidth: 220,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radiusTokens.xl,
     backgroundColor: REVIEW_COLORS.greenSoft,
     borderWidth: 3,
@@ -3258,21 +3470,21 @@ const styles = StyleSheet.create({
   completeXpText: {
     marginTop: spacing.xxs,
     color: REVIEW_COLORS.successDark,
-    fontSize: fontSizes.xxl,
-    lineHeight: 36,
+    fontSize: fontSizes.xl,
+    lineHeight: 30,
     fontWeight: '900',
   },
 
   completeButtonStack: {
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xxs,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
 
   summarySecondaryButton: {
     width: '86%',
     maxWidth: 340,
-    minHeight: 58,
+    minHeight: 52,
     borderRadius: radiusTokens.xl,
     alignItems: 'center',
     justifyContent: 'center',
