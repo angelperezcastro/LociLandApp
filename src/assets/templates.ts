@@ -1,4 +1,7 @@
+// src/assets/templates.ts
+
 import { PALACE_TEMPLATE_IDS } from '../constants/validation';
+import { worldVisuals } from '../theme/worlds';
 import type { PalaceTemplate, PalaceTemplateId } from '../types';
 
 export const palaceTemplates: PalaceTemplate[] = [
@@ -7,42 +10,42 @@ export const palaceTemplates: PalaceTemplate[] = [
     name: 'My Home',
     emoji: '🏠',
     description: 'A cosy place full of familiar rooms and favourite memories.',
-    backgroundColour: '#FFE8A3',
+    backgroundColour: worldVisuals['my-home'].background,
   },
   {
     id: 'magic-castle',
     name: 'Magic Castle',
     emoji: '🏰',
     description: 'A grand castle with towers, secrets, and magical halls.',
-    backgroundColour: '#DCC6FF',
+    backgroundColour: worldVisuals['magic-castle'].background,
   },
   {
     id: 'enchanted-forest',
     name: 'Enchanted Forest',
     emoji: '🌲',
     description: 'A peaceful forest with glowing paths and hidden clearings.',
-    backgroundColour: '#BFEBC2',
+    backgroundColour: worldVisuals['enchanted-forest'].background,
   },
   {
     id: 'space-station',
     name: 'Space Station',
     emoji: '🚀',
     description: 'A futuristic station floating among stars and planets.',
-    backgroundColour: '#BFD7FF',
+    backgroundColour: worldVisuals['space-station'].background,
   },
   {
     id: 'underwater-world',
     name: 'Underwater World',
     emoji: '🐠',
     description: 'A colourful ocean world with coral, fish, and bubbles.',
-    backgroundColour: '#BDF4F7',
+    backgroundColour: worldVisuals['underwater-world'].background,
   },
   {
     id: 'dinosaur-island',
     name: 'Dinosaur Island',
     emoji: '🦕',
     description: 'A wild island with volcanoes, jungles, and friendly dinosaurs.',
-    backgroundColour: '#FFD0A6',
+    backgroundColour: worldVisuals['dinosaur-island'].background,
   },
 ];
 
