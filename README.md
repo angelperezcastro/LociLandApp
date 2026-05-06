@@ -474,6 +474,7 @@ LociLand is a **frontend-heavy mobile application** backed by Firebase services.
 ### High-Level Architecture
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 flowchart TB
     subgraph Mobile[Expo / React Native Mobile App]
         App[App.tsx]
@@ -517,11 +518,24 @@ flowchart TB
     CI --> RulesTests
     CI --> Audit
     CI --> VisualAudit
+
+    style Mobile fill:#FFFFFF,stroke:#FFD93D,stroke-width:2px,color:#2D3436
+    style Firebase fill:#FFFFFF,stroke:#4D96FF,stroke-width:2px,color:#2D3436
+    style Quality fill:#FFFFFF,stroke:#6BCB77,stroke-width:2px,color:#2D3436
+
+    classDef mobile fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
+    classDef firebase fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
+    classDef quality fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
+
+    class App,Root,AuthNav,AppNav,Screens,UI,Stores,Services mobile
+    class Auth,Firestore,Storage,Rules firebase
+    class Typecheck,RulesTests,Audit,VisualAudit,CI quality
 ```
 
 ### Navigation Architecture
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 flowchart LR
     Start[App Launch] --> Fonts[Load Fonts]
     Fonts --> Splash[Keep Splash Visible]
@@ -545,11 +559,20 @@ flowchart LR
     AppNavigator --> EditStation[Edit Station Modal]
     AppNavigator --> Review[Review]
     AppNavigator --> Achievements[Achievements]
+
+    classDef boot fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
+    classDef auth fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
+    classDef app fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
+
+    class Start,Fonts,Splash,AuthObserver boot
+    class AuthNavigator,Onboarding,Login,Register auth
+    class HydrateProfile,AppNavigator,Tabs,Home,Progress,Profile,CreatePalace,PalaceDetail,AddStation,EditStation,Review,Achievements app
 ```
 
 ### User Flow
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 journey
     title LociLand Core User Journey
     section First use
@@ -575,6 +598,7 @@ journey
 ### Data Flow
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 sequenceDiagram
     participant User as Child User
     participant Screen as React Native Screen
@@ -605,6 +629,7 @@ sequenceDiagram
 ### Component and Module Architecture
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 flowchart TB
     subgraph Screens[src/screens]
         OnboardingScreens[Onboarding]
@@ -654,11 +679,30 @@ flowchart TB
     State --> Domain
     Domain --> Foundation
     Components --> Foundation
+
+    style Screens fill:#FFFFFF,stroke:#FFD93D,stroke-width:2px,color:#2D3436
+    style Components fill:#FFFFFF,stroke:#4D96FF,stroke-width:2px,color:#2D3436
+    style Domain fill:#FFFFFF,stroke:#6BCB77,stroke-width:2px,color:#2D3436
+    style State fill:#FFFFFF,stroke:#FF6B6B,stroke-width:2px,color:#2D3436
+    style Foundation fill:#FFFFFF,stroke:#FFB703,stroke-width:2px,color:#2D3436
+
+    classDef screens fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
+    classDef components fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
+    classDef domain fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
+    classDef state fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
+    classDef foundation fill:#FFF1C2,stroke:#FFB703,stroke-width:1.5px,color:#2D3436
+
+    class OnboardingScreens,AuthScreens,AppScreens screens
+    class UI,Feedback,Palace,Station,ReviewComponents,Gamification,ProgressComponents,Guide components
+    class AuthService,UserProfile,PalaceService,StationService,ReviewService,XPService,AchievementService,StatsService,StorageService domain
+    class UserStore,PalaceStore,ConfettiStore,LevelUpStore,ToastStore state
+    class Theme,Validation,Types foundation
 ```
 
 ### Authentication Flow
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 sequenceDiagram
     participant App
     participant RootNavigator
@@ -691,6 +735,7 @@ sequenceDiagram
 ### Review State Machine
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 stateDiagram-v2
     [*] --> INTRO
     INTRO --> WALKING: Start Journey
@@ -711,11 +756,20 @@ stateDiagram-v2
       Correct: celebration
       Incorrect: encouraging reveal
     end note
+
+    classDef reviewState fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
+    classDef feedbackState fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
+    classDef completeState fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
+
+    class INTRO,WALKING,QUESTION reviewState
+    class REVEAL feedbackState
+    class COMPLETE completeState
 ```
 
 ### Database / Entity Relationship Diagram
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 erDiagram
     USER_PROFILE ||--o{ PALACE : owns
     USER_PROFILE ||--o{ XP_EVENT : records
@@ -819,6 +873,7 @@ erDiagram
 ### Deployment / Runtime Architecture
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","mainBkg":"#FFFFFF","primaryColor":"#FFF7DF","primaryTextColor":"#2D3436","primaryBorderColor":"#FFD93D","lineColor":"#4D96FF","secondaryColor":"#DDEBFF","tertiaryColor":"#DDF8E1","fontFamily":"Nunito, Arial, sans-serif","clusterBkg":"#FFFFFF","clusterBorder":"#E9DFC7","edgeLabelBackground":"#FFFFFF","actorBkg":"#FFF7DF","actorBorder":"#FFD93D","actorTextColor":"#2D3436","activationBkg":"#DDEBFF","activationBorderColor":"#4D96FF","sequenceNumberColor":"#2D3436","noteBkgColor":"#FFF7DF","noteTextColor":"#2D3436","stateBkg":"#FFF7DF","stateBorder":"#FFD93D","stateLabelColor":"#2D3436","labelBoxBkgColor":"#FFFFFF","labelBoxBorderColor":"#E9DFC7","entityBkg":"#FFF7DF","entityBorder":"#FFD93D","relationLabelBackground":"#FFFFFF"}}}%%
 flowchart LR
     Dev[Developer Machine] --> NPM[npm install / npm ci]
     NPM --> ExpoDev[Expo Dev Server]
@@ -837,6 +892,16 @@ flowchart LR
     Actions --> RulesTests[Firebase Emulator Tests]
     Actions --> Audit[Runtime Audit]
     Actions --> VisualAudit[Visual Audit]
+
+    classDef local fill:#FFF7DF,stroke:#FFD93D,stroke-width:1.5px,color:#2D3436
+    classDef firebase fill:#DDEBFF,stroke:#4D96FF,stroke-width:1.5px,color:#2D3436
+    classDef build fill:#DDF8E1,stroke:#6BCB77,stroke-width:1.5px,color:#2D3436
+    classDef ci fill:#FFE0E0,stroke:#FF6B6B,stroke-width:1.5px,color:#2D3436
+
+    class Dev,NPM,ExpoDev,Device local
+    class FirebaseDeploy,FirestoreRules,StorageRules firebase
+    class EAS,Android,iOS build
+    class GitHub,Actions,Typecheck,RulesTests,Audit,VisualAudit ci
 ```
 
 ---
