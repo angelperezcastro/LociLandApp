@@ -1,5 +1,5 @@
 import React, { useEffect, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,7 +9,14 @@ import Animated, {
 
 import { Screen } from '../layout';
 import { Button, Body, Caption, H1 } from '../ui';
-import { colors, radius, spacing } from '../../theme';
+import {
+  colors,
+  fontFamilies,
+  fontSizes,
+  radius,
+  shadows,
+  spacing,
+} from '../../theme';
 
 type OnboardingLayoutProps = {
   title: string;
@@ -74,7 +81,14 @@ export function OnboardingLayout({
       duration: 550,
       easing: Easing.out(Easing.cubic),
     });
-  }, [contentOpacity, contentTranslateY, footerOpacity, footerTranslateY, heroOpacity, heroTranslateY]);
+  }, [
+    contentOpacity,
+    contentTranslateY,
+    footerOpacity,
+    footerTranslateY,
+    heroOpacity,
+    heroTranslateY,
+  ]);
 
   const heroAnimatedStyle = useAnimatedStyle(() => ({
     opacity: heroOpacity.value,
@@ -101,6 +115,7 @@ export function OnboardingLayout({
       <View style={styles.topSection}>
         <View style={styles.headerRow}>
           <View />
+
           {showSkip && onSkip ? (
             <Pressable onPress={onSkip} hitSlop={10} style={styles.skipButton}>
               <Caption style={styles.skipText}>Skip</Caption>
@@ -111,7 +126,9 @@ export function OnboardingLayout({
         </View>
 
         {illustration ? (
-          <Animated.View style={[styles.illustrationContainer, heroAnimatedStyle]}>
+          <Animated.View
+            style={[styles.illustrationContainer, heroAnimatedStyle]}
+          >
             {illustration}
           </Animated.View>
         ) : null}
@@ -120,16 +137,40 @@ export function OnboardingLayout({
           <H1 style={styles.title}>{title}</H1>
           <Body style={styles.description}>{description}</Body>
 
-          {children ? <View style={styles.childrenContainer}>{children}</View> : null}
+          {children ? (
+            <View style={styles.childrenContainer}>{children}</View>
+          ) : null}
         </Animated.View>
       </View>
 
       <Animated.View style={[styles.footer, footerAnimatedStyle]}>
         <Button
-          title={primaryActionLabel}
+          variant="secondary"
+          size="lg"
+          fullWidth
           onPress={onPrimaryAction}
           disabled={primaryActionDisabled}
-        />
+          style={[
+            styles.primaryActionButton,
+            primaryActionDisabled && styles.primaryActionButtonDisabled,
+          ]}
+        >
+          <View
+            style={[
+              styles.primaryActionLabelSquircle,
+              primaryActionDisabled && styles.primaryActionLabelSquircleDisabled,
+            ]}
+          >
+            <Text
+              style={[
+                styles.primaryActionButtonText,
+                primaryActionDisabled && styles.primaryActionButtonTextDisabled,
+              ]}
+            >
+              {primaryActionLabel}
+            </Text>
+          </View>
+        </Button>
 
         {secondaryActionLabel && onSecondaryAction ? (
           <View style={styles.secondaryButtonWrapper}>
@@ -137,6 +178,7 @@ export function OnboardingLayout({
               title={secondaryActionLabel}
               variant="ghost"
               onPress={onSecondaryAction}
+              textStyle={styles.secondaryActionButtonText}
             />
           </View>
         ) : null}
@@ -192,7 +234,52 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingTop: spacing.md,
   },
+  primaryActionButton: {
+    minHeight: 64,
+    borderRadius: radius.xl,
+    borderWidth: 3,
+    borderColor: colors.text,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadows.card,
+  },
+  primaryActionButtonDisabled: {
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.disabled,
+    opacity: 0.72,
+  },
+  primaryActionLabelSquircle: {
+    minHeight: 42,
+    minWidth: 142,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.text,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  primaryActionLabelSquircleDisabled: {
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceMuted,
+  },
+  primaryActionButtonText: {
+    color: colors.text,
+    fontFamily: fontFamilies.bodyBold,
+    fontSize: fontSizes.lg,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  primaryActionButtonTextDisabled: {
+    color: colors.muted,
+  },
   secondaryButtonWrapper: {
     marginTop: spacing.md,
+  },
+  secondaryActionButtonText: {
+    color: colors.accent,
+    fontFamily: fontFamilies.bodyBold,
   },
 });
