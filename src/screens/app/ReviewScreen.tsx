@@ -1210,7 +1210,6 @@ const QuestionState = ({
   isYoungerReview,
   isOlderReview,
   textColor,
-  overlayColor,
   buttonFillColor,
   buttonTextColor,
   answerBorderColor,
@@ -1225,7 +1224,6 @@ const QuestionState = ({
   isYoungerReview: boolean;
   isOlderReview: boolean;
   textColor: string;
-  overlayColor: string;
   buttonFillColor: string;
   buttonTextColor: string;
   answerBorderColor: string;
@@ -1245,7 +1243,11 @@ const QuestionState = ({
 
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
-      <View style={styles.questionHeader}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.questionScrollContent}
+      >
+        <View style={styles.questionHeader}>
         <Text
           style={[
             styles.questionTitle,
@@ -1269,10 +1271,10 @@ const QuestionState = ({
         </Text>
       </View>
 
-      <View style={[styles.questionCard, { backgroundColor: overlayColor }]}> 
+      <View style={styles.questionCard}>
         <StationIconTile emoji={station.emoji} size="medium" />
 
-        <Text style={[styles.questionStationName, { color: textColor }]}> 
+        <Text style={[styles.questionStationName, { color: textColor }]}>
           {station.name}
         </Text>
 
@@ -1361,6 +1363,7 @@ const QuestionState = ({
       >
         <Text style={styles.giveUpButtonText}>{QUESTION_COPY.giveUp}</Text>
       </Pressable>
+      </ScrollView>
     </Animated.View>
   );
 };
@@ -2141,7 +2144,6 @@ export const ReviewScreen = () => {
           isYoungerReview={isYoungerReview}
           isOlderReview={isOlderReview}
           textColor={textColor}
-          overlayColor={overlayColor}
           buttonFillColor={buttonFillColor}
           buttonTextColor={buttonTextColor}
           answerBorderColor={answerBorderColor}
@@ -2634,9 +2636,14 @@ const styles = StyleSheet.create({
     lineHeight: scaleYoungerFont(30),
   },
 
+  questionScrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.lg,
+  },
+
   questionHeader: {
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
     gap: spacing.sm,
   },
 
@@ -2667,12 +2674,8 @@ const styles = StyleSheet.create({
   },
 
   questionCard: {
-    marginTop: spacing.xl,
-    borderRadius: radiusTokens.xs,
-    padding: spacing.lg,
+    marginTop: spacing.lg,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: REVIEW_COLORS.subtleStroke,
   },
 
   questionStationName: {
@@ -2711,15 +2714,15 @@ const styles = StyleSheet.create({
   optionsGrid: {
     width: '100%',
     marginTop: spacing.xs,
-    gap: spacing.md,
+    gap: spacing.sm,
     alignItems: 'center',
   },
 
   optionButton: {
-    width: '84%',
-    minHeight: MIN_TOUCH_TARGET_YOUNGER,
+    width: '80%',
+    minHeight: 54,
     borderRadius: radiusTokens.xl,
-    borderWidth: 4,
+    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -2732,8 +2735,8 @@ const styles = StyleSheet.create({
   },
 
   youngerOptionButton: {
-    minHeight: 64,
-    paddingVertical: spacing.lg,
+    minHeight: MIN_TOUCH_TARGET_YOUNGER,
+    paddingVertical: spacing.md,
   },
 
   optionButtonPressed: {
@@ -2780,7 +2783,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     minHeight: MIN_TOUCH_TARGET_YOUNGER,
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radiusTokens.pill,
