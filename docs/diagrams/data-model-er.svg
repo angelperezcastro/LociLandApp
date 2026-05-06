@@ -1,119 +1,97 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980" role="img" aria-label="Data Model / Entity Relationship">
-<rect width="1500" height="980" fill="#FFFFFF"/>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="930" viewBox="0 0 1700 930" role="img" aria-label="Data Model">
 <defs>
-  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#2D3436" flood-opacity="0.10"/>
-  </filter>
   <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
     <path d="M2,2 L10,6 L2,10 Z" fill="#4D96FF" />
   </marker>
-  <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M2,2 L10,6 L2,10 Z" fill="#6BCB77" />
-  </marker>
-  <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-    <path d="M2,2 L10,6 L2,10 Z" fill="#FF6B6B" />
-  </marker>
+  <style>
+    .title { font: 700 26px Arial, Helvetica, sans-serif; fill: #2D3436; }
+    .panel-title { font: 700 18px Arial, Helvetica, sans-serif; fill: #2D3436; }
+    .box-text { font: 600 15px Arial, Helvetica, sans-serif; fill: #2D3436; }
+    .small-text { font: 600 13px Arial, Helvetica, sans-serif; fill: #586267; }
+    .edge-label { font: 600 12px Arial, Helvetica, sans-serif; fill: #586267; }
+    .arrow { fill: none; stroke: #4D96FF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+    .arrow-soft { fill: none; stroke: #4D96FF; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); stroke-dasharray: 8 6; }
+    .relation { fill: none; stroke: #4D96FF; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
 </defs>
-
-
-<style>
-  .title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 30px; font-weight: 800; fill: #2D3436; }
-  .subtitle { font-family: Inter, Nunito, Arial, sans-serif; font-size: 16px; font-weight: 600; fill: #586267; }
-  .group-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 18px; font-weight: 800; fill: #2D3436; }
-  .box-title { font-family: Inter, Nunito, Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #2D3436; }
-  .box-text { font-family: Inter, Nunito, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #586267; }
-  .small { font-family: Inter, Nunito, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #586267; }
-  .tiny { font-family: Inter, Nunito, Arial, sans-serif; font-size: 10px; font-weight: 600; fill: #586267; }
-  .arrow { stroke: #4D96FF; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
-  .arrow-green { stroke: #6BCB77; stroke-width: 2.4; fill: none; marker-end: url(#arrowGreen); }
-  .arrow-red { stroke: #FF6B6B; stroke-width: 2.4; fill: none; marker-end: url(#arrowRed); }
-  .dash { stroke-dasharray: 7 5; }
-</style>
-
-<rect x="12" y="12" width="1476" height="956" rx="28" fill="#FFFFFF" stroke="#E9DFC7" stroke-width="2"/>
-<text x="42" y="58" class="title">Data Model / Entity Relationship</text>
-<text x="42" y="85" class="subtitle">Firestore data is scoped under each authenticated user</text>
-<rect x="60" y="140" width="250" height="178" rx="16" fill="#FFFFFF" stroke="#FFD93D" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="60" y="140" width="250" height="44" rx="16" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
-<text x="185.0" y="168" text-anchor="middle" class="box-title">USER_PROFILE</text>
-<text x="76" y="212" class="small">uid PK</text>
-<text x="76" y="238" class="small">displayName / email</text>
-<text x="76" y="264" class="small">avatarEmoji / ageGroup</text>
-<text x="76" y="290" class="small">xp / level / levelTitle</text>
-<text x="76" y="316" class="small">streak / bestStreak</text>
-<rect x="420" y="150" width="230" height="178" rx="16" fill="#FFFFFF" stroke="#4D96FF" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="420" y="150" width="230" height="44" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="535.0" y="178" text-anchor="middle" class="box-title">PALACE</text>
-<text x="436" y="222" class="small">id PK</text>
-<text x="436" y="248" class="small">userId FK</text>
-<text x="436" y="274" class="small">name / templateId</text>
-<text x="436" y="300" class="small">stationCount</text>
-<text x="436" y="326" class="small">createdAt / updatedAt</text>
-<rect x="780" y="130" width="250" height="204" rx="16" fill="#FFFFFF" stroke="#6BCB77" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="780" y="130" width="250" height="44" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="905.0" y="158" text-anchor="middle" class="box-title">STATION</text>
-<text x="796" y="202" class="small">id PK</text>
-<text x="796" y="228" class="small">palaceId FK</text>
-<text x="796" y="254" class="small">userId FK</text>
-<text x="796" y="280" class="small">order / emoji / label</text>
-<text x="796" y="306" class="small">memoryText</text>
-<text x="796" y="332" class="small">imageUri</text>
-<rect x="420" y="520" width="270" height="230" rx="16" fill="#FFFFFF" stroke="#FFB703" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="420" y="520" width="270" height="44" rx="16" fill="#FFF1C2" stroke="#FFB703" stroke-width="2.5"/>
-<text x="555.0" y="548" text-anchor="middle" class="box-title">REVIEW_SESSION</text>
-<text x="436" y="592" class="small">id PK</text>
-<text x="436" y="618" class="small">palaceId FK / userId FK</text>
-<text x="436" y="644" class="small">startedAt / completedAt</text>
-<text x="436" y="670" class="small">totalStations</text>
-<text x="436" y="696" class="small">correct / incorrect</text>
-<text x="436" y="722" class="small">xpEarned / isPerfect</text>
-<text x="436" y="748" class="small">status</text>
-<rect x="780" y="555" width="250" height="152" rx="16" fill="#FFFFFF" stroke="#7F5AD8" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="780" y="555" width="250" height="44" rx="16" fill="#F1E8FF" stroke="#7F5AD8" stroke-width="2.5"/>
-<text x="905.0" y="583" text-anchor="middle" class="box-title">REVIEW_ANSWER</text>
-<text x="796" y="627" class="small">stationId PK</text>
-<text x="796" y="653" class="small">sessionId FK</text>
-<text x="796" y="679" class="small">correct</text>
-<text x="796" y="705" class="small">answeredAt</text>
-<rect x="1150" y="140" width="260" height="178" rx="16" fill="#FFFFFF" stroke="#FF6B6B" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="1150" y="140" width="260" height="44" rx="16" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2.5"/>
-<text x="1280.0" y="168" text-anchor="middle" class="box-title">XP_EVENT</text>
-<text x="1166" y="212" class="small">eventId PK</text>
-<text x="1166" y="238" class="small">reason / amount</text>
-<text x="1166" y="264" class="small">previousXP / newXP</text>
-<text x="1166" y="290" class="small">previousLevel / newLevel</text>
-<text x="1166" y="316" class="small">metadata</text>
-<rect x="1150" y="430" width="260" height="178" rx="16" fill="#FFFFFF" stroke="#6BCB77" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="1150" y="430" width="260" height="44" rx="16" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
-<text x="1280.0" y="458" text-anchor="middle" class="box-title">ACHIEVEMENT</text>
-<text x="1166" y="502" class="small">achievementId PK</text>
-<text x="1166" y="528" class="small">title / description</text>
-<text x="1166" y="554" class="small">emoji / xpReward</text>
-<text x="1166" y="580" class="small">earnedAt</text>
-<text x="1166" y="606" class="small">triggerType</text>
-<rect x="1150" y="700" width="260" height="204" rx="16" fill="#FFFFFF" stroke="#4D96FF" stroke-width="2.5" filter="url(#shadow)"/>
-<rect x="1150" y="700" width="260" height="44" rx="16" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
-<text x="1280.0" y="728" text-anchor="middle" class="box-title">STATS_SUMMARY</text>
-<text x="1166" y="772" class="small">totalPalaces</text>
-<text x="1166" y="798" class="small">totalStations</text>
-<text x="1166" y="824" class="small">reviews / perfectReviews</text>
-<text x="1166" y="850" class="small">correct / incorrect</text>
-<text x="1166" y="876" class="small">usedTemplateIds</text>
-<text x="1166" y="902" class="small">fastestReviewSeconds</text>
-<path d="M310,229.0 C365.0,229.0 365.0,239.0 420,239.0" class="arrow"/>
-<text x="365.0" y="226.0" text-anchor="middle" class="tiny">owns</text>
-<path d="M650,239.0 C715.0,239.0 715.0,232.0 780,232.0" class="arrow-green"/>
-<text x="715.0" y="227.5" text-anchor="middle" class="tiny">contains</text>
-<path d="M650,239.0 C535.0,239.0 535.0,635.0 420,635.0" class="arrow"/>
-<text x="535.0" y="429.0" text-anchor="middle" class="tiny">has</text>
-<path d="M690,635.0 C735.0,635.0 735.0,631.0 780,631.0" class="arrow-green"/>
-<text x="735.0" y="625.0" text-anchor="middle" class="tiny">records</text>
-<path d="M310,229.0 C730.0,229.0 730.0,229.0 1150,229.0" class="arrow-red"/>
-<text x="730.0" y="221.0" text-anchor="middle" class="tiny">records</text>
-<path d="M310,229.0 C730.0,229.0 730.0,519.0 1150,519.0" class="arrow-green"/>
-<text x="730.0" y="366.0" text-anchor="middle" class="tiny">unlocks</text>
-<path d="M310,229.0 C730.0,229.0 730.0,802.0 1150,802.0" class="arrow"/>
-<text x="730.0" y="507.5" text-anchor="middle" class="tiny">aggregates</text>
-<text x="60" y="925" class="small">Firestore shape: users/{uid}/palaces/{palaceId}/stations, reviewSessions, answers, xpEvents, achievements and stats/summary.</text>
+<rect x="0" y="0" width="1700" height="930" fill="#FFFFFF"/>
+<text x="32" y="42" class="title" text-anchor="start">Data Model</text>
+<rect x="60" y="390" width="270" height="115" rx="18" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
+<text x="195.0" y="416.5" class="box-text" text-anchor="middle">
+<tspan x="195.0" dy="0">USER_PROFILE</tspan>
+<tspan x="195.0" dy="18">uid PK</tspan>
+<tspan x="195.0" dy="18">displayName, email</tspan>
+<tspan x="195.0" dy="18">ageGroup, avatar</tspan>
+<tspan x="195.0" dy="18">xp, level, streak</tspan>
+</text>
+<rect x="445" y="185" width="260" height="110" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
+<text x="575.0" y="209.0" class="box-text" text-anchor="middle">
+<tspan x="575.0" dy="0">PALACE</tspan>
+<tspan x="575.0" dy="18">id PK</tspan>
+<tspan x="575.0" dy="18">userId FK</tspan>
+<tspan x="575.0" dy="18">name, templateId</tspan>
+<tspan x="575.0" dy="18">stationCount</tspan>
+</text>
+<rect x="445" y="610" width="260" height="120" rx="18" fill="#DDEBFF" stroke="#4D96FF" stroke-width="2.5"/>
+<text x="575.0" y="639.0" class="box-text" text-anchor="middle">
+<tspan x="575.0" dy="0">STATION</tspan>
+<tspan x="575.0" dy="18">id PK</tspan>
+<tspan x="575.0" dy="18">palaceId FK</tspan>
+<tspan x="575.0" dy="18">order, emoji, label</tspan>
+<tspan x="575.0" dy="18">memoryText, imageUri</tspan>
+</text>
+<rect x="830" y="185" width="280" height="115" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
+<text x="970.0" y="211.5" class="box-text" text-anchor="middle">
+<tspan x="970.0" dy="0">REVIEW_SESSION</tspan>
+<tspan x="970.0" dy="18">id PK</tspan>
+<tspan x="970.0" dy="18">palaceId FK</tspan>
+<tspan x="970.0" dy="18">status, counters</tspan>
+<tspan x="970.0" dy="18">xpEarned, isPerfect</tspan>
+</text>
+<rect x="830" y="610" width="280" height="110" rx="18" fill="#DDF8E1" stroke="#6BCB77" stroke-width="2.5"/>
+<text x="970.0" y="634.0" class="box-text" text-anchor="middle">
+<tspan x="970.0" dy="0">REVIEW_ANSWER</tspan>
+<tspan x="970.0" dy="18">stationId PK</tspan>
+<tspan x="970.0" dy="18">sessionId FK</tspan>
+<tspan x="970.0" dy="18">correct</tspan>
+<tspan x="970.0" dy="18">answeredAt</tspan>
+</text>
+<rect x="1225" y="125" width="280" height="110" rx="18" fill="#FFF1C2" stroke="#FFB703" stroke-width="2.5"/>
+<text x="1365.0" y="149.0" class="box-text" text-anchor="middle">
+<tspan x="1365.0" dy="0">XP_EVENT</tspan>
+<tspan x="1365.0" dy="18">eventId PK</tspan>
+<tspan x="1365.0" dy="18">reason, amount</tspan>
+<tspan x="1365.0" dy="18">previous/new XP</tspan>
+<tspan x="1365.0" dy="18">metadata</tspan>
+</text>
+<rect x="1225" y="350" width="280" height="110" rx="18" fill="#FFE0E0" stroke="#FF6B6B" stroke-width="2.5"/>
+<text x="1365.0" y="374.0" class="box-text" text-anchor="middle">
+<tspan x="1365.0" dy="0">ACHIEVEMENT</tspan>
+<tspan x="1365.0" dy="18">achievementId PK</tspan>
+<tspan x="1365.0" dy="18">title, emoji</tspan>
+<tspan x="1365.0" dy="18">xpReward</tspan>
+<tspan x="1365.0" dy="18">earnedAt</tspan>
+</text>
+<rect x="1225" y="575" width="280" height="120" rx="18" fill="#FFF7DF" stroke="#FFD93D" stroke-width="2.5"/>
+<text x="1365.0" y="604.0" class="box-text" text-anchor="middle">
+<tspan x="1365.0" dy="0">STATS_SUMMARY</tspan>
+<tspan x="1365.0" dy="18">totals</tspan>
+<tspan x="1365.0" dy="18">review dates</tspan>
+<tspan x="1365.0" dy="18">fastest review</tspan>
+<tspan x="1365.0" dy="18">aggregates</tspan>
+</text>
+<path class="arrow" d="M 330 448 L 385 448 L 385 240 L 445 240"/>
+<text x="385" y="330" class="edge-label" text-anchor="middle">owns many</text>
+<path class="arrow" d="M 575 295 L 575 610"/>
+<text x="610" y="455" class="edge-label" text-anchor="start">contains many</text>
+<path class="arrow" d="M 705 240 L 830 240"/>
+<text x="767" y="222" class="edge-label" text-anchor="middle">has reviews</text>
+<path class="arrow" d="M 970 300 L 970 610"/>
+<text x="1005" y="455" class="edge-label" text-anchor="start">records answers</text>
+<path class="arrow" d="M 330 448 L 1160 448 L 1160 180 L 1225 180"/>
+<text x="1160" y="292" class="edge-label" text-anchor="start">records XP</text>
+<path class="arrow" d="M 330 448 L 1185 448 L 1185 405 L 1225 405"/>
+<text x="760" y="432" class="edge-label" text-anchor="middle">unlocks achievements</text>
+<path class="arrow" d="M 330 448 L 1160 448 L 1160 635 L 1225 635"/>
+<text x="1160" y="548" class="edge-label" text-anchor="start">has summary</text>
 </svg>
