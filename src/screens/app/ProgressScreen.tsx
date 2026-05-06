@@ -13,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { AnimatedNumber } from '../../components/gamification/AnimatedNumber';
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback';
+import { MemoryConstellationCard } from '../../components/progress/MemoryConstellationCard';
+import { XpEnergyCard } from '../../components/progress/XpEnergyCard';
 import { useAgeGroup, type AgeGroupUi } from '../../hooks/useAgeGroup';
 import {
   getProgressStats,
@@ -220,10 +222,19 @@ export function ProgressScreen() {
           <YoungerProgressDashboard stats={stats} ageGroupUi={ageGroupUi} />
         ) : (
           <>
-            <TotalXpCard stats={stats} />
-            <LevelCard stats={stats} />
-            <WeeklyActivityCard days={stats.weeklyActivity} />
+            <XpEnergyCard
+              totalXP={stats.totalXP}
+              currentLevel={stats.currentLevel}
+              levelTitle={stats.levelTitle}
+              progressPercent={stats.progressPercent}
+              xpRemainingForNextLevel={stats.xpRemainingForNextLevel}
+              xpForNextLevel={stats.xpForNextLevel}
+            />
+
+            <MemoryConstellationCard days={stats.weeklyActivity} />
+
             <StatsGrid stats={stats} />
+
             <RecentAchievementsCard
               achievements={stats.recentAchievements}
               showXpReward
@@ -286,7 +297,7 @@ const YoungerProgressDashboard = ({
         </Text>
       </View>
 
-      <YoungerWeeklyActivityCard days={stats.weeklyActivity} ageGroupUi={ageGroupUi} />
+      <MemoryConstellationCard days={stats.weeklyActivity} younger />
 
       <View style={styles.sectionCard}>
         <Text
