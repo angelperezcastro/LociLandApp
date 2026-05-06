@@ -46,6 +46,7 @@ import { normalizeAgeGroup } from '../../utils/ageGroup';
 
 const EMPTY_STATIONS: Station[] = [];
 const MIN_REVIEW_STATIONS = 2;
+const MAX_REVIEW_STATIONS = 20;
 const LARGE_PALACE_WARNING_THRESHOLD = 20;
 
 type PalaceDetailRoute = {
@@ -177,8 +178,12 @@ function PalaceDetailScreen() {
     stations.length,
   );
 
+  const isOverReviewStationLimit = visibleStationCount > MAX_REVIEW_STATIONS;
+
   const canStartReview = Boolean(
-    palace && visibleStationCount >= MIN_REVIEW_STATIONS,
+    palace &&
+      visibleStationCount >= MIN_REVIEW_STATIONS &&
+      !isOverReviewStationLimit,
   );
 
   const shouldShowLargePalaceWarning =
@@ -193,6 +198,10 @@ function PalaceDetailScreen() {
   );
 
   const sectionHint = useMemo(() => {
+    if (hasStations && isOverReviewStationLimit) {
+      return 'Review mode supports up to 20 stations. Split this palace or keep it for browsing.';
+    }
+
     if (hasStations && visibleStationCount < MIN_REVIEW_STATIONS) {
       return 'Add one more station to start review mode';
     }
@@ -206,7 +215,7 @@ function PalaceDetailScreen() {
     }
 
     return 'Add stations to build your memory route';
-  }, [hasStations, visibleStationCount]);
+  }, [hasStations, isOverReviewStationLimit, visibleStationCount]);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -290,6 +299,7 @@ function PalaceDetailScreen() {
       try {
         setIsReordering(true);
         await reorderStations(palaceId, userId, orderedIds);
+        await loadStations(palaceId, userId);
       } catch (reorderError) {
         Alert.alert(
           'Stations not reordered',
@@ -302,7 +312,7 @@ function PalaceDetailScreen() {
         setIsReordering(false);
       }
     },
-    [isReordering, palaceId, reorderStations, userId],
+    [isReordering, loadStations, palaceId, reorderStations, userId],
   );
 
   const handleStartReview = () => {
@@ -314,6 +324,14 @@ function PalaceDetailScreen() {
       Alert.alert(
         'Review unavailable',
         'This palace could not be opened because its route is missing.',
+      );
+      return;
+    }
+
+    if (isOverReviewStationLimit) {
+      Alert.alert(
+        'Too many stations',
+        'Review mode supports up to 20 stations. Split this palace into smaller routes or delete a few stations before starting.',
       );
       return;
     }
@@ -421,6 +439,7 @@ function PalaceDetailScreen() {
 
         {hasStations ? (
           <MemoryPathMap
+            key={`memory-map-${stationListRenderKey}`}
             templateId={palace.templateId}
             stations={stations}
             title="Visual memory route"
@@ -571,12 +590,14 @@ function PalaceDetailScreen() {
           title={
             isStartingReview
               ? 'Starting...'
-              : canStartReview
-                ? 'Start Review'
-                : 'Need 2 stations'
+              : isOverReviewStationLimit
+                ? 'Max 20 stations'
+                : canStartReview
+                  ? 'Start Review'
+                  : 'Need 2 stations'
           }
           variant={canStartReview ? 'secondary' : 'outline'}
-          disabled={!canStartReview || isStartingReview}
+          disabled={isStartingReview || (!canStartReview && !isOverReviewStationLimit)}
           onPress={handleStartReview}
           style={styles.reviewButton}
           textStyle={styles.reviewButtonText}
@@ -586,6 +607,7 @@ function PalaceDetailScreen() {
       <DraggableFlatList
         key={stationListRenderKey}
         data={stations}
+        extraData={stations}
         keyExtractor={(item) => item.id}
         renderItem={renderStationItem}
         onDragEnd={handleDragEnd}

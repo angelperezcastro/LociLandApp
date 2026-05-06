@@ -463,8 +463,8 @@ export function MemoryPathMap({
         <View style={[styles.footerPill, { backgroundColor: world.nodeSoft }]}>
           <Text style={styles.footerText}>
             {hiddenStationCount > 0
-              ? `Showing ${MAX_VISIBLE_STATIONS} of ${orderedStations.length} stations`
-              : 'Tap a node to edit its station'}
+              ? `Showing first ${MAX_VISIBLE_STATIONS} of ${orderedStations.length} · numbers show route order`
+              : 'Numbers show route order · tap a node to edit'}
           </Text>
         </View>
       </View>
