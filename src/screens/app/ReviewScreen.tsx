@@ -177,8 +177,8 @@ const scaleYoungerFont = (value: number) => Math.round(value * YOUNGER_FONT_SCAL
 const REVIEW_DIMENSIONS = {
   introGuide: 210,
   introGuideCompact: 112,
-  walkingGuide: 104,
-  walkingGuideCompact: 76,
+  walkingGuide: 132,
+  walkingGuideCompact: 124,
 } as const;
 
 const REVIEW_FONT_SIZES = {
@@ -614,27 +614,41 @@ const ReviewPrimaryButton = ({
   backgroundColor,
   textColor,
   disabled = false,
+  compact = false,
   onPress,
 }: {
   label: string;
   backgroundColor: string;
   textColor: string;
   disabled?: boolean;
+  compact?: boolean;
   onPress: () => void;
 }) => {
   return (
-    <View style={styles.primaryButtonOuter}>
+    <View
+      style={[
+        styles.primaryButtonOuter,
+        compact && styles.primaryButtonOuterCompact,
+      ]}
+    >
       <Pressable
         disabled={disabled}
         onPress={onPress}
         style={({ pressed }) => [
           styles.primaryButton,
+          compact && styles.primaryButtonCompact,
           { backgroundColor },
           pressed && styles.primaryButtonPressed,
           disabled && styles.primaryButtonDisabled,
         ]}
       >
-        <Text style={[styles.primaryButtonText, { color: textColor }]}>
+        <Text
+          style={[
+            styles.primaryButtonText,
+            compact && styles.primaryButtonTextCompact,
+            { color: textColor },
+          ]}
+        >
           {label}
         </Text>
       </Pressable>
@@ -721,9 +735,11 @@ const getStationImageUrl = (station: ReviewScreenStation): string | null => {
 const StationPhotoCue = ({
   station,
   variant,
+  compact = false,
 }: {
   station: ReviewScreenStation;
   variant: 'walking' | 'reveal';
+  compact?: boolean;
 }) => {
   const imageUrl = getStationImageUrl(station);
 
@@ -738,6 +754,7 @@ const StationPhotoCue = ({
       entering={FadeIn.duration(260)}
       style={[
         styles.stationPhotoCue,
+        compact && styles.stationPhotoCueCompact,
         isReveal && styles.stationPhotoCueReveal,
       ]}
     >
@@ -747,12 +764,23 @@ const StationPhotoCue = ({
         resizeMode="cover"
         style={[
           styles.stationPhotoCueImage,
+          compact && styles.stationPhotoCueImageCompact,
           isReveal && styles.stationPhotoCueImageReveal,
         ]}
       />
 
-      <View style={styles.stationPhotoCueBadge}>
-        <Text style={styles.stationPhotoCueBadgeText}>
+      <View
+        style={[
+          styles.stationPhotoCueBadge,
+          compact && styles.stationPhotoCueBadgeCompact,
+        ]}
+      >
+        <Text
+          style={[
+            styles.stationPhotoCueBadgeText,
+            compact && styles.stationPhotoCueBadgeTextCompact,
+          ]}
+        >
           {isReveal ? 'Memory picture' : 'Visual clue'}
         </Text>
       </View>
@@ -1108,14 +1136,22 @@ const WalkingState = ({
 }) => {
   const { height } = useWindowDimensions();
   const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
+  const hasPhotoCue = Boolean(getStationImageUrl(station));
+  const shouldUseFittedLayout = isCompactHeight || hasPhotoCue;
 
   return (
-    <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
+    <Animated.View
+      entering={FadeIn.duration(350)}
+      style={[
+        styles.stateContainer,
+        shouldUseFittedLayout && styles.walkingStateContainerFitted,
+      ]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.walkingScrollContent,
-          isCompactHeight && styles.walkingScrollContentCompact,
+          shouldUseFittedLayout && styles.walkingScrollContentFitted,
         ]}
       >
         <ProgressBar
@@ -1128,7 +1164,7 @@ const WalkingState = ({
         <View
           style={[
             styles.walkingContent,
-            isCompactHeight && styles.walkingContentCompact,
+            shouldUseFittedLayout && styles.walkingContentFitted,
           ]}
         >
           <Animated.View
@@ -1137,17 +1173,22 @@ const WalkingState = ({
           >
             <StationIconTile
               emoji={station.emoji}
-              size={isCompactHeight ? 'medium' : 'large'}
+              size={shouldUseFittedLayout ? 'medium' : 'large'}
             />
           </Animated.View>
 
-          <StationPhotoCue station={station} variant="walking" />
+          <StationPhotoCue
+            station={station}
+            variant="walking"
+            compact={shouldUseFittedLayout}
+          />
 
           <Text
             style={[
               styles.stationName,
-              isCompactHeight && styles.stationNameCompact,
+              shouldUseFittedLayout && styles.stationNameCompact,
               isYoungerReview && styles.youngerStationName,
+              shouldUseFittedLayout && styles.stationNameFitted,
               { color: textColor },
             ]}
           >
@@ -1157,8 +1198,9 @@ const WalkingState = ({
           <Text
             style={[
               styles.walkingPrompt,
-              isCompactHeight && styles.walkingPromptCompact,
+              shouldUseFittedLayout && styles.walkingPromptCompact,
               isYoungerReview && styles.youngerWalkingPrompt,
+              shouldUseFittedLayout && styles.walkingPromptFitted,
               { color: textColor },
             ]}
           >
@@ -1169,33 +1211,46 @@ const WalkingState = ({
         <View
           style={[
             styles.walkingGuideSection,
-            isCompactHeight && styles.walkingGuideSectionCompact,
+            shouldUseFittedLayout && styles.walkingGuideSectionFitted,
           ]}
         >
           <GuideLottie
             size={
-              isCompactHeight
+              shouldUseFittedLayout
                 ? REVIEW_DIMENSIONS.walkingGuideCompact
                 : REVIEW_DIMENSIONS.walkingGuide
             }
             variant="pointing"
           />
 
-          <View style={styles.guideSpeechBubble}>
-            <Text style={styles.guideSpeechBubbleText}>Take your time.</Text>
+          <View
+            style={[
+              styles.guideSpeechBubble,
+              shouldUseFittedLayout && styles.guideSpeechBubbleFitted,
+            ]}
+          >
+            <Text
+              style={[
+                styles.guideSpeechBubbleText,
+                shouldUseFittedLayout && styles.guideSpeechBubbleTextFitted,
+              ]}
+            >
+              Take your time.
+            </Text>
           </View>
         </View>
 
         <View
           style={[
             styles.walkingButtonSection,
-            isCompactHeight && styles.walkingButtonSectionCompact,
+            shouldUseFittedLayout && styles.walkingButtonSectionFitted,
           ]}
         >
           <ReviewPrimaryButton
             label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
             backgroundColor={buttonFillColor}
             textColor={buttonTextColor}
+            compact={shouldUseFittedLayout}
             onPress={onRemember}
           />
         </View>
@@ -2198,6 +2253,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
 
+  walkingStateContainerFitted: {
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -2331,8 +2391,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
-  walkingGuideSectionCompact: {
-    marginTop: spacing.sm,
+  walkingGuideSectionFitted: {
+    marginTop: spacing.xs,
+    gap: spacing.md,
   },
 
   guideSpeechBubble: {
@@ -2350,11 +2411,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
+  guideSpeechBubbleFitted: {
+    marginTop: spacing.none,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+
   guideSpeechBubbleText: {
     fontSize: fontSizes.sm,
     fontWeight: '900',
     color: REVIEW_COLORS.textDark,
     textAlign: 'center',
+  },
+
+  guideSpeechBubbleTextFitted: {
+    fontSize: fontSizes.sm,
+    lineHeight: 20,
   },
 
   introButtonSection: {
@@ -2372,9 +2444,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
 
-  walkingButtonSectionCompact: {
-    marginTop: spacing.md,
-    paddingBottom: spacing.sm,
+  walkingButtonSectionFitted: {
+    marginTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
 
   primaryButtonOuter: {
@@ -2392,12 +2464,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  primaryButtonOuterCompact: {
+    width: '86%',
+    maxWidth: 340,
+    borderWidth: 2,
+  },
+
   primaryButton: {
     width: '100%',
     minHeight: 64,
     borderRadius: radiusTokens.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+
+  primaryButtonCompact: {
+    minHeight: 56,
     paddingHorizontal: spacing.lg,
   },
 
@@ -2408,6 +2491,10 @@ const styles = StyleSheet.create({
     textShadowColor: colors.shadow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+
+  primaryButtonTextCompact: {
+    fontSize: fontSizes.lg,
   },
 
   primaryButtonPressed: {
@@ -2473,8 +2560,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  walkingScrollContentCompact: {
-    justifyContent: 'space-between',
+  walkingScrollContentFitted: {
+    justifyContent: 'flex-start',
+    paddingBottom: spacing.sm,
   },
 
   walkingContent: {
@@ -2484,9 +2572,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
 
-  walkingContentCompact: {
+  walkingContentFitted: {
     marginTop: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
 
   // TILE EXTERIOR
@@ -2510,10 +2598,10 @@ const styles = StyleSheet.create({
   },
 
   stationIconTileMedium: {
-    width: 112,
-    height: 112,
+    width: 108,
+    height: 108,
     borderRadius: radiusTokens.xxl,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
 
   // SUPERFICIE INTERIOR
@@ -2531,8 +2619,8 @@ const styles = StyleSheet.create({
   },
 
   stationIconEmojiSurfaceMedium: {
-    width: 78,
-    height: 78,
+    width: 74,
+    height: 74,
     borderRadius: radiusTokens.lg,
   },
 
@@ -2555,7 +2643,7 @@ const styles = StyleSheet.create({
 
   stationPhotoCue: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 350,
     alignSelf: 'center',
     marginTop: spacing.md,
     borderRadius: radiusTokens.xl,
@@ -2570,6 +2658,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
+  stationPhotoCueCompact: {
+    maxWidth: 340,
+    marginTop: spacing.xs,
+    borderRadius: radiusTokens.lg,
+  },
+
   stationPhotoCueReveal: {
     marginTop: spacing.sm,
     maxWidth: 360,
@@ -2577,12 +2671,16 @@ const styles = StyleSheet.create({
 
   stationPhotoCueImage: {
     width: '100%',
-    height: 150,
+    height: 170,
     backgroundColor: REVIEW_COLORS.iconTileSurface,
   },
 
-  stationPhotoCueImageReveal: {
+  stationPhotoCueImageCompact: {
     height: 132,
+  },
+
+  stationPhotoCueImageReveal: {
+    height: 156,
   },
 
   stationPhotoCueBadge: {
@@ -2596,10 +2694,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
 
+  stationPhotoCueBadgeCompact: {
+    margin: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxs,
+  },
+
   stationPhotoCueBadgeText: {
     color: REVIEW_COLORS.textDark,
     fontSize: fontSizes.sm,
     fontWeight: '900',
+  },
+
+  stationPhotoCueBadgeTextCompact: {
+    fontSize: fontSizes.xs,
   },
 
   stationName: {
@@ -2619,6 +2727,11 @@ const styles = StyleSheet.create({
     lineHeight: scaleYoungerFont(40),
   },
 
+  stationNameFitted: {
+    fontSize: fontSizes.xxl,
+    lineHeight: 32,
+  },
+
   walkingPrompt: {
     fontSize: fontSizes.xl,
     lineHeight: 30,
@@ -2634,6 +2747,12 @@ const styles = StyleSheet.create({
   youngerWalkingPrompt: {
     fontSize: scaleYoungerFont(fontSizes.xl),
     lineHeight: scaleYoungerFont(30),
+  },
+
+  walkingPromptFitted: {
+    maxWidth: 310,
+    fontSize: fontSizes.xl,
+    lineHeight: 28,
   },
 
   questionScrollContent: {
