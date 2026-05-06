@@ -170,6 +170,7 @@ const SUMMARY_COUNTER_DURATION_MS = 900;
 const COMPACT_REVIEW_HEIGHT_THRESHOLD = 750;
 const YOUNGER_FONT_SCALE = 1.15;
 const MIN_TOUCH_TARGET_YOUNGER = 56;
+const MAX_REVIEW_ROUTE_PREVIEW_STATIONS = 8;
 
 const scaleYoungerFont = (value: number) => Math.round(value * YOUNGER_FONT_SCALE);
 
@@ -178,7 +179,7 @@ const REVIEW_DIMENSIONS = {
   introGuide: 210,
   introGuideCompact: 112,
   walkingGuide: 132,
-  walkingGuideCompact: 124,
+  walkingGuideCompact: 168,
 } as const;
 
 const REVIEW_FONT_SIZES = {
@@ -761,7 +762,7 @@ const StationPhotoCue = ({
       <Image
         accessibilityIgnoresInvertColors
         source={{ uri: imageUrl }}
-        resizeMode="cover"
+        resizeMode="contain"
         style={[
           styles.stationPhotoCueImage,
           compact && styles.stationPhotoCueImageCompact,
@@ -823,6 +824,81 @@ const ProgressBar = ({
     </View>
   );
 };
+
+
+const ReviewJourneyRail = ({
+  stations,
+  currentIndex,
+  textColor,
+  compact = false,
+}: {
+  stations: ReviewScreenStation[];
+  currentIndex: number;
+  textColor: string;
+  compact?: boolean;
+}) => {
+  const visibleStations = stations.slice(0, MAX_REVIEW_ROUTE_PREVIEW_STATIONS);
+  const hiddenStationCount = Math.max(0, stations.length - visibleStations.length);
+  const safeCurrentIndex = clamp(currentIndex, 0, Math.max(visibleStations.length - 1, 0));
+
+  if (visibleStations.length === 0) {
+    return null;
+  }
+
+  return (
+    <View
+      style={[
+        styles.reviewJourneyRail,
+        compact && styles.reviewJourneyRailCompact,
+      ]}
+    >
+      <View style={styles.reviewJourneyRailTrack}>
+        {visibleStations.map((station, index) => {
+          const isCurrent = index === safeCurrentIndex;
+          const isCompleted = index < safeCurrentIndex;
+
+          return (
+            <React.Fragment key={station.id}>
+              {index > 0 ? (
+                <View
+                  style={[
+                    styles.reviewJourneyConnector,
+                    isCompleted && styles.reviewJourneyConnectorCompleted,
+                  ]}
+                />
+              ) : null}
+
+              <View
+                style={[
+                  styles.reviewJourneyNode,
+                  isCompleted && styles.reviewJourneyNodeCompleted,
+                  isCurrent && styles.reviewJourneyNodeCurrent,
+                ]}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.reviewJourneyNodeText,
+                    isCurrent && styles.reviewJourneyNodeTextCurrent,
+                  ]}
+                >
+                  {isCompleted ? '✓' : station.emoji}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      <Text style={[styles.reviewJourneyRailLabel, { color: textColor }]}>
+        {hiddenStationCount > 0
+          ? `Showing first ${visibleStations.length} stops · ${hiddenStationCount} more in this walk`
+          : `Stop ${currentIndex + 1} of ${stations.length}`}
+      </Text>
+    </View>
+  );
+};
+
 
 const CountdownTimer = () => {
   const [remainingSeconds, setRemainingSeconds] = useState(30);
@@ -1068,6 +1144,13 @@ const IntroState = ({
           </View>
         </View>
 
+        <ReviewJourneyRail
+          stations={data.stations}
+          currentIndex={0}
+          textColor={textColor}
+          compact={isCompactHeight}
+        />
+
         <View
           style={[
             styles.introGuideSection,
@@ -1117,6 +1200,7 @@ const IntroState = ({
 
 const WalkingState = ({
   station,
+  stations,
   currentIndex,
   totalStations,
   textColor,
@@ -1126,6 +1210,7 @@ const WalkingState = ({
   onRemember,
 }: {
   station: ReviewScreenStation;
+  stations: ReviewScreenStation[];
   currentIndex: number;
   totalStations: number;
   textColor: string;
@@ -1134,10 +1219,7 @@ const WalkingState = ({
   isYoungerReview: boolean;
   onRemember: () => void;
 }) => {
-  const { height } = useWindowDimensions();
-  const isCompactHeight = height < COMPACT_REVIEW_HEIGHT_THRESHOLD;
-  const hasPhotoCue = Boolean(getStationImageUrl(station));
-  const shouldUseFittedLayout = isCompactHeight || hasPhotoCue;
+  const shouldUseFittedLayout = true;
 
   return (
     <Animated.View
@@ -1161,9 +1243,17 @@ const WalkingState = ({
           isYoungerReview={isYoungerReview}
         />
 
+        <ReviewJourneyRail
+          stations={stations}
+          currentIndex={currentIndex}
+          textColor={textColor}
+          compact={shouldUseFittedLayout}
+        />
+
         <View
           style={[
             styles.walkingContent,
+            styles.walkingStationPanel,
             shouldUseFittedLayout && styles.walkingContentFitted,
           ]}
         >
@@ -1210,6 +1300,21 @@ const WalkingState = ({
 
         <View
           style={[
+            styles.walkingButtonSection,
+            shouldUseFittedLayout && styles.walkingButtonSectionFitted,
+          ]}
+        >
+          <ReviewPrimaryButton
+            label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
+            backgroundColor={buttonFillColor}
+            textColor={buttonTextColor}
+            compact={shouldUseFittedLayout}
+            onPress={onRemember}
+          />
+        </View>
+
+        <View
+          style={[
             styles.walkingGuideSection,
             shouldUseFittedLayout && styles.walkingGuideSectionFitted,
           ]}
@@ -1238,21 +1343,6 @@ const WalkingState = ({
               Take your time.
             </Text>
           </View>
-        </View>
-
-        <View
-          style={[
-            styles.walkingButtonSection,
-            shouldUseFittedLayout && styles.walkingButtonSectionFitted,
-          ]}
-        >
-          <ReviewPrimaryButton
-            label={isYoungerReview ? 'I remember! ⭐' : WALKING_COPY.rememberButton}
-            backgroundColor={buttonFillColor}
-            textColor={buttonTextColor}
-            compact={shouldUseFittedLayout}
-            onPress={onRemember}
-          />
         </View>
       </ScrollView>
     </Animated.View>
@@ -1295,6 +1385,10 @@ const QuestionState = ({
   }, [station, stations]);
 
   const canSubmitFreeText = freeTextAnswer.trim().length > 0 && !isSubmittingAnswer;
+  const currentStationIndex = Math.max(
+    0,
+    stations.findIndex((item) => item.id === station.id),
+  );
 
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.stateContainer}>
@@ -1325,6 +1419,13 @@ const QuestionState = ({
             : QUESTION_COPY.subtitle10to14}
         </Text>
       </View>
+
+      <ReviewJourneyRail
+        stations={stations}
+        currentIndex={currentStationIndex}
+        textColor={textColor}
+        compact
+      />
 
       <View style={styles.questionCard}>
         <StationIconTile emoji={station.emoji} size="medium" />
@@ -2182,6 +2283,7 @@ export const ReviewScreen = () => {
       {screenState === 'WALKING' && currentStation && (
         <WalkingState
           station={currentStation}
+          stations={data.stations}
           currentIndex={currentStationIndex}
           totalStations={data.stations.length}
           textColor={textColor}
@@ -2392,7 +2494,7 @@ const styles = StyleSheet.create({
   },
 
   walkingGuideSectionFitted: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xl,
     gap: spacing.md,
   },
 
@@ -2412,7 +2514,7 @@ const styles = StyleSheet.create({
   },
 
   guideSpeechBubbleFitted: {
-    marginTop: spacing.none,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
@@ -2445,7 +2547,7 @@ const styles = StyleSheet.create({
   },
 
   walkingButtonSectionFitted: {
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
     paddingBottom: spacing.xs,
   },
 
@@ -2556,6 +2658,86 @@ const styles = StyleSheet.create({
     borderRadius: radiusTokens.pill,
   },
 
+  reviewJourneyRail: {
+    width: '100%',
+    borderRadius: radiusTokens.xl,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.strongStroke,
+    backgroundColor: REVIEW_COLORS.overlayLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  reviewJourneyRailCompact: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+
+  reviewJourneyRailTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  reviewJourneyConnector: {
+    width: spacing.md,
+    height: spacing.xs,
+    borderRadius: radiusTokens.pill,
+    backgroundColor: REVIEW_COLORS.subtleStroke,
+  },
+
+  reviewJourneyConnectorCompleted: {
+    backgroundColor: REVIEW_COLORS.success,
+  },
+
+  reviewJourneyNode: {
+    width: spacing.xl,
+    height: spacing.xl,
+    borderRadius: radiusTokens.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.subtleStroke,
+    backgroundColor: REVIEW_COLORS.overlayStrong,
+  },
+
+  reviewJourneyNodeCompleted: {
+    borderColor: REVIEW_COLORS.success,
+    backgroundColor: REVIEW_COLORS.greenSoft,
+  },
+
+  reviewJourneyNodeCurrent: {
+    borderColor: REVIEW_COLORS.textDark,
+    backgroundColor: REVIEW_COLORS.white,
+    transform: [{ scale: 1.08 }],
+  },
+
+  reviewJourneyNodeText: {
+    fontSize: fontSizes.sm,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+
+  reviewJourneyNodeTextCurrent: {
+    fontWeight: '900',
+  },
+
+  reviewJourneyRailLabel: {
+    marginTop: spacing.xs,
+    fontSize: fontSizes.xs,
+    lineHeight: 16,
+    fontWeight: '900',
+    textAlign: 'center',
+    opacity: 0.78,
+  },
+
   walkingScrollContent: {
     flexGrow: 1,
   },
@@ -2572,9 +2754,25 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
 
+  walkingStationPanel: {
+    width: '100%',
+    borderRadius: radiusTokens.xxl,
+    borderWidth: 2,
+    borderColor: REVIEW_COLORS.strongStroke,
+    backgroundColor: REVIEW_COLORS.overlayLight,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+
   walkingContentFitted: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     gap: spacing.xs,
+    paddingVertical: spacing.md,
   },
 
   // TILE EXTERIOR
@@ -2762,7 +2960,7 @@ const styles = StyleSheet.create({
 
   questionHeader: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     gap: spacing.sm,
   },
 
