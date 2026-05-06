@@ -112,6 +112,7 @@ export const AddStationScreen = () => {
 
   const createStation = usePalaceStore((state) => state.createStation);
   const updateStation = usePalaceStore((state) => state.updateStation);
+  const deleteStation = usePalaceStore((state) => state.deleteStation);
   const loadStations = usePalaceStore((state) => state.loadStations);
 
   const existingStations = usePalaceStore((state) => {
@@ -138,9 +139,16 @@ export const AddStationScreen = () => {
   );
   const [hasHydratedEditForm, setHasHydratedEditForm] =
     useState<boolean>(false);
+
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const isSavingRef = useRef(false);
+
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const isDeletingRef = useRef(false);
+
   const [saveStatus, setSaveStatus] = useState<string>('');
+
+  const isFormBusy = isSaving || isDeleting;
 
   useEffect(() => {
     if (!isEditMode || !palaceId || !userId || stationToEdit) {
@@ -172,15 +180,17 @@ export const AddStationScreen = () => {
   }, [hasHydratedEditForm, stationToEdit]);
 
   const isSaveDisabled = useMemo(
-    () => !selectedEmoji || !label.trim() || isSaving,
-    [isSaving, label, selectedEmoji],
+    () => !selectedEmoji || !label.trim() || isFormBusy,
+    [isFormBusy, label, selectedEmoji],
   );
 
   const handleClose = () => {
-    if (isSaving) {
+    if (isFormBusy) {
       Alert.alert(
-        'Saving in progress',
-        'Please wait until the station finishes saving.',
+        isDeleting ? 'Deleting in progress' : 'Saving in progress',
+        isDeleting
+          ? 'Please wait until the station finishes deleting.'
+          : 'Please wait until the station finishes saving.',
       );
       return;
     }
@@ -189,7 +199,7 @@ export const AddStationScreen = () => {
   };
 
   const handlePickImage = async () => {
-    if (isSavingRef.current) {
+    if (isSavingRef.current || isDeletingRef.current) {
       return;
     }
 
@@ -249,7 +259,7 @@ export const AddStationScreen = () => {
   };
 
   const handleRemoveImage = () => {
-    if (isSavingRef.current) {
+    if (isSavingRef.current || isDeletingRef.current) {
       return;
     }
 
@@ -288,7 +298,7 @@ export const AddStationScreen = () => {
   };
 
   const handleSaveStation = async () => {
-    if (isSavingRef.current) {
+    if (isSavingRef.current || isDeletingRef.current) {
       return;
     }
 
@@ -376,6 +386,70 @@ export const AddStationScreen = () => {
     }
   };
 
+  const handleDeleteStation = () => {
+    if (!isEditMode || !stationId) {
+      return;
+    }
+
+    if (isSavingRef.current || isDeletingRef.current) {
+      return;
+    }
+
+    if (!palaceId) {
+      Alert.alert(
+        'Missing palace',
+        'This station needs to belong to a palace. Go back and try again.',
+      );
+      return;
+    }
+
+    if (!userId) {
+      Alert.alert(
+        'Session problem',
+        'Your user session could not be found. Please log out and log in again.',
+      );
+      return;
+    }
+
+    const stationName =
+      stationToEdit?.label?.trim() || label.trim() || 'this station';
+
+    Alert.alert(
+      'Delete station?',
+      `This will permanently delete "${stationName}", remove its photo, and update your palace stats.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (isSavingRef.current || isDeletingRef.current) {
+              return;
+            }
+
+            try {
+              isDeletingRef.current = true;
+              setIsDeleting(true);
+              setSaveStatus('Deleting station...');
+
+              await deleteStation(stationId, palaceId, userId);
+              await refreshStationsAndGoBack();
+            } catch (error) {
+              Alert.alert('Station not deleted', getErrorMessage(error));
+            } finally {
+              isDeletingRef.current = false;
+              setIsDeleting(false);
+              setSaveStatus('');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -435,11 +509,12 @@ export const AddStationScreen = () => {
                       <Pressable
                         key={`${category.title}-${emoji}`}
                         accessibilityRole="button"
-                        disabled={isSaving}
+                        disabled={isFormBusy}
                         onPress={() => setSelectedEmoji(emoji)}
                         style={[
                           styles.emojiButton,
                           isSelected && styles.emojiButtonSelected,
+                          isFormBusy && styles.formControlDisabled,
                         ]}
                       >
                         <Text style={styles.emojiText}>{emoji}</Text>
@@ -459,12 +534,12 @@ export const AddStationScreen = () => {
 
             <TextInput
               value={label}
-              editable={!isSaving}
+              editable={!isFormBusy}
               onChangeText={setLabel}
               placeholder="Front door"
               placeholderTextColor={colors.muted}
               maxLength={VALIDATION_LIMITS.station.labelMaxLength}
-              style={styles.input}
+              style={[styles.input, isFormBusy && styles.formControlDisabled]}
             />
           </View>
 
@@ -476,14 +551,18 @@ export const AddStationScreen = () => {
 
             <TextInput
               value={memoryText}
-              editable={!isSaving}
+              editable={!isFormBusy}
               onChangeText={setMemoryText}
               placeholder="Example: The first planet is Mercury."
               placeholderTextColor={colors.muted}
               multiline
               textAlignVertical="top"
               maxLength={VALIDATION_LIMITS.station.memoryTextMaxLength}
-              style={[styles.input, styles.textArea]}
+              style={[
+                styles.input,
+                styles.textArea,
+                isFormBusy && styles.formControlDisabled,
+              ]}
             />
           </View>
 
@@ -503,11 +582,11 @@ export const AddStationScreen = () => {
                 <View style={styles.imageActions}>
                   <Pressable
                     accessibilityRole="button"
-                    disabled={isSaving}
+                    disabled={isFormBusy}
                     onPress={handlePickImage}
                     style={[
                       styles.secondaryImageButton,
-                      isSaving && styles.imageButtonDisabled,
+                      isFormBusy && styles.imageButtonDisabled,
                     ]}
                   >
                     <Text style={styles.secondaryImageText}>Replace photo</Text>
@@ -515,11 +594,11 @@ export const AddStationScreen = () => {
 
                   <Pressable
                     accessibilityRole="button"
-                    disabled={isSaving}
+                    disabled={isFormBusy}
                     onPress={handleRemoveImage}
                     style={[
                       styles.removeImageButton,
-                      isSaving && styles.imageButtonDisabled,
+                      isFormBusy && styles.imageButtonDisabled,
                     ]}
                   >
                     <Text style={styles.removeImageText}>Remove</Text>
@@ -529,11 +608,11 @@ export const AddStationScreen = () => {
             ) : (
               <Pressable
                 accessibilityRole="button"
-                disabled={isSaving}
+                disabled={isFormBusy}
                 onPress={handlePickImage}
                 style={[
                   styles.photoButton,
-                  isSaving && styles.imageButtonDisabled,
+                  isFormBusy && styles.imageButtonDisabled,
                 ]}
               >
                 <Text style={styles.photoButtonEmoji}>📷</Text>
@@ -564,6 +643,31 @@ export const AddStationScreen = () => {
               </Text>
             )}
           </Pressable>
+
+          {isEditMode ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isFormBusy}
+              onPress={handleDeleteStation}
+              style={[
+                styles.deleteStationButton,
+                isFormBusy && styles.deleteStationButtonDisabled,
+              ]}
+            >
+              {isDeleting ? (
+                <View style={styles.savingContent}>
+                  <ActivityIndicator color={colors.emphasis} />
+                  <Text style={styles.deletingText}>
+                    {saveStatus || 'Deleting station...'}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.deleteStationButtonText}>
+                  Delete Station
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -715,6 +819,9 @@ const styles = StyleSheet.create({
     minHeight: 128,
     lineHeight: 22,
   },
+  formControlDisabled: {
+    opacity: 0.56,
+  },
   photoButton: {
     minHeight: 96,
     borderRadius: radius.xl,
@@ -807,6 +914,36 @@ const styles = StyleSheet.create({
   },
   savingText: {
     color: colors.text,
+    fontSize: typography.caption.fontSize,
+    fontWeight: '900',
+  },
+  deleteStationButton: {
+    minHeight: 58,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.emphasis,
+    backgroundColor: colors.emphasisSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.text,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  deleteStationButtonDisabled: {
+    opacity: 0.5,
+  },
+  deleteStationButtonText: {
+    color: colors.emphasis,
+    fontSize: typography.h3.fontSize,
+    fontWeight: '900',
+  },
+  deletingText: {
+    color: colors.emphasis,
     fontSize: typography.caption.fontSize,
     fontWeight: '900',
   },
