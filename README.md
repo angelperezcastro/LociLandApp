@@ -30,6 +30,8 @@
 
 <br />
 
+</div>
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -156,7 +158,6 @@ Firebase acts as the backend layer:
 
 ## Visual Showcase
 
-Real screenshots should be added to `docs/screenshots/`. The README is prepared with precise placeholders so the final repository can look professional once captures are exported from a real device.
 
 ### 1. Onboarding Flow
 
@@ -323,6 +324,7 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 </p>
 
 <br />
+
 ---
 
 ### 13. Review Complete
@@ -421,7 +423,6 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 
 LociLand is a **frontend-heavy mobile application** backed by Firebase services. There is no custom Express/FastAPI backend in the repository; Firebase provides authentication, database, storage and security rules.
 
-> Diagram format note: diagrams are stored as static SVG files under `docs/diagrams/` to keep a white background and stable rendering in GitHub, regardless of Mermaid or browser theme settings.
 
 ### High-Level Architecture
 
@@ -770,7 +771,6 @@ Create a `.env` file in the project root.
 cp .env.example .env
 ```
 
-> Note: `.env.example` was not detected in the repository at the time of analysis. Create it manually using the table below.
 
 ### 4. Start the app
 
@@ -811,7 +811,6 @@ This runs:
 
 The app reads Firebase config from public Expo variables. These values are required for the client app to connect to the correct Firebase project.
 
-> Firebase web/mobile config values are not database passwords, but they still identify the project. They must be paired with strict Firestore and Storage rules.
 
 | Variable | Required | Description | Example Value |
 | --- | --- | --- | --- |
