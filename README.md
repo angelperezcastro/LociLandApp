@@ -22,7 +22,7 @@
 
 <p align="center">
 
-  <img src="assets/1.png" alt="LociLand memory path screen" width="400" />
+  <img src="assets/logo-title.png" alt="LociLand memory path screen" width="500" />
   
 </p>
 
