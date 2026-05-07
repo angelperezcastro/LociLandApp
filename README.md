@@ -175,18 +175,15 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 ---
 
 ### 3. Authentication Screens
+<br />
 
-**Recommended file:** `docs/screenshots/auth-register.png`
+<p align="center">
+  <img src="docs/screenshots/createAccount.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/logIn.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-```md
-![LociLand registration screen](docs/screenshots/auth-register.png)
-```
-
-**Capture instructions:**  
-Capture the registration screen with avatar selector, age group selector, email/password fields and primary action.
-
-**Why it matters:**  
-This proves that the app has a real user model and not only local prototype data.
+<br />
 
 ---
 
