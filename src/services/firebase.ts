@@ -9,26 +9,24 @@ import {
   initializeAuth,
 } from 'firebase/auth';
 
-const getRequiredEnvVar = (key: string): string => {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`Missing Firebase env var: ${key}`);
-  }
-
-  return value;
-};
-
 const firebaseConfig = {
-  apiKey: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_API_KEY'),
-  authDomain: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-  projectId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
-  storageBucket: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  ),
-  appId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
+
+const missingFirebaseConfigKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingFirebaseConfigKeys.length > 0) {
+  throw new Error(
+    `Missing Firebase config values: ${missingFirebaseConfigKeys.join(', ')}`,
+  );
+}
 
 export const firebaseApp =
   getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
