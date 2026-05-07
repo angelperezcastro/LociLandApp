@@ -331,7 +331,7 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 <p align="center">
   <img src="docs/screenshots/questionFeedbackBien.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/perfectReview.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/screenshots/PerfectReview.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -388,17 +388,14 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 
 ### 17. Achievements Screen
 
-**Recommended file:** `docs/screenshots/achievements-screen.png`
 
-```md
-![LociLand achievements screen](docs/screenshots/achievements-screen.png)
-```
+<br />
 
-**Capture instructions:**  
-Capture a mix of earned and locked achievements. At least three earned achievements should be visible.
+<p align="center">
+  <img src="docs/screenshots/achievements.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Why it matters:**  
-Achievements show long-term motivation and system depth.
+<br />
 
 ---
 
