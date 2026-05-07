@@ -190,11 +190,8 @@ function PalaceDetailScreen() {
     visibleStationCount >= LARGE_PALACE_WARNING_THRESHOLD;
 
   const stationListRenderKey = useMemo(
-    () =>
-      `${palaceId ?? 'no-palace'}-${stations.length}-${stations
-        .map((station) => `${station.id}:${station.order}:${station.label}`)
-        .join('|')}`,
-    [palaceId, stations],
+    () => `${palaceId ?? 'no-palace'}-${stations.length}`,
+    [palaceId, stations.length],
   );
 
   const sectionHint = useMemo(() => {
@@ -439,12 +436,12 @@ function PalaceDetailScreen() {
 
         {hasStations ? (
           <MemoryPathMap
-            key={`memory-map-${stationListRenderKey}`}
             templateId={palace.templateId}
             stations={stations}
             title="Visual memory route"
             subtitle="Follow the path and visit each station in order."
             onStationPress={handleEditStation}
+            disableEntryAnimations
           />
         ) : null}
 

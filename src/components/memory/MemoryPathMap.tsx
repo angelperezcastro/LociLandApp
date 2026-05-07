@@ -43,6 +43,13 @@ type MemoryPathMapProps = {
   compact?: boolean;
   style?: ViewStyle;
   onStationPress?: (station: Station) => void;
+
+  /**
+   * Use this when the map is rendered inside virtualized/drag lists.
+   * iOS can remount list headers during drag gestures; entry animations then
+   * replay and create a visible flicker.
+   */
+  disableEntryAnimations?: boolean;
 };
 
 const MAX_VISIBLE_STATIONS = 8;
@@ -200,6 +207,7 @@ export function MemoryPathMap({
   compact = false,
   style,
   onStationPress,
+  disableEntryAnimations = false,
 }: MemoryPathMapProps) {
   const world = getWorldVisuals(templateId);
 
@@ -280,7 +288,11 @@ export function MemoryPathMap({
 
   return (
     <Animated.View
-      entering={FadeIn.duration(motion.duration.normal)}
+      entering={
+        disableEntryAnimations
+          ? undefined
+          : FadeIn.duration(motion.duration.normal)
+      }
       style={[
         styles.card,
         compact ? styles.cardCompact : null,
@@ -384,9 +396,13 @@ export function MemoryPathMap({
           return (
             <Animated.View
               key={station.id}
-              entering={ZoomIn.delay(index * motion.delay.staggerSm).duration(
-                motion.duration.normal,
-              )}
+              entering={
+                disableEntryAnimations
+                  ? undefined
+                  : ZoomIn.delay(index * motion.delay.staggerSm).duration(
+                      motion.duration.normal,
+                    )
+              }
               style={[
                 styles.nodeWrapper,
                 {
