@@ -28,7 +28,9 @@
   <img src="docs/screenshots/PerfectReview.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
-<br />## Table of Contents
+<br />
+
+## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
@@ -156,37 +158,19 @@ Firebase acts as the backend layer:
 
 Real screenshots should be added to `docs/screenshots/`. The README is prepared with precise placeholders so the final repository can look professional once captures are exported from a real device.
 
-### 1. Hero Showcase
+### 1. Onboarding Flow
 
-**Recommended file:** `docs/screenshots/hero-showcase.png`
+<br />
 
-**Markdown:**
+<p align="center">
+  <img src="docs/screenshots/onboarding1.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/onboarding2.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/onboarding3.png" alt="LociLand perfect review screen" width="220" />
+</p>
 
-```md
-![LociLand mobile app showcase](docs/screenshots/hero-showcase.png)
-```
-
-**Capture instructions:**  
-Create a 3-device mockup showing: Home with palaces, Palace Detail with station path, and Review Complete with celebration.
-
-**Why it matters:**  
-This gives recruiters and evaluators an immediate visual understanding of the product quality.
-
----
-
-### 2. Onboarding Flow
-
-**Recommended file:** `docs/screenshots/onboarding-flow.png`
-
-```md
-![LociLand onboarding flow](docs/screenshots/onboarding-flow.png)
-```
-
-**Capture instructions:**  
-Capture the onboarding screens showing the child-friendly introduction, guide character and first call-to-action.
-
-**Why it matters:**  
-The onboarding is the first impression and explains the app concept before the user enters the main experience.
+<br />
 
 ---
 
