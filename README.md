@@ -200,55 +200,49 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 
 ---
 
-### 5. Empty Home State
+### 4. Empty Home State
 
-**Recommended file:** `docs/screenshots/home-empty-state.png`
+<br />
 
-```md
-![LociLand empty home state](docs/screenshots/home-empty-state.png)
-```
+<p align="center">
+  <img src="docs/screenshots/homeWithoutP.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Use a fresh account with no palaces. Capture the empty state with the guide character and “Start building” CTA.
+<br />
 
-**Why it matters:**  
-Empty states are important in product design. This one should feel inviting rather than unfinished.
 
 ---
 
-### 6. Create Palace Screen
+### 5. Create Palace Screen
 
-**Recommended file:** `docs/screenshots/create-palace.png`
+<br />
 
-```md
-![LociLand create palace screen](docs/screenshots/create-palace.png)
-```
+<p align="center">
+  <img src="docs/screenshots/createP1.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/createP2.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Capture the create flow with a typed palace name, one selected template and the preview card visible.
+<br />
 
-**Why it matters:**  
-This screen demonstrates multi-step mobile form design, template selection and visual preview.
-
----
-
-### 7. Palace Detail and Memory Path
-
-**Recommended file:** `docs/screenshots/palace-detail-path.png`
-
-```md
-![LociLand palace detail memory path](docs/screenshots/palace-detail-path.png)
-```
-
-**Capture instructions:**  
-Open a palace with at least five stations. Capture the palace header, station route/path visualization, station cards and “Start Review” entry point.
-
-**Why it matters:**  
-This is where the Method of Loci becomes spatial. The screenshot should prove that memory is represented as a route, not only a list.
 
 ---
 
-### 8. Add Station With Image
+### 6. Palace Detail and Memory Path
+
+<br />
+
+<p align="center">
+  <img src="docs/screenshots/memoryPathDetails.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/MemoryPathDetails2.png" alt="LociLand memory path screen" width="220" />
+</p>
+
+<br />
+
+---
+
+### 7. Add Station With Image
 
 **Recommended file:** `docs/screenshots/add-station-image.png`
 
@@ -264,7 +258,7 @@ This shows the core content-creation mechanic and Firebase Storage-backed image 
 
 ---
 
-### 9. Review Intro
+### 8. Review Intro
 
 **Recommended file:** `docs/screenshots/review-intro.png`
 
@@ -280,7 +274,7 @@ It frames review as a guided walk, not a test.
 
 ---
 
-### 10. Review Walking State
+### 9. Review Walking State
 
 **Recommended file:** `docs/screenshots/review-walking.png`
 
@@ -296,7 +290,7 @@ This is the strongest visual translation of the Method of Loci into the UI.
 
 ---
 
-### 11. Review Question — Younger User
+### 10. Review Question — Younger User
 
 **Recommended file:** `docs/screenshots/review-question-younger.png`
 
@@ -312,7 +306,7 @@ It demonstrates age-specific UX and child-safe interaction design.
 
 ---
 
-### 12. Review Question — Older User
+### 11. Review Question — Older User
 
 **Recommended file:** `docs/screenshots/review-question-older.png`
 
@@ -328,7 +322,7 @@ It proves the app does not treat all children the same and supports more advance
 
 ---
 
-### 13. Review Reveal Feedback
+### 12. Review Reveal Feedback
 
 **Recommended file:** `docs/screenshots/review-reveal-feedback.png`
 
@@ -344,7 +338,7 @@ Emotional design is critical in children's learning products. Wrong answers shou
 
 ---
 
-### 14. Perfect Review Complete
+### 13. Perfect Review Complete
 
 **Recommended file:** `docs/screenshots/review-perfect-complete.png`
 
@@ -360,7 +354,7 @@ This is the strongest gamification and reward screenshot.
 
 ---
 
-### 15. Progress — Younger User
+### 14. Progress — Younger User
 
 **Recommended file:** `docs/screenshots/progress-younger.png`
 
@@ -376,7 +370,7 @@ This demonstrates simplified, age-appropriate analytics.
 
 ---
 
-### 16. Progress — Older User
+### 15. Progress — Older User
 
 **Recommended file:** `docs/screenshots/progress-older.png`
 
@@ -392,7 +386,7 @@ This demonstrates richer progression and metric visibility.
 
 ---
 
-### 17. Profile Screen
+### 16. Profile Screen
 
 **Recommended file:** `docs/screenshots/profile-screen.png`
 
@@ -408,7 +402,7 @@ The profile acts as the child's memory identity/passport.
 
 ---
 
-### 18. Achievements Screen
+### 17. Achievements Screen
 
 **Recommended file:** `docs/screenshots/achievements-screen.png`
 
