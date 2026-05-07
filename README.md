@@ -236,169 +236,153 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
   <img src="docs/screenshots/memoryPathDetails.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
   <img src="docs/screenshots/MemoryPathDetails2.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/memoryPathDetails3.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
 <br />
 
 ---
 
-### 7. Add Station With Image
+### 7. Add Station
 
-**Recommended file:** `docs/screenshots/add-station-image.png`
+<br />
 
-```md
-![LociLand add station with image](docs/screenshots/add-station-image.png)
-```
+<p align="center">
+  <img src="docs/screenshots/addStation3.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/addStation2.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/addStation.png" alt="LociLand perfect review screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Capture the Add Station screen after selecting an emoji, writing a label, adding memory text and attaching an image.
-
-**Why it matters:**  
-This shows the core content-creation mechanic and Firebase Storage-backed image support.
+<br />
 
 ---
 
 ### 8. Review Intro
 
-**Recommended file:** `docs/screenshots/review-intro.png`
+<br />
 
-```md
-![LociLand review intro screen](docs/screenshots/review-intro.png)
-```
+<p align="center">
+  <img src="docs/screenshots/reviewIntro.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Start a review session and capture the intro state showing palace identity, station count and “Start the Journey” CTA.
-
-**Why it matters:**  
-It frames review as a guided walk, not a test.
+<br />
 
 ---
 
 ### 9. Review Walking State
 
-**Recommended file:** `docs/screenshots/review-walking.png`
 
-```md
-![LociLand review walking state](docs/screenshots/review-walking.png)
-```
+<br />
 
-**Capture instructions:**  
-Capture the walking state with progress bar, current station emoji/name, route preview and guide character.
+<p align="center">
+  <img src="docs/screenshots/reviewWalkingState.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Why it matters:**  
-This is the strongest visual translation of the Method of Loci into the UI.
+<br />
 
 ---
 
 ### 10. Review Question — Younger User
 
-**Recommended file:** `docs/screenshots/review-question-younger.png`
 
-```md
-![LociLand review question for younger users](docs/screenshots/review-question-younger.png)
-```
+<br />
 
-**Capture instructions:**  
-Use a profile with age group `6-9`. Capture the multiple-choice answer state with large touch targets.
+<p align="center">
+  <img src="docs/screenshots/reviewQuestion69.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Why it matters:**  
-It demonstrates age-specific UX and child-safe interaction design.
+<br />
+
 
 ---
 
 ### 11. Review Question — Older User
 
-**Recommended file:** `docs/screenshots/review-question-older.png`
 
-```md
-![LociLand review question for older users](docs/screenshots/review-question-older.png)
-```
+<br />
 
-**Capture instructions:**  
-Use a profile with age group `10-14`. Capture free-text answer input and timer.
+<p align="center">
+  <img src="docs/screenshots/reviewQuestion1014.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Why it matters:**  
-It proves the app does not treat all children the same and supports more advanced recall behaviour.
+<br />
 
 ---
 
-### 12. Review Reveal Feedback
+### 12. Review Reveal Question Feedback
 
-**Recommended file:** `docs/screenshots/review-reveal-feedback.png`
+<br />
 
-```md
-![LociLand review reveal feedback](docs/screenshots/review-reveal-feedback.png)
-```
+<p align="center">
+  <img src="docs/screenshots/questionFeedbackBien1.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/questionFeedbackMal.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Capture either a correct answer celebration or an incorrect answer reveal. For incorrect, show the encouraging feedback and correct answer.
-
-**Why it matters:**  
-Emotional design is critical in children's learning products. Wrong answers should feel safe and constructive.
-
+<br />
 ---
 
-### 13. Perfect Review Complete
+### 13. Review Complete
+<br />
 
-**Recommended file:** `docs/screenshots/review-perfect-complete.png`
+<p align="center">
+  <img src="docs/screenshots/questionFeedbackBien.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/perfectReview.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-```md
-![LociLand perfect review completion](docs/screenshots/review-perfect-complete.png)
-```
-
-**Capture instructions:**  
-Complete a review with 100% correct answers. Capture the summary state showing score, celebration and perfect memory badge.
-
-**Why it matters:**  
-This is the strongest gamification and reward screenshot.
+<br />
 
 ---
 
 ### 14. Progress — Younger User
 
-**Recommended file:** `docs/screenshots/progress-younger.png`
+<br />
 
-```md
-![LociLand simplified progress for younger users](docs/screenshots/progress-younger.png)
-```
+<p align="center">
+  <img src="docs/screenshots/progress69_1.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/progress69_2.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/profile_1.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Use age group `6-9`. Capture Memory Stars, weekly activity and simplified achievement/progress view.
-
-**Why it matters:**  
-This demonstrates simplified, age-appropriate analytics.
+<br />
 
 ---
 
 ### 15. Progress — Older User
 
-**Recommended file:** `docs/screenshots/progress-older.png`
+<br />
 
-```md
-![LociLand detailed progress for older users](docs/screenshots/progress-older.png)
-```
+<p align="center">
+  <img src="docs/screenshots/progress1014_2.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/progress1014_1.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/profile_2.png" alt="LociLand memory path screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Use age group `10-14`. Capture XP, level, progress bar, weekly constellation and stats grid.
-
-**Why it matters:**  
-This demonstrates richer progression and metric visibility.
+<br />
 
 ---
 
 ### 16. Profile Screen
 
-**Recommended file:** `docs/screenshots/profile-screen.png`
+<br />
 
-```md
-![LociLand profile screen](docs/screenshots/profile-screen.png)
-```
+<p align="center">
+  <img src="docs/screenshots/profile_5.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/profile_4.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/profile_3.png" alt="LociLand perfect review screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Capture avatar, display name, level/streak identity, stats and account actions.
-
-**Why it matters:**  
-The profile acts as the child's memory identity/passport.
+<br />
 
 ---
 
