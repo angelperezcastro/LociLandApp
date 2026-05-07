@@ -58,11 +58,12 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
     "@firebase/rules-unit-testing": "^5.0.0",
     "@types/node": "^22.15.0",
+    "@types/react": "~19.1.0",
+    "babel-preset-expo": "~54.0.10",
     "firebase-tools": "^14.0.0",
+    "typescript": "~5.9.2",
     "vitest": "^3.2.0"
   },
   "private": true
