@@ -20,12 +20,9 @@
 
 <br />
 
-<!-- Replace this placeholder once app screenshots are available. -->
 
-![LociLand mobile app showcase](docs/screenshots/hero-showcase.png)
+![LociLand mobile app showcase](docs/screenshots/home.JPEG) ![LociLand mobile app showcase](docs/screenshots/MemoryPath.JPEG) ![LociLand mobile app showcase](docs/screenshots/PerfectReview.JPEG)
 
-**Screenshot placeholder:** `docs/screenshots/hero-showcase.png`  
-Capture a polished 3-device mockup showing Home, Palace Detail and Review Complete. This should be the main visual proof that the app feels like a real mobile product, not only a functional university prototype.
 
 </div>
 
