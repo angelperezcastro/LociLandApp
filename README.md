@@ -21,11 +21,9 @@
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="LociLand home screen" width="220" />
-  &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/MemoryPath.png" alt="LociLand memory path screen" width="220" />
-  &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/PerfectReview.png" alt="LociLand perfect review screen" width="220" />
+
+  <img src="assets/1.png" alt="LociLand memory path screen" width="400" />
+  
 </p>
 
 <br />
