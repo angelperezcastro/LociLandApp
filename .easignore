@@ -1,40 +1,40 @@
 # Dependencies
-node_modules/
+node_modules
 
 # Expo / Metro / build outputs
-.expo/
-dist/
-web-build/
+.expo
+dist
+web-build
 expo-env.d.ts
 
 # EAS local inspection output
-eas-archive-inspect/
+eas-archive-inspect
 
 # Native generated folders
-android/
-ios/
+android
+ios
 
 # Local credentials / secrets
-credentials/
+credentials
 .env
 .env.local
 .env.*.local
 
-# Logs
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Firebase local tooling
+.firebase
 firebase-debug.log*
 firestore-debug.log*
 storage-debug.log*
 ui-debug.log*
-
-# Firebase local tooling
-.firebase/
-*.local-export/
+*.local-export
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
 
 # OS files
 .DS_Store
