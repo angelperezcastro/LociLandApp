@@ -21,7 +21,7 @@
 <br />
 
 
-![LociLand mobile app showcase](docs/screenshots/home.JPEG) ![LociLand mobile app showcase](docs/screenshots/MemoryPath.JPEG) ![LociLand mobile app showcase](docs/screenshots/PerfectReview.JPEG)
+![LociLand mobile app showcase](docs/screenshots/home.png) ![LociLand mobile app showcase](docs/screenshots/MemoryPath.png) ![LociLand mobile app showcase](docs/screenshots/PerfectReview.png)
 
 
 </div>
