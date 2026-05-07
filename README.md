@@ -20,15 +20,15 @@
 
 <br />
 
+<p align="center">
+  <img src="docs/screenshots/home.png" alt="LociLand home screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/MemoryPath.png" alt="LociLand memory path screen" width="220" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/PerfectReview.png" alt="LociLand perfect review screen" width="220" />
+</p>
 
-![LociLand mobile app showcase](docs/screenshots/home.png) ![LociLand mobile app showcase](docs/screenshots/MemoryPath.png) ![LociLand mobile app showcase](docs/screenshots/PerfectReview.png)
-
-
-</div>
-
----
-
-## Table of Contents
+<br />## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
