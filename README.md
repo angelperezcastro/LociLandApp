@@ -174,7 +174,7 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 
 ---
 
-### 3. Authentication Screens
+### 2. Authentication Screens
 <br />
 
 <p align="center">
@@ -187,19 +187,16 @@ Real screenshots should be added to `docs/screenshots/`. The README is prepared 
 
 ---
 
-### 4. Home Screen With Palaces
+### 3. Home Screen With Palaces
 
-**Recommended file:** `docs/screenshots/home-palaces.png`
+<br />
 
-```md
-![LociLand home screen with memory palaces](docs/screenshots/home-palaces.png)
-```
+<p align="center">
+  <img src="docs/screenshots/homeWithP.png" alt="LociLand home screen" width="220" />
+</p>
 
-**Capture instructions:**  
-Capture Home after creating at least three different palaces. The screenshot should show the greeting, avatar, palace cards, station count badges and floating create button.
+<br />
 
-**Why it matters:**  
-Home is the central product surface and best communicates the app's playful world-based identity.
 
 ---
 
