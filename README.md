@@ -162,11 +162,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/onboarding1.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/onboarding1-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/onboarding2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/onboarding2-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/onboarding3.png" alt="LociLand perfect review screen" width="220" />
+  <img src="docs/mockups/onboarding3-portrait.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
 <br />
@@ -177,9 +177,9 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/createAccount.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/createAccount-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/logIn.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/logIn-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -191,7 +191,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/homeWithP.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/homeWithP-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -204,7 +204,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/homeWithoutP.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/homeWithoutP-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -217,9 +217,9 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/createP1.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/createP1-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/createP2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/createP2-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -232,11 +232,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/memoryPathDetails.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/memoryPathDetails-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/MemoryPathDetails2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/MemoryPathDetails2-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/memoryPathDetails3.png" alt="LociLand perfect review screen" width="220" />
+  <img src="docs/mockups/memoryPathDetails3-portrait.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
 <br />
@@ -248,11 +248,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/addStation3.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/addStation3-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/addStation2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/addStation2-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/addStation.png" alt="LociLand perfect review screen" width="220" />
+  <img src="docs/mockups/addStation-portrait.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
 <br />
@@ -264,7 +264,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/reviewIntro.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/reviewIntro-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -277,7 +277,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/reviewWalkingState.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/reviewWalkingState-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -290,7 +290,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/reviewQuestion69.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/reviewQuestion69-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -304,7 +304,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/reviewQuestion1014.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/reviewQuestion1014-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -316,9 +316,9 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/questionFeedbackBien1.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/questionFeedbackBien1-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/questionFeedbackMal.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/questionFeedbackMal-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -329,9 +329,9 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/questionFeedbackBien.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/questionFeedbackBien-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/PerfectReview.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/PerfectReview-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -343,11 +343,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/progress69_1.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/progress69_1-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/progress69_2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/progress69_2-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/profile_1.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/profile_1-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -359,11 +359,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/progress1014_2.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/progress1014_2-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/progress1014_1.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/progress1014_1-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/profile_2.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/profile_2-portrait.png" alt="LociLand memory path screen" width="220" />
 </p>
 
 <br />
@@ -375,11 +375,11 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/profile_5.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/profile_5-portrait.png" alt="LociLand home screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/profile_4.png" alt="LociLand memory path screen" width="220" />
+  <img src="docs/mockups/profile_4-portrait.png" alt="LociLand memory path screen" width="220" />
   &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/profile_3.png" alt="LociLand perfect review screen" width="220" />
+  <img src="docs/mockups/profile_3-portrait.png" alt="LociLand perfect review screen" width="220" />
 </p>
 
 <br />
@@ -392,7 +392,7 @@ Firebase acts as the backend layer:
 <br />
 
 <p align="center">
-  <img src="docs/screenshots/achievements.png" alt="LociLand home screen" width="220" />
+  <img src="docs/mockups/achievements-portrait.png" alt="LociLand home screen" width="220" />
 </p>
 
 <br />
@@ -1050,21 +1050,9 @@ This project demonstrates several technical and product lessons:
 | --- | --- |
 | Name | Ángel Pérez Castro |
 | GitHub | [angelperezcastro](https://github.com/angelperezcastro) |
-| LinkedIn | To be added |
-| Portfolio | To be added |
-| Email | To be added |
+| LinkedIn | [Ángel Pérez Castro](www.linkedin.com/in/ángel-pérez-castro-50ab12339) |
+| Email | angelpeka04@gmail.com |
 
----
-
-## License
-
-No license file was detected in the repository at the time this README was generated.
-
-Recommended next step: add a `LICENSE` file. For portfolio/university projects, common options are:
-
-- **MIT License** if the project can be reused freely.
-- **All rights reserved** notice if the code should not be reused.
-- University-specific license if required by the academic context.
 
 ---
 
