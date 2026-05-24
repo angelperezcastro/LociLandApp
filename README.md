@@ -61,14 +61,19 @@
 
 ## 🎥 App Demo
 
-Watch LociLand running as an installed Android build.
+Watch **LociLand** running as an installed Android build: memory palace creation, station management, guided review, XP feedback and progress tracking.
 
-<video src="docs/demo/lociland-demo.mp4" controls width="280">
-  Your browser does not support the video tag.
-</video>
+<a href="https://github.com/angelperezcastro/LociLandApp/raw/main/docs/demo/lociland-demo.mp4">
+  <img src="docs/demo/lociland-demo-cover.png" alt="Watch the LociLand demo video" width="320" />
+</a>
+
+<br />
+
+<a href="https://github.com/angelperezcastro/LociLandApp/raw/main/docs/demo/lociland-demo.mp4">
+  <strong>▶ Watch the demo video</strong>
+</a>
 
 </div>
-
 
 ---
 
