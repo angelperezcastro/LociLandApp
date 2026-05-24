@@ -55,6 +55,23 @@
 
 ---
 
+---
+
+<div align="center">
+
+## 🎥 App Demo
+
+Watch LociLand running as an installed Android build.
+
+<video src="docs/demo/lociland-demo.mp4" controls width="280">
+  Your browser does not support the video tag.
+</video>
+
+</div>
+
+
+---
+
 <div align="center">
 
 # Download Android APK
