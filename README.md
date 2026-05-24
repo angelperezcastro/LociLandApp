@@ -55,6 +55,18 @@
 
 ---
 
+<div align="center">
+
+# Download Android APK
+
+<a href="https://github.com/angelperezcastro/LociLandApp/releases/latest">
+  <img src="https://img.shields.io/badge/Download-Android_APK-4D96FF?style=for-the-badge&logo=android&logoColor=white" />
+</a>
+
+</div>
+
+---
+
 ## Overview
 
 **LociLand** is an educational mobile app built around the **Memory Palace** technique, also known as the **Method of Loci**. The app helps children transform abstract information into spatial memory journeys.
